@@ -1,0 +1,20 @@
+{
+  "name": "counterfactual-poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.1",
+    "@sequence/wallet-contracts": "npm:@0xsequence/wallet-contracts@^1.10.0",
+    "hardhat": "^2.12.7",
+    "solmate": "^6.7.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1"
+  }
+}
