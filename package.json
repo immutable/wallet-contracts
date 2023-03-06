@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.1",
+    "@openzeppelin/contracts": "^4.8.2",
     "@sequence/wallet-contracts": "npm:@0xsequence/wallet-contracts@^1.10.0",
     "hardhat": "^2.12.7",
     "solmate": "^6.7.0"
