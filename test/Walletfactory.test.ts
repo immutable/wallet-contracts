@@ -56,6 +56,22 @@ describe("Wallet Factory", function () {
         );
       }
     });
+
+    it("Should depend on all parameters and generate no collisions", async function () {
+      const { factory, mainModule, customModule } = await loadFixture(setupFactoryFixture);
+
+      // Call getAddress() with different addresses and different salts
+      const addresses = await Promise.all(
+        [mainModule.address, customModule.address].flatMap((address) =>
+          salts.map(async (salt) => factory.getAddress(address, salt))
+        )
+      );
+
+      const addressSet = new Set(addresses);
+
+      // Results should have no duplicates
+      expect(addressSet.size).to.equal(addresses.length);
+    });
   });
 
   describe("deploy", function () {
@@ -140,6 +156,32 @@ describe("Wallet Factory", function () {
         "WalletFactory: deployment failed"
       );
     });
+
+    it("Should generate contracts with independent storage (i.e.: delegatecall)", async function () {
+      const { owner, acc1, factory, customModule } = await loadFixture(
+        setupFactoryFixture
+      );
+
+      const salts = [
+        encodeImageHash(1, [{ weight: 1, address: owner.address }]),
+        encodeImageHash(1, [{ weight: 1, address: acc1.address }])
+      ];
+
+      // Deploy two contracts pointing to the same implementation
+      await Promise.all(salts.map(async salt => factory.deploy(customModule.address, salt)));
+
+      const contracts = salts.map(salt => CustomModule__factory.connect(
+        addressOf(factory.address, customModule.address, salt),
+        owner
+      ));
+
+      // Set the string stored in each contract to their address
+      await Promise.all(contracts.map(async contract => contract.setStr(contract.address)));
+
+      for (const contract of contracts) {
+        expect(await contract.getStr()).to.equal(contract.address);
+      }
+    });
   });
 
   describe("ownable", function () {
@@ -156,6 +198,7 @@ describe("Wallet Factory", function () {
           )
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
+
     it("Should not change generated addresses after changing ownership", async function () {
       const { acc1, factory, mainModule } = await loadFixture(
         setupFactoryFixture
