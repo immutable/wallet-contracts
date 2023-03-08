@@ -157,7 +157,7 @@ describe("Wallet Factory", function () {
       );
     });
 
-    it("Storage of each deployed contract should be independent (i.e.: delegatecall)", async function () {
+    it("Should generate contracts with independent storage (i.e.: delegatecall)", async function () {
       const { owner, acc1, factory, customModule } = await loadFixture(
         setupFactoryFixture
       );
