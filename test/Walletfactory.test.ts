@@ -47,8 +47,6 @@ describe("Wallet Factory", function () {
     };
   }
 
-  // TODO: test salt generation too?
-
   describe("getAddress", function () {
     it("Should return deterministic contract address", async function () {
       const { factory, mainModule } = await loadFixture(setupFactoryFixture);
@@ -200,6 +198,7 @@ describe("Wallet Factory", function () {
           )
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
+
     it("Should not change generated addresses after changing ownership", async function () {
       const { acc1, factory, mainModule } = await loadFixture(
         setupFactoryFixture
