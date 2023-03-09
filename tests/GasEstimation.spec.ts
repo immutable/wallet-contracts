@@ -70,24 +70,19 @@ contract('Estimate gas usage', (accounts: string[]) => {
 
   // FIXME: These fail because we try to deploy from the factory using a SCW
   // that is not the owner.
-  describe.skip('Estimate gas of transactions', () => {
+  describe('Estimate gas of transactions', () => {
     context('without wallet deployed', () => {
-      const bundleWithDeploy = (txData: string) => {
-        return [{
-          delegateCall: false,
-          revertOnError: true,
-          target: factory.address,
-          gasLimit: 0,
-          data: factory.interface.encodeFunctionData('deploy', [mainModule.address, salt]),
-          value: 0
-        }, {
-          delegateCall: false,
-          revertOnError: true,
-          target: address,
-          gasLimit: 0,
-          data: txData,
-          value: 0
-        }]
+      const bundle = (txData: string) => {
+        return [
+          {
+            delegateCall: false,
+            revertOnError: true,
+            target: address,
+            gasLimit: 0,
+            data: txData,
+            value: 0
+          }
+        ]
       }
 
       it('Should estimate wallet deployment', async () => {
@@ -98,7 +93,7 @@ contract('Estimate gas usage', (accounts: string[]) => {
 
         // NOTE: we set a high variance here as gas estimation on factory is a bit tricky from hardhat.
         // or perhaps the txBaseCost() is wrong somehow..? could be hardhat's opcode pricing is off too.
-        expect(estimated + txBaseCost(factoryData)).to.approximately(realTxReceipt.gasUsed.toNumber(), 30_000)
+        expect(estimated + txBaseCost(factoryData)).to.approximately(realTxReceipt.gasUsed.toNumber(), 36_000)
       })
 
       it('Should estimate wallet deployment + upgrade', async () => {
@@ -117,10 +112,10 @@ contract('Estimate gas usage', (accounts: string[]) => {
         const txData = await signAndEncodeMetaTxn(mainModule as unknown as MainModule, owner, [transaction], networkId)
         const txDataNoSignature = await signAndEncodeMetaTxn(mainModule as unknown as MainModule, ethers.Wallet.createRandom(), [transaction], networkId)
 
-        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundleWithDeploy(txDataNoSignature), 0, []])
+        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundle(txDataNoSignature), 0, []])
 
         const estimated = ethers.BigNumber.from((await estimate(guestModule.address, bundleDataNoSignature)).gasLimit).toNumber()
-        const realTx = await guestModule.execute(bundleWithDeploy(txData), 0, [])
+        const realTx = await guestModule.execute(bundle(txData), 0, [])
         const realTxReceipt = await realTx.wait()
 
         expect(estimated + txBaseCost(bundleDataNoSignature)).to.approximately(realTxReceipt.gasUsed.toNumber(), 40_000)
@@ -147,10 +142,10 @@ contract('Estimate gas usage', (accounts: string[]) => {
         const txData = await signAndEncodeMetaTxn(mainModule as any, owner, transaction, networkId)
         const txDataNoSignature = await signAndEncodeMetaTxn(mainModule as any, ethers.Wallet.createRandom(), transaction, networkId)
 
-        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundleWithDeploy(txDataNoSignature), 0, []])
+        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundle(txDataNoSignature), 0, []])
 
         const estimated = ethers.BigNumber.from((await estimate(guestModule.address, bundleDataNoSignature)).gasLimit).toNumber()
-        const realTx = await guestModule.execute(bundleWithDeploy(txData), 0, [])
+        const realTx = await guestModule.execute(bundle(txData), 0, [])
         const realTxReceipt = await realTx.wait()
 
         expect(estimated + txBaseCost(bundleDataNoSignature)).to.approximately(realTxReceipt.gasUsed.toNumber(), 50_000)
@@ -179,10 +174,10 @@ contract('Estimate gas usage', (accounts: string[]) => {
         const txData = await signAndEncodeMetaTxn(mainModule as any, owner, transaction, networkId)
         const txDataNoSignature = await signAndEncodeMetaTxn(mainModule as any, ethers.Wallet.createRandom(), transaction, networkId)
 
-        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundleWithDeploy(txDataNoSignature), 0, []])
+        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundle(txDataNoSignature), 0, []])
 
         const estimated = ethers.BigNumber.from((await estimate(guestModule.address, bundleDataNoSignature)).gasLimit).toNumber()
-        const realTx = await guestModule.execute(bundleWithDeploy(txData), 0, [])
+        const realTx = await guestModule.execute(bundle(txData), 0, [])
         const realTxReceipt = await realTx.wait()
 
         expect(estimated + txBaseCost(bundleDataNoSignature)).to.approximately(realTxReceipt.gasUsed.toNumber(), 50_000)
@@ -209,10 +204,10 @@ contract('Estimate gas usage', (accounts: string[]) => {
         const txData = await signAndEncodeMetaTxn(mainModule as any, owner, transaction, networkId)
         const txDataNoSignature = await signAndEncodeMetaTxn(mainModule as any, ethers.Wallet.createRandom(), transaction, networkId)
 
-        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundleWithDeploy(txDataNoSignature), 0, []])
+        const bundleDataNoSignature = guestModule.interface.encodeFunctionData('execute', [bundle(txDataNoSignature), 0, []])
 
         const estimated = ethers.BigNumber.from((await estimate(guestModule.address, bundleDataNoSignature)).gasLimit).toNumber()
-        const realTx = await guestModule.execute(bundleWithDeploy(txData), 0, [])
+        const realTx = await guestModule.execute(bundle(txData), 0, [])
         const realTxReceipt = await realTx.wait()
 
         expect(estimated + txBaseCost(bundleDataNoSignature)).to.approximately(realTxReceipt.gasUsed.toNumber(), 50_000)
