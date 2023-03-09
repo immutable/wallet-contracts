@@ -90,7 +90,6 @@ contract('Require utils', (accounts: string[]) => {
       expect(await callReceiver.lastValB()).to.equal(valB)
     })
 
-    // FIXME: Fails because we deploy twice and the second transaction reverts
     it('Should fail if signer is not new', async () => {
       const message = ethers.utils.hexlify(ethers.utils.randomBytes(96))
       const digest = ethers.utils.keccak256(message)
