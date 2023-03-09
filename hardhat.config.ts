@@ -5,6 +5,7 @@ import '@nomiclabs/hardhat-truffle5'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-web3'
 import '@nomiclabs/hardhat-etherscan'
+import '@nomicfoundation/hardhat-chai-matchers'
 import "@tenderly/hardhat-tenderly"
 
 import 'hardhat-gas-reporter'
@@ -17,7 +18,7 @@ const ganacheNetwork = {
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.7.6',
+    compilers: [{ version: "0.8.17" }, { version: "0.7.6" }],
     settings: {
       optimizer: {
         enabled: true,

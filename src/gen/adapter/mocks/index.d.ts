@@ -1,4 +1,7 @@
+import type * as mainModuleSol from "./MainModule.sol";
+export type { mainModuleSol };
 export type { CallReceiverMock } from "./CallReceiverMock";
+export type { CustomModule } from "./CustomModule";
 export type { DelegateCallMock } from "./DelegateCallMock";
 export type { ERC165CheckerMock } from "./ERC165CheckerMock";
 export type { GasBurnerMock } from "./GasBurnerMock";

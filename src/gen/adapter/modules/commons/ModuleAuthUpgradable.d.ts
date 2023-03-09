@@ -29,10 +29,10 @@ export interface ModuleAuthUpgradableInterface extends utils.Interface {
 export interface ImageHashUpdatedEventObject {
     newImageHash: string;
 }
-export declare type ImageHashUpdatedEvent = TypedEvent<[
+export type ImageHashUpdatedEvent = TypedEvent<[
     string
 ], ImageHashUpdatedEventObject>;
-export declare type ImageHashUpdatedEventFilter = TypedEventFilter<ImageHashUpdatedEvent>;
+export type ImageHashUpdatedEventFilter = TypedEventFilter<ImageHashUpdatedEvent>;
 export interface ModuleAuthUpgradable extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

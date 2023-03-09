@@ -1,4 +1,6 @@
+export * as mainModuleSol from "./MainModule.sol";
 export { CallReceiverMock__factory } from "./CallReceiverMock__factory";
+export { CustomModule__factory } from "./CustomModule__factory";
 export { DelegateCallMock__factory } from "./DelegateCallMock__factory";
 export { ERC165CheckerMock__factory } from "./ERC165CheckerMock__factory";
 export { GasBurnerMock__factory } from "./GasBurnerMock__factory";

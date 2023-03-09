@@ -134,22 +134,22 @@ export interface RequiredConfigEventObject {
     _threshold: BigNumber;
     _signers: string;
 }
-export declare type RequiredConfigEvent = TypedEvent<[
+export type RequiredConfigEvent = TypedEvent<[
     string,
     string,
     BigNumber,
     string
 ], RequiredConfigEventObject>;
-export declare type RequiredConfigEventFilter = TypedEventFilter<RequiredConfigEvent>;
+export type RequiredConfigEventFilter = TypedEventFilter<RequiredConfigEvent>;
 export interface RequiredSignerEventObject {
     _wallet: string;
     _signer: string;
 }
-export declare type RequiredSignerEvent = TypedEvent<[
+export type RequiredSignerEvent = TypedEvent<[
     string,
     string
 ], RequiredSignerEventObject>;
-export declare type RequiredSignerEventFilter = TypedEventFilter<RequiredSignerEvent>;
+export type RequiredSignerEventFilter = TypedEventFilter<RequiredSignerEvent>;
 export interface SequenceUtils extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

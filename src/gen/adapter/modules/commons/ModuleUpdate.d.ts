@@ -20,10 +20,10 @@ export interface ModuleUpdateInterface extends utils.Interface {
 export interface ImplementationUpdatedEventObject {
     newImplementation: string;
 }
-export declare type ImplementationUpdatedEvent = TypedEvent<[
+export type ImplementationUpdatedEvent = TypedEvent<[
     string
 ], ImplementationUpdatedEventObject>;
-export declare type ImplementationUpdatedEventFilter = TypedEventFilter<ImplementationUpdatedEvent>;
+export type ImplementationUpdatedEventFilter = TypedEventFilter<ImplementationUpdatedEvent>;
 export interface ModuleUpdate extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

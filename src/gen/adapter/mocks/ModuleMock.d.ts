@@ -16,8 +16,8 @@ export interface ModuleMockInterface extends utils.Interface {
 }
 export interface PongEventObject {
 }
-export declare type PongEvent = TypedEvent<[], PongEventObject>;
-export declare type PongEventFilter = TypedEventFilter<PongEvent>;
+export type PongEvent = TypedEvent<[], PongEventObject>;
+export type PongEventFilter = TypedEventFilter<PongEvent>;
 export interface ModuleMock extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

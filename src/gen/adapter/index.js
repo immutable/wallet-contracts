@@ -22,7 +22,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SequenceUtils__factory = exports.RequireUtils__factory = exports.MultiCallUtils__factory = exports.RequireFreshSigner__factory = exports.GasEstimator__factory = exports.MainModuleUpgradable__factory = exports.MainModuleGasEstimation__factory = exports.MainModule__factory = exports.GuestModule__factory = exports.ModuleUpdate__factory = exports.ModuleIgnoreNonceCalls__factory = exports.ModuleIgnoreAuthUpgradable__factory = exports.ModuleHooks__factory = exports.ModuleERC165__factory = exports.ModuleCreator__factory = exports.ModuleCalls__factory = exports.ModuleAuthUpgradable__factory = exports.ModuleAuth__factory = exports.IModuleUpdate__factory = exports.IModuleHooks__factory = exports.IModuleCreator__factory = exports.IModuleCalls__factory = exports.IModuleAuthUpgradable__factory = exports.ModuleMock__factory = exports.LibBytesImpl__factory = exports.HookMock__factory = exports.HookCallerMock__factory = exports.GasBurnerMock__factory = exports.ERC165CheckerMock__factory = exports.DelegateCallMock__factory = exports.CallReceiverMock__factory = exports.Migrations__factory = exports.IERC721Receiver__factory = exports.IERC223Receiver__factory = exports.IERC1155Receiver__factory = exports.IERC1271Wallet__factory = exports.Factory__factory = exports.factories = void 0;
+exports.SequenceUtils__factory = exports.RequireUtils__factory = exports.MultiCallUtils__factory = exports.RequireFreshSigner__factory = exports.GasEstimator__factory = exports.MainModuleUpgradable__factory = exports.MainModuleGasEstimation__factory = exports.MainModule__factory = exports.GuestModule__factory = exports.ModuleUpdate__factory = exports.ModuleIgnoreNonceCalls__factory = exports.ModuleIgnoreAuthUpgradable__factory = exports.ModuleHooks__factory = exports.ModuleERC165__factory = exports.ModuleCreator__factory = exports.ModuleCalls__factory = exports.ModuleAuthUpgradable__factory = exports.ModuleAuth__factory = exports.IModuleUpdate__factory = exports.IModuleHooks__factory = exports.IModuleCreator__factory = exports.IModuleCalls__factory = exports.IModuleAuthUpgradable__factory = exports.ModuleMock__factory = exports.MainModuleMock__factory = exports.LibBytesImpl__factory = exports.HookMock__factory = exports.HookCallerMock__factory = exports.GasBurnerMock__factory = exports.ERC165CheckerMock__factory = exports.DelegateCallMock__factory = exports.CustomModule__factory = exports.CallReceiverMock__factory = exports.Migrations__factory = exports.IERC721Receiver__factory = exports.IERC223Receiver__factory = exports.IERC1155Receiver__factory = exports.IERC1271Wallet__factory = exports.Factory__factory = exports.factories = void 0;
 exports.factories = __importStar(require("./factories"));
 var Factory__factory_1 = require("./factories/Factory__factory");
 Object.defineProperty(exports, "Factory__factory", { enumerable: true, get: function () { return Factory__factory_1.Factory__factory; } });
@@ -38,6 +38,8 @@ var Migrations__factory_1 = require("./factories/migrations/Migrations__factory"
 Object.defineProperty(exports, "Migrations__factory", { enumerable: true, get: function () { return Migrations__factory_1.Migrations__factory; } });
 var CallReceiverMock__factory_1 = require("./factories/mocks/CallReceiverMock__factory");
 Object.defineProperty(exports, "CallReceiverMock__factory", { enumerable: true, get: function () { return CallReceiverMock__factory_1.CallReceiverMock__factory; } });
+var CustomModule__factory_1 = require("./factories/mocks/CustomModule__factory");
+Object.defineProperty(exports, "CustomModule__factory", { enumerable: true, get: function () { return CustomModule__factory_1.CustomModule__factory; } });
 var DelegateCallMock__factory_1 = require("./factories/mocks/DelegateCallMock__factory");
 Object.defineProperty(exports, "DelegateCallMock__factory", { enumerable: true, get: function () { return DelegateCallMock__factory_1.DelegateCallMock__factory; } });
 var ERC165CheckerMock__factory_1 = require("./factories/mocks/ERC165CheckerMock__factory");
@@ -50,6 +52,8 @@ var HookMock__factory_1 = require("./factories/mocks/HookMock__factory");
 Object.defineProperty(exports, "HookMock__factory", { enumerable: true, get: function () { return HookMock__factory_1.HookMock__factory; } });
 var LibBytesImpl__factory_1 = require("./factories/mocks/LibBytesImpl__factory");
 Object.defineProperty(exports, "LibBytesImpl__factory", { enumerable: true, get: function () { return LibBytesImpl__factory_1.LibBytesImpl__factory; } });
+var MainModuleMock__factory_1 = require("./factories/mocks/MainModule.sol/MainModuleMock__factory");
+Object.defineProperty(exports, "MainModuleMock__factory", { enumerable: true, get: function () { return MainModuleMock__factory_1.MainModuleMock__factory; } });
 var ModuleMock__factory_1 = require("./factories/mocks/ModuleMock__factory");
 Object.defineProperty(exports, "ModuleMock__factory", { enumerable: true, get: function () { return ModuleMock__factory_1.ModuleMock__factory; } });
 var IModuleAuthUpgradable__factory_1 = require("./factories/modules/commons/interfaces/IModuleAuthUpgradable__factory");

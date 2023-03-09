@@ -63,22 +63,22 @@ export interface NonceChangeEventObject {
     _space: BigNumber;
     _newNonce: BigNumber;
 }
-export declare type NonceChangeEvent = TypedEvent<[
+export type NonceChangeEvent = TypedEvent<[
     BigNumber,
     BigNumber
 ], NonceChangeEventObject>;
-export declare type NonceChangeEventFilter = TypedEventFilter<NonceChangeEvent>;
+export type NonceChangeEventFilter = TypedEventFilter<NonceChangeEvent>;
 export interface TxExecutedEventObject {
     _tx: string;
 }
-export declare type TxExecutedEvent = TypedEvent<[string], TxExecutedEventObject>;
-export declare type TxExecutedEventFilter = TypedEventFilter<TxExecutedEvent>;
+export type TxExecutedEvent = TypedEvent<[string], TxExecutedEventObject>;
+export type TxExecutedEventFilter = TypedEventFilter<TxExecutedEvent>;
 export interface TxFailedEventObject {
     _tx: string;
     _reason: string;
 }
-export declare type TxFailedEvent = TypedEvent<[string, string], TxFailedEventObject>;
-export declare type TxFailedEventFilter = TypedEventFilter<TxFailedEvent>;
+export type TxFailedEvent = TypedEvent<[string, string], TxFailedEventObject>;
+export type TxFailedEventFilter = TypedEventFilter<TxFailedEvent>;
 export interface ModuleCalls extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

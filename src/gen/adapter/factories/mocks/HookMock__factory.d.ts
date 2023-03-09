@@ -2,7 +2,7 @@ import { Signer, ContractFactory, Overrides } from "ethers";
 import type { Provider, TransactionRequest } from "@ethersproject/providers";
 import type { PromiseOrValue } from "../../common";
 import type { HookMock, HookMockInterface } from "../../mocks/HookMock";
-declare type HookMockConstructorParams = [signer?: Signer] | ConstructorParameters<typeof ContractFactory>;
+type HookMockConstructorParams = [signer?: Signer] | ConstructorParameters<typeof ContractFactory>;
 export declare class HookMock__factory extends ContractFactory {
     constructor(...args: HookMockConstructorParams);
     deploy(overrides?: Overrides & {
@@ -13,22 +13,22 @@ export declare class HookMock__factory extends ContractFactory {
     }): TransactionRequest;
     attach(address: string): HookMock;
     connect(signer: Signer): HookMock__factory;
-    static readonly bytecode = "0x6080604052348015600f57600080fd5b5060958061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063b68fe6cf14602d575b600080fd5b604760048036036020811015604157600080fd5b50356059565b60408051918252519081900360200190f35b6002029056fea264697066735822122029a1e312dcefda1bc536e0d465373c6d97a053313911fb1a8d3e3c7806aeac1764736f6c63430007060033";
-    static readonly abi: {
-        inputs: {
-            internalType: string;
-            name: string;
-            type: string;
-        }[];
-        name: string;
-        outputs: {
-            internalType: string;
-            name: string;
-            type: string;
-        }[];
-        stateMutability: string;
-        type: string;
-    }[];
+    static readonly bytecode = "0x6080604052348015600f57600080fd5b5060af8061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063b68fe6cf14602d575b600080fd5b605660048036036020811015604157600080fd5b8101908080359060200190929190505050606c565b6040518082815260200191505060405180910390f35b600060028202905091905056fea264697066735822122072e21121382e1acb76573b1e8d5af223fcaf563f0bbb9962a8b60337cbb7f3b164736f6c63430007060033";
+    static readonly abi: readonly [{
+        readonly inputs: readonly [{
+            readonly internalType: "uint256";
+            readonly name: "_num";
+            readonly type: "uint256";
+        }];
+        readonly name: "onHookMockCall";
+        readonly outputs: readonly [{
+            readonly internalType: "uint256";
+            readonly name: "";
+            readonly type: "uint256";
+        }];
+        readonly stateMutability: "pure";
+        readonly type: "function";
+    }];
     static createInterface(): HookMockInterface;
     static connect(address: string, signerOrProvider: Signer | Provider): HookMock;
 }
