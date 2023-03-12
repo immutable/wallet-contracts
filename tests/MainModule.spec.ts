@@ -68,18 +68,20 @@ contract('MainModule', (accounts: string[]) => {
     // get signer and provider from hardhat
     signer = (await hardhat.getSigners())[0]
     // provider = hardhat.provider
-    
+
     // Get network ID
     networkId = process.env.NET_ID ? Number(process.env.NET_ID) : await web3.eth.net.getId()
 
     // Deploy wallet factory
-    factory = await (new Factory__factory()).connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy()
+    // Grant deployer role to signer
+    await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
     // Deploy MainModule
-    mainModule = await (new MainModule__factory()).connect(signer).deploy(factory.address)
-    moduleUpgradable = await (new MainModuleUpgradable__factory()).connect(signer).deploy()
+    mainModule = await new MainModule__factory().connect(signer).deploy(factory.address)
+    moduleUpgradable = await new MainModuleUpgradable__factory().connect(signer).deploy()
 
     // Deploy RequireUtils
-    requireUtils = await (new RequireUtils__factory()).connect(signer).deploy(factory.address, mainModule.address)
+    requireUtils = await new RequireUtils__factory().connect(signer).deploy(factory.address, mainModule.address)
   })
 
   beforeEach(async () => {
@@ -91,7 +93,7 @@ contract('MainModule', (accounts: string[]) => {
 
   describe('Nested signatures', () => {
     it('Should accept simple nested signed ERC1271 message', async () => {
-      const hookMock = await (new HookCallerMock__factory()).connect(signer).deploy()
+      const hookMock = await new HookCallerMock__factory().connect(signer).deploy()
 
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
@@ -106,32 +108,14 @@ contract('MainModule', (accounts: string[]) => {
 
       const message = ethers.utils.hexlify(ethers.utils.randomBytes(95))
 
-      const topLevelDigest = ethers.utils.keccak256(
-        encodeMessageData(
-          wallet.address,
-          message,
-          networkId
-        )
-      )
+      const topLevelDigest = ethers.utils.keccak256(encodeMessageData(wallet.address, message, networkId))
 
-      const walletADigest = ethers.utils.keccak256(
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )
-      )
+      const walletADigest = ethers.utils.keccak256(encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId))
 
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        walletADigest,
-        false,
-        true
-      ) + '03'
+      const signedWalletA = (await walletMultiSign([{ weight: 1, owner: owner_a }], 1, walletADigest, false, true)) + '03'
 
       const topLevelSigned = await walletMultiSign(
-        [{ weight: 1, owner: wallet_a.address, signature: signedWalletA}],
+        [{ weight: 1, owner: wallet_a.address, signature: signedWalletA }],
         1,
         topLevelDigest,
         false,
@@ -153,7 +137,7 @@ contract('MainModule', (accounts: string[]) => {
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -168,32 +152,15 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
-      const walletADigest = ethers.utils.keccak256(
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )
-      )
+      const walletADigest = ethers.utils.keccak256(encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId))
 
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        walletADigest,
-        false,
-        true
-      ) + '03'
+      const signedWalletA = (await walletMultiSign([{ weight: 1, owner: owner_a }], 1, walletADigest, false, true)) + '03'
 
       const topLevelSigned = await walletMultiSign(
-        [{ weight: 1, owner: wallet_a.address, signature: signedWalletA}],
+        [{ weight: 1, owner: wallet_a.address, signature: signedWalletA }],
         1,
         topLevelDigest,
         false,
@@ -220,11 +187,14 @@ contract('MainModule', (accounts: string[]) => {
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
-      const salt = encodeImageHash(2, [{ weight: 1, address: wallet_a.address }, { weight: 1, address: wallet_b.address }])
+      const salt = encodeImageHash(2, [
+        { weight: 1, address: wallet_a.address },
+        { weight: 1, address: wallet_b.address }
+      ])
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -239,40 +209,29 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
       // Sign using wallet A
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )  
-      ) + '03'
+      const signedWalletA =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId)
+        )) + '03'
 
       // Sign using wallet B
-      const signedWalletB = await walletMultiSign(
-        [{ weight: 1, owner: owner_b }],
-        1,
-        encodeMessageSubDigest(
-          wallet_b.address,
-          topLevelDigest,
-          networkId
-        )
-      ) + '03'
+      const signedWalletB =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_b }],
+          1,
+          encodeMessageSubDigest(wallet_b.address, topLevelDigest, networkId)
+        )) + '03'
 
       const topLevelSigned = await walletMultiSign(
         [
-          { weight: 1, owner: wallet_a.address, signature: signedWalletA},
-          { weight: 1, owner: wallet_b.address, signature: signedWalletB}
+          { weight: 1, owner: wallet_a.address, signature: signedWalletA },
+          { weight: 1, owner: wallet_b.address, signature: signedWalletB }
         ],
         2,
         topLevelDigest,
@@ -297,11 +256,14 @@ contract('MainModule', (accounts: string[]) => {
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
 
       // Top level wallet
-      const salt = encodeImageHash(2, [{ weight: 1, address: wallet_a.address }, { weight: 1, address: owner_b.address }])
+      const salt = encodeImageHash(2, [
+        { weight: 1, address: wallet_a.address },
+        { weight: 1, address: owner_b.address }
+      ])
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -316,29 +278,21 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
       // Sign using wallet A
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )  
-      ) + '03'
+      const signedWalletA =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId)
+        )) + '03'
 
       const topLevelSigned = await walletMultiSign(
         [
-          { weight: 1, owner: wallet_a.address, signature: signedWalletA},
-          { weight: 1, owner: owner_b}
+          { weight: 1, owner: wallet_a.address, signature: signedWalletA },
+          { weight: 1, owner: owner_b }
         ],
         2,
         topLevelDigest,
@@ -352,84 +306,91 @@ contract('MainModule', (accounts: string[]) => {
       expect(await callReceiver.lastValB()).to.equal(valB)
     })
 
-    const cases = [{
-      name: "2 nested sequence wallets",
-      childs: 1,
-      depth: 2
-    }, {
-      name: "64 nested sequence wallets",
-      childs: 1,
-      depth: 64
-    }, {
-      name: "97 nested sequence wallets",
-      childs: 1,
-      depth: 97
-    }, {
-      name: "binary tree of sequence wallets",
-      childs: 2,
-      depth: 5
-    }, {
-      name: "ternary tree of sequence wallets",
-      childs: 3,
-      depth: 4
-    }, {
-      name: "hexary tree of sequence wallets",
-      childs: 16,
-      depth: 2
-    }, {
-      name: "random tree of sequence wallets (depth 1)",
-      depth: 1
-    }, {
-      name: "random tree of sequence wallets (depth 2)",
-      depth: 2
-    }, {
-      name: "random tree of sequence wallets (depth 3)",
-      depth: 3
-    }, {
-      name: "random tree of sequence wallets (depth 4)",
-      depth: 4
-    }]
+    const cases = [
+      {
+        name: '2 nested sequence wallets',
+        childs: 1,
+        depth: 2
+      },
+      {
+        name: '64 nested sequence wallets',
+        childs: 1,
+        depth: 64
+      },
+      {
+        name: '97 nested sequence wallets',
+        childs: 1,
+        depth: 97
+      },
+      {
+        name: 'binary tree of sequence wallets',
+        childs: 2,
+        depth: 5
+      },
+      {
+        name: 'ternary tree of sequence wallets',
+        childs: 3,
+        depth: 4
+      },
+      {
+        name: 'hexary tree of sequence wallets',
+        childs: 16,
+        depth: 2
+      },
+      {
+        name: 'random tree of sequence wallets (depth 1)',
+        depth: 1
+      },
+      {
+        name: 'random tree of sequence wallets (depth 2)',
+        depth: 2
+      },
+      {
+        name: 'random tree of sequence wallets (depth 3)',
+        depth: 3
+      },
+      {
+        name: 'random tree of sequence wallets (depth 4)',
+        depth: 4
+      }
+    ]
 
-    cases.map((c) => {
+    cases.map(c => {
       it(`Should handle ${c.name}`, async () => {
         type Node = {
-          owner: MainModule | ethers.Wallet,
+          owner: MainModule | ethers.Wallet
           childs?: Node[]
         }
-  
+
         const gen = async (depth: number, numChilds: number | undefined, max: number): Promise<Node> => {
-          let nchilds = numChilds ? numChilds : Math.floor((Math.random() * 5) + 1)
+          let nchilds = numChilds ? numChilds : Math.floor(Math.random() * 5 + 1)
           nchilds = depth === 0 && nchilds === 0 ? 1 : nchilds
           if (depth === max || nchilds === 0) {
             return {
               owner: new ethers.Wallet(ethers.utils.randomBytes(32))
             }
           }
-  
+
           const childs = await Promise.all([...new Array(nchilds)].map(() => gen(depth + 1, numChilds, max)))
-          const salt = encodeImageHash(childs.length, childs.map((c) => ({ weight: 1, address: c.owner.address })))
-  
+          const salt = encodeImageHash(
+            childs.length,
+            childs.map(c => ({ weight: 1, address: c.owner.address }))
+          )
+
           await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
           const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
-  
+
           return {
             owner: wallet,
             childs: childs
           }
         }
-  
-  
+
         const sign = async (node: Node, digest: string): Promise<string> => {
           if (node.childs) {
-            const subDigest = ethers.utils.keccak256(
-              encodeMessageSubDigest(
-                node.owner.address,
-                digest,
-                networkId
-              )
-            )
-  
-            const signatures = await Promise.all(node.childs.map(async (c) => await sign(c, subDigest) + (c.childs ? '03' : '')))
+            const subDigest = ethers.utils.keccak256(encodeMessageSubDigest(node.owner.address, digest, networkId))
+
+            const signatures = await Promise.all(node.childs.map(async c => (await sign(c, subDigest)) + (c.childs ? '03' : '')))
             return await walletMultiSign(
               node.childs.map((c, i) => ({ weight: 1, owner: c.owner.address, signature: signatures[i] })),
               node.childs.length,
@@ -438,18 +399,18 @@ contract('MainModule', (accounts: string[]) => {
               true
             )
           }
-  
+
           const eoas = await ethSign(node.owner as ethers.Wallet, digest, true)
           return eoas
         }
-  
+
         const tree = await gen(0, c.childs, c.depth)
-  
-        const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
-  
+
+        const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
+
         const valA = 5423
         const valB = web3.utils.randomHex(120)
-  
+
         const transaction = {
           delegateCall: false,
           revertOnError: true,
@@ -458,9 +419,12 @@ contract('MainModule', (accounts: string[]) => {
           value: ethers.constants.Zero,
           data: callReceiver.interface.encodeFunctionData('testCall', [valA, valB])
         }
-  
-        const topLevelDigest = ethers.utils.defaultAbiCoder.encode(['uint256', MetaTransactionsType], [await nextNonce(tree.owner as MainModule), [transaction]])
-  
+
+        const topLevelDigest = ethers.utils.defaultAbiCoder.encode(
+          ['uint256', MetaTransactionsType],
+          [await nextNonce(tree.owner as MainModule), [transaction]]
+        )
+
         const signature = await sign(tree, ethers.utils.keccak256(topLevelDigest))
         await (tree.owner as MainModule).execute([transaction], await nextNonce(wallet), signature)
 
@@ -483,11 +447,14 @@ contract('MainModule', (accounts: string[]) => {
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
-      const salt = encodeImageHash(2, [{ weight: 1, address: wallet_a.address }, { weight: 1, address: wallet_b.address }])
+      const salt = encodeImageHash(2, [
+        { weight: 1, address: wallet_a.address },
+        { weight: 1, address: wallet_b.address }
+      ])
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -502,40 +469,29 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
       // Sign using wallet A
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )  
-      ) + '03'
+      const signedWalletA =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId)
+        )) + '03'
 
       // Sign using wallet A again (invalid)
-      const signedWalletB = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_b.address,
-          topLevelDigest,
-          networkId
-        )
-      ) + '03'
+      const signedWalletB =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_b.address, topLevelDigest, networkId)
+        )) + '03'
 
       const topLevelSigned = await walletMultiSign(
         [
-          { weight: 1, owner: wallet_a.address, signature: signedWalletA},
-          { weight: 1, owner: wallet_b.address, signature: signedWalletB}
+          { weight: 1, owner: wallet_a.address, signature: signedWalletA },
+          { weight: 1, owner: wallet_b.address, signature: signedWalletB }
         ],
         2,
         topLevelDigest,
@@ -561,11 +517,14 @@ contract('MainModule', (accounts: string[]) => {
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
-      const salt = encodeImageHash(3, [{ weight: 1, address: wallet_a.address }, { weight: 1, address: wallet_b.address }])
+      const salt = encodeImageHash(3, [
+        { weight: 1, address: wallet_a.address },
+        { weight: 1, address: wallet_b.address }
+      ])
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -580,40 +539,29 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
       // Sign using wallet A
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )  
-      ) + '03'
+      const signedWalletA =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId)
+        )) + '03'
 
       // Sign using wallet B
-      const signedWalletB = await walletMultiSign(
-        [{ weight: 1, owner: owner_b }],
-        1,
-        encodeMessageSubDigest(
-          wallet_b.address,
-          topLevelDigest,
-          networkId
-        )
-      ) + '03'
+      const signedWalletB =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_b }],
+          1,
+          encodeMessageSubDigest(wallet_b.address, topLevelDigest, networkId)
+        )) + '03'
 
       const topLevelSigned = await walletMultiSign(
         [
-          { weight: 1, owner: wallet_a.address, signature: signedWalletA},
-          { weight: 1, owner: wallet_b.address, signature: signedWalletB}
+          { weight: 1, owner: wallet_a.address, signature: signedWalletA },
+          { weight: 1, owner: wallet_b.address, signature: signedWalletB }
         ],
         2,
         topLevelDigest,
@@ -645,11 +593,15 @@ contract('MainModule', (accounts: string[]) => {
       const wallet_c = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_c), signer)
 
       // Top level wallet
-      const salt = encodeImageHash(2, [{ weight: 1, address: wallet_a.address }, { weight: 1, address: wallet_b.address }, { weight: 2, address: wallet_c.address }])
+      const salt = encodeImageHash(2, [
+        { weight: 1, address: wallet_a.address },
+        { weight: 1, address: wallet_b.address },
+        { weight: 2, address: wallet_c.address }
+      ])
       await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -664,55 +616,49 @@ contract('MainModule', (accounts: string[]) => {
       }
 
       const topLevelDigest = ethers.utils.keccak256(
-        encodeMetaTransactionsData(
-          wallet.address,
-          [transaction],
-          networkId,
-          await nextNonce(wallet)
-        )
+        encodeMetaTransactionsData(wallet.address, [transaction], networkId, await nextNonce(wallet))
       )
 
       // Sign using wallet A
-      const signedWalletA = await walletMultiSign(
-        [{ weight: 1, owner: owner_a }],
-        1,
-        encodeMessageSubDigest(
-          wallet_a.address,
-          topLevelDigest,
-          networkId
-        )  
-      ) + '03'
+      const signedWalletA =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_a }],
+          1,
+          encodeMessageSubDigest(wallet_a.address, topLevelDigest, networkId)
+        )) + '03'
 
       // Sign using wallet B
-      const signedWalletB = await walletMultiSign(
-        [{ weight: 1, owner: owner_b }],
-        1,
-        encodeMessageSubDigest(
-          wallet_b.address,
-          topLevelDigest,
-          networkId
-        )
-      ) + '03'
+      const signedWalletB =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_b }],
+          1,
+          encodeMessageSubDigest(wallet_b.address, topLevelDigest, networkId)
+        )) + '03'
 
       // Sign using wallet C
-      const signedWalletC = await walletMultiSign(
-        [{ weight: 1, owner: owner_c }],
-        1,
-        encodeMessageSubDigest(
-          wallet_c.address,
-          topLevelDigest,
-          networkId
-        )
-      ) + '03'
+      const signedWalletC =
+        (await walletMultiSign(
+          [{ weight: 1, owner: owner_c }],
+          1,
+          encodeMessageSubDigest(wallet_c.address, topLevelDigest, networkId)
+        )) + '03'
 
       const topLevelSignedOnlyA = await walletMultiSign(
-        [{
-          weight: 1, owner: wallet_a.address, signature: signedWalletA
-        }, {
-          weight: 1, owner: wallet_b.address
-        }, {
-          weight: 2, owner: wallet_c.address
-        }],
+        [
+          {
+            weight: 1,
+            owner: wallet_a.address,
+            signature: signedWalletA
+          },
+          {
+            weight: 1,
+            owner: wallet_b.address
+          },
+          {
+            weight: 2,
+            owner: wallet_c.address
+          }
+        ],
         2,
         topLevelDigest,
         false,
@@ -723,13 +669,21 @@ contract('MainModule', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('ModuleCalls#execute: INVALID_SIGNATURE'))
 
       const topLevelSignedOnlyB = await walletMultiSign(
-        [{
-          weight: 1, owner: wallet_a.address
-        }, {
-          weight: 1, owner: wallet_b.address, signature: signedWalletB
-        }, {
-          weight: 2, owner: wallet_c.address
-        }],
+        [
+          {
+            weight: 1,
+            owner: wallet_a.address
+          },
+          {
+            weight: 1,
+            owner: wallet_b.address,
+            signature: signedWalletB
+          },
+          {
+            weight: 2,
+            owner: wallet_c.address
+          }
+        ],
         2,
         topLevelDigest,
         false,
@@ -740,13 +694,21 @@ contract('MainModule', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('ModuleCalls#execute: INVALID_SIGNATURE'))
 
       const topLevelSignedOnlyC = await walletMultiSign(
-        [{
-          weight: 1, owner: wallet_a.address
-        }, {
-          weight: 1, owner: wallet_b.address
-        }, {
-          weight: 2, owner: wallet_c.address, signature: signedWalletC
-        }],
+        [
+          {
+            weight: 1,
+            owner: wallet_a.address
+          },
+          {
+            weight: 1,
+            owner: wallet_b.address
+          },
+          {
+            weight: 2,
+            owner: wallet_c.address,
+            signature: signedWalletC
+          }
+        ],
         2,
         topLevelDigest,
         false,
@@ -875,7 +837,9 @@ contract('MainModule', (accounts: string[]) => {
             const encodedSecondNonce = encodeNonce(space, ethers.constants.One)
 
             const receipt1 = await (await signAndExecuteMetaTx(wallet, owner, [transaction], networkId, encodedFirstNonce)).wait()
-            const receipt2 = await (await signAndExecuteMetaTx(wallet, owner, [transaction], networkId, encodedSecondNonce)).wait()
+            const receipt2 = await (
+              await signAndExecuteMetaTx(wallet, owner, [transaction], networkId, encodedSecondNonce)
+            ).wait()
 
             const ev1 = receipt1.events?.find(l => l.event === 'NonceChange')!
             expect(ev1.event).to.be.equal('NonceChange')
@@ -988,7 +952,7 @@ contract('MainModule', (accounts: string[]) => {
 
   describe('Upgradeability', () => {
     it('Should update implementation', async () => {
-      const newImplementation = await (new ModuleMock__factory()).connect(signer).deploy()
+      const newImplementation = await new ModuleMock__factory().connect(signer).deploy()
 
       const transaction = {
         delegateCall: false,
@@ -1031,7 +995,7 @@ contract('MainModule', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('ModuleUpdate#updateImplementation: INVALID_IMPLEMENTATION'))
     })
     it('Should use implementation storage key', async () => {
-      const newImplementation = await (new ModuleMock__factory()).connect(signer).deploy()
+      const newImplementation = await new ModuleMock__factory().connect(signer).deploy()
 
       const transaction = {
         delegateCall: false,
@@ -1046,13 +1010,15 @@ contract('MainModule', (accounts: string[]) => {
 
       const storageValue = await web3.eth.getStorageAt(wallet.address, wallet.address)
 
-      expect(ethers.utils.getAddress(ethers.utils.defaultAbiCoder.decode(['address'], storageValue)[0])).to.equal(newImplementation.address)
+      expect(ethers.utils.getAddress(ethers.utils.defaultAbiCoder.decode(['address'], storageValue)[0])).to.equal(
+        newImplementation.address
+      )
     })
   })
 
   describe('External calls', () => {
     it('Should perform call to contract', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -1072,7 +1038,7 @@ contract('MainModule', (accounts: string[]) => {
     })
 
     it('Should return error message', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await callReceiver.setRevertFlag(true)
 
       const transaction = {
@@ -1090,8 +1056,8 @@ contract('MainModule', (accounts: string[]) => {
 
     describe('Batch transactions', () => {
       it('Should perform multiple calls to contracts in one tx', async () => {
-        const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-        const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+        const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+        const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
 
         const val1A = 5423
         const val1B = web3.utils.randomHex(120)
@@ -1126,7 +1092,7 @@ contract('MainModule', (accounts: string[]) => {
       })
 
       it('Should perform call a contract and transfer eth in one tx', async () => {
-        const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+        const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
         const receiver = new ethers.Wallet(ethers.utils.randomBytes(32))
 
         await signer.sendTransaction({
@@ -1162,7 +1128,7 @@ contract('MainModule', (accounts: string[]) => {
         expect(await web3.eth.getBalance(receiver.address)).to.eq.BN(26)
       })
       it('Should fail if one transaction fails', async () => {
-        const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+        const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
         const receiver = new ethers.Wallet(ethers.utils.randomBytes(32))
 
         await callReceiver.setRevertFlag(true)
@@ -1200,7 +1166,7 @@ contract('MainModule', (accounts: string[]) => {
     let mockModule: DelegateCallMock
 
     beforeEach(async () => {
-      mockModule = await (new DelegateCallMock__factory()).connect(signer).deploy()
+      mockModule = await new DelegateCallMock__factory().connect(signer).deploy()
     })
 
     it('Should delegate call to module', async () => {
@@ -1302,7 +1268,7 @@ contract('MainModule', (accounts: string[]) => {
         value: 100
       })
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 63129
       const valB = web3.utils.randomHex(120)
@@ -1326,7 +1292,7 @@ contract('MainModule', (accounts: string[]) => {
 
   describe('Optional transactions', () => {
     it('Should skip a skipOnError transaction', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await callReceiver.setRevertFlag(true)
 
       const data = callReceiver.interface.encodeFunctionData('testCall', [0, []])
@@ -1351,8 +1317,8 @@ contract('MainModule', (accounts: string[]) => {
       expect(event.args?._index).to.eq.BN(0)
     })
     it('Should skip failing transaction within batch', async () => {
-      const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
 
       await callReceiver1.setRevertFlag(true)
 
@@ -1392,8 +1358,8 @@ contract('MainModule', (accounts: string[]) => {
       expect(await callReceiver2.lastValB()).to.equal(valB)
     })
     it('Should skip multiple failing transactions within batch', async () => {
-      const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
 
       await callReceiver1.setRevertFlag(true)
 
@@ -1450,7 +1416,7 @@ contract('MainModule', (accounts: string[]) => {
       expect(await callReceiver2.lastValB()).to.equal(valB)
     })
     it('Should skip all failing transactions within batch', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       await callReceiver.setRevertFlag(true)
 
@@ -1487,7 +1453,7 @@ contract('MainModule', (accounts: string[]) => {
     })
 
     it('Should skip skipOnError update implementation action', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       await callReceiver.setRevertFlag(true)
 
@@ -1515,7 +1481,7 @@ contract('MainModule', (accounts: string[]) => {
   describe('Hooks', () => {
     let hookMock: HookCallerMock
     before(async () => {
-      hookMock = await (new HookCallerMock__factory()).connect(signer).deploy()
+      hookMock = await new HookCallerMock__factory().connect(signer).deploy()
     })
     describe('receive tokens', () => {
       it('Should implement ERC1155 single transfer hook', async () => {
@@ -1575,7 +1541,7 @@ contract('MainModule', (accounts: string[]) => {
     describe('External hooks', () => {
       let hookMock: HookMock
       before(async () => {
-        hookMock = await (new HookMock__factory()).connect(signer).deploy()
+        hookMock = await new HookMock__factory().connect(signer).deploy()
       })
       it('Should read added hook', async () => {
         const selector = ethers.utils.id('onHookMockCall(uint256)').substring(0, 10)
@@ -1610,7 +1576,7 @@ contract('MainModule', (accounts: string[]) => {
 
         await signAndExecuteMetaTx(wallet, owner, [transaction], networkId)
 
-        const walletHook = await (new HookMock__factory()).connect(signer).deploy()
+        const walletHook = await new HookMock__factory().connect(signer).deploy()
         expect((await walletHook.onHookMockCall(21)).toNumber()).to.eq.BN(42)
       })
       it('Should not forward call to deregistered hook', async () => {
@@ -1699,12 +1665,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2addr, threshold, [
+                wallet2addr,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 1
                   }
-                ], false
+                ],
+                false
               ])
             }
           ],
@@ -1732,12 +1701,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2.address, threshold, [
+                wallet2.address,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 1
                   }
-                ], false
+                ],
+                false
               ])
             }
           ],
@@ -1763,12 +1735,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2addr, threshold, [
+                wallet2addr,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 2
                   }
-                ], false
+                ],
+                false
               ])
             }
           ],
@@ -1790,12 +1765,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2.address, threshold, [
+                wallet2.address,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 2
                   }
-                ], false
+                ],
+                false
               ])
             }
           ],
@@ -1826,12 +1804,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2addr, threshold, [
+                wallet2addr,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 1
                   }
-                ], true
+                ],
+                true
               ])
             }
           ],
@@ -1861,12 +1842,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2.address, threshold, [
+                wallet2.address,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 1
                   }
-                ], true
+                ],
+                true
               ])
             }
           ],
@@ -1934,12 +1918,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2.address, threshold, [
+                wallet2.address,
+                threshold,
+                [
                   {
                     signer: newOwnerA.address,
                     weight: 1
                   }
-                ], true
+                ],
+                true
               ])
             }
           ],
@@ -1956,7 +1943,9 @@ contract('MainModule', (accounts: string[]) => {
         expect((await requireUtils.lastImageHashUpdate(salt2)).toNumber()).to.equal(0)
 
         expect(await requireUtils.knownImageHashes(wallet2addr)).to.equal(ethers.constants.HashZero)
-        expect(await requireUtils.knownImageHashes(addressOf(factory.address, mainModule.address, newImageHash))).to.equal(ethers.constants.HashZero)
+        expect(await requireUtils.knownImageHashes(addressOf(factory.address, mainModule.address, newImageHash))).to.equal(
+          ethers.constants.HashZero
+        )
       })
       it('Should fail to publish wrong configuration of a non-deployed wallet', async () => {
         const tx = signAndExecuteMetaTx(
@@ -1970,12 +1959,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2addr, threshold, [
+                wallet2addr,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 2
                   }
-                ], true
+                ],
+                true
               ])
             }
           ],
@@ -1997,12 +1989,15 @@ contract('MainModule', (accounts: string[]) => {
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
-                wallet2.address, threshold, [
+                wallet2.address,
+                threshold,
+                [
                   {
                     signer: owner2.address,
                     weight: 2
                   }
-                ], true
+                ],
+                true
               ])
             }
           ],
@@ -2024,82 +2019,129 @@ contract('MainModule', (accounts: string[]) => {
       let preSubDigest: string
       let signature: string
       let badSignature: string
-      let config: { weight: number, address: string, signer?: ethers.Wallet }[]
+      let config: { weight: number; address: string; signer?: ethers.Wallet }[]
 
       enum SignatureType {
-        EOA, EOADynamic, ERC1271
+        EOA,
+        EOADynamic,
+        ERC1271
       }
 
-      const options = [{
-        name: 'EOA signature indexed',
-        signatureType: SignatureType.EOA,
-        indexed: true
-      }, {
-        name: 'EOA signature not indexed',
-        signatureType: SignatureType.EOA,
-        indexed: false
-      }, {
-        name: 'dynamic EOA signature indexed',
-        signatureType: SignatureType.EOADynamic,
-        indexed: true
-      }, {
-        name: 'dynamic EOA signature not indexed',
-        signatureType: SignatureType.EOADynamic,
-        indexed: false
-      }, {
-        name: 'ERC1271 signature indexed',
-        signatureType: SignatureType.ERC1271,
-        indexed: true
-      }, {
-        name: 'ERC1271 signature not indexed',
-        signatureType: SignatureType.ERC1271,
-        indexed: false
-      }]
+      const options = [
+        {
+          name: 'EOA signature indexed',
+          signatureType: SignatureType.EOA,
+          indexed: true
+        },
+        {
+          name: 'EOA signature not indexed',
+          signatureType: SignatureType.EOA,
+          indexed: false
+        },
+        {
+          name: 'dynamic EOA signature indexed',
+          signatureType: SignatureType.EOADynamic,
+          indexed: true
+        },
+        {
+          name: 'dynamic EOA signature not indexed',
+          signatureType: SignatureType.EOADynamic,
+          indexed: false
+        },
+        {
+          name: 'ERC1271 signature indexed',
+          signatureType: SignatureType.ERC1271,
+          indexed: true
+        },
+        {
+          name: 'ERC1271 signature not indexed',
+          signatureType: SignatureType.ERC1271,
+          indexed: false
+        }
+      ]
 
-      options.map((o) => {
+      options.map(o => {
         context(o.name, () => {
           beforeEach(async () => {
             owner2a = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner2b = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner2c = new ethers.Wallet(ethers.utils.randomBytes(32))
-  
-            config = [{ weight: 1, address: owner2a.address, signer: owner2a }, { weight: 1, address: owner2b.address, signer: owner2b }, { weight: 1, address: owner2c.address }]
+
+            config = [
+              { weight: 1, address: owner2a.address, signer: owner2a },
+              { weight: 1, address: owner2b.address, signer: owner2b },
+              { weight: 1, address: owner2c.address }
+            ]
             salt2 = encodeImageHash(threshold, config)
             wallet2addr = addressOf(factory.address, mainModule.address, salt2)
-  
+
             message = ethers.utils.hexlify(ethers.utils.randomBytes(96))
             digest = ethers.utils.keccak256(message)
             preSubDigest = ethers.utils.solidityPack(
               ['string', 'uint256', 'address', 'bytes'],
               ['\x19\x01', networkId, wallet2addr, digest]
             )
-  
+
             switch (o.signatureType) {
               case SignatureType.EOA:
-                signature = await walletMultiSign([{ weight: 1, owner: owner2a }, { weight: 1, owner: owner2b }, { weight: 1, owner: owner2c.address }], threshold, preSubDigest)
+                signature = await walletMultiSign(
+                  [
+                    { weight: 1, owner: owner2a },
+                    { weight: 1, owner: owner2b },
+                    { weight: 1, owner: owner2c.address }
+                  ],
+                  threshold,
+                  preSubDigest
+                )
                 break
               case SignatureType.EOADynamic:
-                signature = await walletMultiSign([{ weight: 1, owner: owner2a }, { weight: 1, owner: owner2b }, { weight: 1, owner: owner2c.address }], threshold, preSubDigest, true)
+                signature = await walletMultiSign(
+                  [
+                    { weight: 1, owner: owner2a },
+                    { weight: 1, owner: owner2b },
+                    { weight: 1, owner: owner2c.address }
+                  ],
+                  threshold,
+                  preSubDigest,
+                  true
+                )
                 break
               case SignatureType.ERC1271:
                 // Deploy nested sequence wallet
                 const ownern2a = new ethers.Wallet(ethers.utils.randomBytes(32))
                 const ownern2b = new ethers.Wallet(ethers.utils.randomBytes(32))
-                const nconfig = [{ weight: 2, address: ownern2a.address, signer: ownern2a }, { weight: 1, address: ownern2b.address }]
+                const nconfig = [
+                  { weight: 2, address: ownern2a.address, signer: ownern2a },
+                  { weight: 1, address: ownern2b.address }
+                ]
                 const nsalt = encodeImageHash(2, nconfig)
                 await factory.deploy(mainModule.address, nsalt, { gasLimit: 100_000 })
                 const nwalletaddr = addressOf(factory.address, mainModule.address, nsalt)
-                owner2b = { address: nwalletaddr, signMessage: async (msg) => {
-                  const nsubdigest = ethers.utils.solidityPack(
-                    ['string', 'uint256', 'address', 'bytes'],
-                    ['\x19\x01', networkId, nwalletaddr, msg]
-                  )
+                owner2b = {
+                  address: nwalletaddr,
+                  signMessage: async msg => {
+                    const nsubdigest = ethers.utils.solidityPack(
+                      ['string', 'uint256', 'address', 'bytes'],
+                      ['\x19\x01', networkId, nwalletaddr, msg]
+                    )
 
-                  return `${await walletMultiSign([{ weight: 2, owner: ownern2a }, { weight: 1, owner: ownern2b.address }], threshold, nsubdigest)}03`
-                } } as any
+                    return `${await walletMultiSign(
+                      [
+                        { weight: 2, owner: ownern2a },
+                        { weight: 1, owner: ownern2b.address }
+                      ],
+                      threshold,
+                      nsubdigest
+                    )}03`
+                  }
+                } as any
 
                 // Re-create wallet
-                config = [{ weight: 1, address: owner2a.address, signer: owner2a }, { weight: 1, address: owner2b.address, signer: owner2b }, { weight: 1, address: owner2c.address }]
+                config = [
+                  { weight: 1, address: owner2a.address, signer: owner2a },
+                  { weight: 1, address: owner2b.address, signer: owner2b },
+                  { weight: 1, address: owner2c.address }
+                ]
                 salt2 = encodeImageHash(threshold, config)
                 wallet2addr = addressOf(factory.address, mainModule.address, salt2)
                 preSubDigest = ethers.utils.solidityPack(
@@ -2107,7 +2149,15 @@ contract('MainModule', (accounts: string[]) => {
                   ['\x19\x01', networkId, wallet2addr, digest]
                 )
 
-                signature = await walletMultiSign([{ weight: 1, owner: owner2a }, { weight: 1, owner: owner2b }, { weight: 1, owner: owner2c.address }], threshold, preSubDigest)
+                signature = await walletMultiSign(
+                  [
+                    { weight: 1, owner: owner2a },
+                    { weight: 1, owner: owner2b },
+                    { weight: 1, owner: owner2c.address }
+                  ],
+                  threshold,
+                  preSubDigest
+                )
                 break
             }
           })
@@ -2123,7 +2173,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     3,
@@ -2134,62 +2184,67 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
+
             const receipt = await tx.wait()
 
             const logs = receipt.events!
-            
-            const owner2aLog = logs.find((l) =>
-              (
+
+            const owner2aLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2a.address])
-              )
             )!
-    
+
             expect(owner2aLog).to.not.be.undefined
             expect(owner2aLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
-    
-            const owner2bLog = logs.find((l) =>
-              (
+
+            const owner2bLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2b.address])
-              )
             )!
-    
+
             expect(owner2bLog).to.not.be.undefined
             expect(owner2bLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
-    
-            const owner2cLog = logs.find((l) =>
-              (
+
+            const owner2cLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2c.address])
-              )
             )
-    
+
             expect(owner2cLog).to.be.undefined
-    
+
             const MembersType = `tuple(
               uint256 weight,
               address signer
             )[]`
-    
+
             const walletLog = logs[logs.length - 2]
             expect(walletLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
             expect(walletLog.topics[2]).to.equal(salt2)
-            expect(walletLog.data).to.equal(ethers.utils.defaultAbiCoder.encode(
+            expect(walletLog.data).to.equal(
+              ethers.utils.defaultAbiCoder.encode(
                 ['uint256', 'bytes'],
-                [threshold, ethers.utils.defaultAbiCoder.encode(
-                  [MembersType],
-                  [config.sort((a, b) => compareAddr(a.address, b.address)).map((s) => ({ weight: s.weight, signer: s.address }))]
-                )]
+                [
+                  threshold,
+                  ethers.utils.defaultAbiCoder.encode(
+                    [MembersType],
+                    [config.sort((a, b) => compareAddr(a.address, b.address)).map(s => ({ weight: s.weight, signer: s.address }))]
+                  )
+                ]
               )
             )
 
-            expect((await requireUtils.lastSignerUpdate(owner2a.address)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
-            expect((await requireUtils.lastSignerUpdate(owner2b.address)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
+            expect((await requireUtils.lastSignerUpdate(owner2a.address)).toNumber()).to.equal(
+              o.indexed ? receipt.blockNumber : 0
+            )
+            expect((await requireUtils.lastSignerUpdate(owner2b.address)).toNumber()).to.equal(
+              o.indexed ? receipt.blockNumber : 0
+            )
             expect((await requireUtils.lastSignerUpdate(owner2c.address)).toNumber()).to.equal(0)
 
             expect((await requireUtils.lastWalletUpdate(wallet2addr)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
@@ -2208,7 +2263,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     3,
@@ -2219,62 +2274,67 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
+
             const receipt = await tx.wait()
 
             const logs = receipt.events!
-            
-            const owner2aLog = logs.find((l) =>
-              (
+
+            const owner2aLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2a.address])
-              )
             )!
-    
+
             expect(owner2aLog).to.not.be.undefined
             expect(owner2aLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
-    
-            const owner2bLog = logs.find((l) =>
-              (
+
+            const owner2bLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2b.address])
-              )
             )!
-    
+
             expect(owner2bLog).to.not.be.undefined
             expect(owner2bLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
-    
-            const owner2cLog = logs.find((l) =>
-              (
+
+            const owner2cLog = logs.find(
+              l =>
                 l.topics.length === 3 &&
                 l.topics[0] === '0x600ba597427f042bcd559a0d06fa1732cc104d6dd43cbe8845b5a0e804b2b39f' &&
                 l.topics[2] === ethers.utils.defaultAbiCoder.encode(['address'], [owner2c.address])
-              )
             )
-    
+
             expect(owner2cLog).to.be.undefined
-    
+
             const MembersType = `tuple(
               uint256 weight,
               address signer
             )[]`
-    
+
             const walletLog = logs[logs.length - 2]
             expect(walletLog.topics[1]).to.equal(ethers.utils.defaultAbiCoder.encode(['address'], [wallet2addr]))
             expect(walletLog.topics[2]).to.equal(salt2)
-            expect(walletLog.data).to.equal(ethers.utils.defaultAbiCoder.encode(
+            expect(walletLog.data).to.equal(
+              ethers.utils.defaultAbiCoder.encode(
                 ['uint256', 'bytes'],
-                [threshold, ethers.utils.defaultAbiCoder.encode(
-                  [MembersType],
-                  [config.sort((a, b) => compareAddr(a.address, b.address)).map((s) => ({ weight: s.weight, signer: s.address }))]
-                )]
+                [
+                  threshold,
+                  ethers.utils.defaultAbiCoder.encode(
+                    [MembersType],
+                    [config.sort((a, b) => compareAddr(a.address, b.address)).map(s => ({ weight: s.weight, signer: s.address }))]
+                  )
+                ]
               )
             )
 
-            expect((await requireUtils.lastSignerUpdate(owner2a.address)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
-            expect((await requireUtils.lastSignerUpdate(owner2b.address)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
+            expect((await requireUtils.lastSignerUpdate(owner2a.address)).toNumber()).to.equal(
+              o.indexed ? receipt.blockNumber : 0
+            )
+            expect((await requireUtils.lastSignerUpdate(owner2b.address)).toNumber()).to.equal(
+              o.indexed ? receipt.blockNumber : 0
+            )
             expect((await requireUtils.lastSignerUpdate(owner2c.address)).toNumber()).to.equal(0)
 
             expect((await requireUtils.lastWalletUpdate(wallet2addr)).toNumber()).to.equal(o.indexed ? receipt.blockNumber : 0)
@@ -2292,7 +2352,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     1,
@@ -2303,8 +2363,8 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
-            await expect(tx).to.be.rejectedWith(RevertError("RequireUtils#publishInitialSigners: INVALID_SIGNATURE_FLAG"))
+
+            await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#publishInitialSigners: INVALID_SIGNATURE_FLAG'))
           })
           it('Should fail to publish signers with invalid signers count', async () => {
             const tx = signAndExecuteMetaTx(
@@ -2317,7 +2377,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     4,
@@ -2328,12 +2388,19 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
-            await expect(tx).to.be.rejectedWith(RevertError("RequireUtils#publishInitialSigners: INVALID_MEMBERS_COUNT"))
+
+            await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#publishInitialSigners: INVALID_MEMBERS_COUNT'))
           })
           it('Should fail to publish signers of non-deployed wallet with invalid signature', async () => {
-            const invalidSignature = await walletMultiSign([{ weight: 1, owner: ethers.Wallet.createRandom() }, { weight: 1, owner: owner2c.address }], threshold, message)
-    
+            const invalidSignature = await walletMultiSign(
+              [
+                { weight: 1, owner: ethers.Wallet.createRandom() },
+                { weight: 1, owner: owner2c.address }
+              ],
+              threshold,
+              message
+            )
+
             const tx = signAndExecuteMetaTx(
               wallet,
               owner,
@@ -2344,7 +2411,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     2,
@@ -2355,14 +2422,23 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
-            await expect(tx).to.be.rejectedWith(RevertError("RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH"))
+
+            await expect(tx).to.be.rejectedWith(
+              RevertError('RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH')
+            )
           })
           it('Should fail to publish signers of deployed wallet with invalid signature', async () => {
             await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
 
-            const invalidSignature = await walletMultiSign([{ weight: 1, owner: ethers.Wallet.createRandom() }, { weight: 1, owner: owner2c.address }], threshold, message)
-    
+            const invalidSignature = await walletMultiSign(
+              [
+                { weight: 1, owner: ethers.Wallet.createRandom() },
+                { weight: 1, owner: owner2c.address }
+              ],
+              threshold,
+              message
+            )
+
             const tx = signAndExecuteMetaTx(
               wallet,
               owner,
@@ -2373,7 +2449,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     2,
@@ -2384,8 +2460,10 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
-            await expect(tx).to.be.rejectedWith(RevertError("RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH"))
+
+            await expect(tx).to.be.rejectedWith(
+              RevertError('RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH')
+            )
           })
           it('Should fail to publish signers of updated wallet with invalid signature', async () => {
             await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
@@ -2394,9 +2472,9 @@ contract('MainModule', (accounts: string[]) => {
 
             const newOwnerA = ethers.Wallet.createRandom()
             const newImageHash = encodeImageHash(1, [{ weight: 1, address: newOwnerA.address }])
-    
+
             const newWallet = await MainModuleUpgradable__factory.connect(wallet2.address, signer)
-    
+
             const migrateBundle = [
               {
                 delegateCall: false,
@@ -2415,7 +2493,7 @@ contract('MainModule', (accounts: string[]) => {
                 data: newWallet.interface.encodeFunctionData('updateImageHash', [newImageHash])
               }
             ]
-    
+
             const migrateTransaction = [
               {
                 delegateCall: false,
@@ -2426,10 +2504,16 @@ contract('MainModule', (accounts: string[]) => {
                 data: newWallet.interface.encodeFunctionData('selfExecute', [migrateBundle])
               }
             ]
-    
-            await multiSignAndExecuteMetaTx(wallet2, config.map((c) => ({ weight: c.weight, owner: c.signer ? c.signer : c.address })), 2, migrateTransaction, networkId)
+
+            await multiSignAndExecuteMetaTx(
+              wallet2,
+              config.map(c => ({ weight: c.weight, owner: c.signer ? c.signer : c.address })),
+              2,
+              migrateTransaction,
+              networkId
+            )
             signature = await walletMultiSign([{ weight: 1, owner: ethers.Wallet.createRandom() }], 1, message)
-    
+
             const tx = signAndExecuteMetaTx(
               wallet,
               owner,
@@ -2440,7 +2524,7 @@ contract('MainModule', (accounts: string[]) => {
                   gasLimit: ethers.constants.Zero,
                   target: requireUtils.address,
                   value: ethers.constants.Zero,
-                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners',[
+                  data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [
                     wallet2addr,
                     digest,
                     1,
@@ -2451,8 +2535,10 @@ contract('MainModule', (accounts: string[]) => {
               ],
               networkId
             )
-    
-            await expect(tx).to.be.rejectedWith(RevertError("RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH"))
+
+            await expect(tx).to.be.rejectedWith(
+              RevertError('RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH')
+            )
           })
         })
       })
@@ -2566,7 +2652,7 @@ contract('MainModule', (accounts: string[]) => {
         ])
 
         const walletUpgradable = wallet as unknown as MainModuleUpgradable
-        
+
         const migrateTransactions = [
           {
             delegateCall: false,
@@ -2701,26 +2787,29 @@ contract('MainModule', (accounts: string[]) => {
       data: []
     }
 
-    const modes = [{
-      name: "Forced dynamic signature encoding",
-      force: true,
-    }, {
-      name: "Default signature encoding",
-      force: false,
-    }]
+    const modes = [
+      {
+        name: 'Forced dynamic signature encoding',
+        force: true
+      },
+      {
+        name: 'Default signature encoding',
+        force: false
+      }
+    ]
 
-    modes.map((mode) => {
+    modes.map(mode => {
       context(mode.name, () => {
         context('With 1/2 wallet', () => {
           let owner1: ethers.Wallet
           let owner2: ethers.Wallet
           let ownerweight = 1
           let threshold = 1
-    
+
           beforeEach(async () => {
             owner1 = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner2 = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const salt = encodeImageHash(threshold, [
               {
                 weight: ownerweight,
@@ -2731,7 +2820,7 @@ contract('MainModule', (accounts: string[]) => {
                 address: owner2.address
               }
             ])
-    
+
             await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
@@ -2746,7 +2835,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message by second owner', async () => {
@@ -2760,7 +2849,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message by both owners', async () => {
@@ -2774,7 +2863,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should reject message without signatures', async () => {
@@ -2788,13 +2877,13 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject message signed by non-owner', async () => {
             const impostor = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const accounts = [
               {
                 weight: ownerweight,
@@ -2805,7 +2894,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -2821,13 +2910,21 @@ contract('MainModule', (accounts: string[]) => {
               {
                 weight: ownerweight,
                 owner: owner2.address,
-                signature: [ ...eoasignature.slice(0, -1), 75, 2]
+                signature: [...eoasignature.slice(0, -1), 75, 2]
               }
             ]
 
-            const signature = await multiSignMetaTransactions(wallet, accounts, threshold, [transaction], networkId, await nextNonce(wallet), mode.force)
+            const signature = await multiSignMetaTransactions(
+              wallet,
+              accounts,
+              threshold,
+              [transaction],
+              networkId,
+              await nextNonce(wallet),
+              mode.force
+            )
             const tx = wallet.execute([transaction], await nextNonce(wallet), signature)
-            await expect(tx).to.be.rejectedWith(RevertError("SignatureValidator#recoverSigner: invalid signature length"))
+            await expect(tx).to.be.rejectedWith(RevertError('SignatureValidator#recoverSigner: invalid signature length'))
           })
         })
         context('With 2/2 wallet', () => {
@@ -2835,11 +2932,11 @@ contract('MainModule', (accounts: string[]) => {
           let owner2
           let ownerweight = 1
           let threshold = 2
-    
+
           beforeEach(async () => {
             owner1 = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner2 = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const salt = encodeImageHash(threshold, [
               {
                 weight: ownerweight,
@@ -2850,7 +2947,7 @@ contract('MainModule', (accounts: string[]) => {
                 address: owner2.address
               }
             ])
-    
+
             await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
@@ -2865,7 +2962,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should reject message without signatures', async () => {
@@ -2879,7 +2976,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -2894,7 +2991,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -2909,13 +3006,13 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject message signed by non-owner', async () => {
             const impostor = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const accounts = [
               {
                 weight: ownerweight,
@@ -2926,7 +3023,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: impostor
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -2935,15 +3032,15 @@ contract('MainModule', (accounts: string[]) => {
           let owner1
           let owner2
           let owner3
-    
+
           let ownerweight = 1
           let threshold = 2
-    
+
           beforeEach(async () => {
             owner1 = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner2 = new ethers.Wallet(ethers.utils.randomBytes(32))
             owner3 = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const salt = encodeImageHash(threshold, [
               {
                 weight: ownerweight,
@@ -2958,11 +3055,11 @@ contract('MainModule', (accounts: string[]) => {
                 address: owner3.address
               }
             ])
-    
+
             await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
-    
+
           it('Should accept signed message by first and second owner', async () => {
             const accounts = [
               {
@@ -2978,7 +3075,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3.address
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message by first and last owner', async () => {
@@ -2996,7 +3093,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message by second and last owner', async () => {
@@ -3014,7 +3111,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message by all owners', async () => {
@@ -3032,7 +3129,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3
               }
             ]
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should reject message signed only by first owner', async () => {
@@ -3050,7 +3147,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -3069,7 +3166,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -3088,7 +3185,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -3107,13 +3204,13 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject message signed by non-owner', async () => {
             const impostor = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const accounts = [
               {
                 weight: ownerweight,
@@ -3128,13 +3225,13 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner3.address
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject message if the image lacks an owner', async () => {
             const impostor = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const accounts = [
               {
                 weight: ownerweight,
@@ -3145,22 +3242,22 @@ contract('MainModule', (accounts: string[]) => {
                 owner: owner2
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
         })
-    
+
         context('With 255/255 wallet', () => {
           let owners: ethers.Wallet[]
           let weight = 1
           let threshold = 255
-  
+
           beforeEach(async () => {
             owners = Array(255)
               .fill(0)
               .map(() => new ethers.Wallet(ethers.utils.randomBytes(32)))
-  
+
             const salt = encodeImageHash(
               threshold,
               owners.map(owner => ({
@@ -3168,17 +3265,17 @@ contract('MainModule', (accounts: string[]) => {
                 address: owner.address
               }))
             )
-  
+
             await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
-  
+
           it('Should accept message signed by all owners', async () => {
             const accounts = owners.map(owner => ({
               weight: weight,
               owner: owner
             }))
-  
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should reject message signed by non-owner', async () => {
@@ -3193,7 +3290,7 @@ contract('MainModule', (accounts: string[]) => {
                 owner: impostor
               }
             ]
-  
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -3202,23 +3299,23 @@ contract('MainModule', (accounts: string[]) => {
               weight: weight,
               owner: owner
             }))
-  
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
         })
-    
+
         context('With weighted owners', () => {
           let owners: ethers.Wallet[]
           let weights: BigNumberish[]
           let threshold = 4
-    
+
           beforeEach(async () => {
             owners = Array(5)
               .fill(0)
               .map(() => new ethers.Wallet(ethers.utils.randomBytes(32)))
             weights = [3, 3, 1, 1, 1]
-    
+
             const salt = encodeImageHash(
               threshold,
               owners.map((owner, i) => ({
@@ -3226,92 +3323,92 @@ contract('MainModule', (accounts: string[]) => {
                 address: owner.address
               }))
             )
-    
+
             await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
-    
+
           it('Should accept signed message with (3+1)/4 weight', async () => {
             const signers = [0, 3]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message with (3+3)/4 weight', async () => {
             const signers = [0, 1]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message with (3+3+1+1)/4 weight', async () => {
             const signers = [0, 1, 2, 3]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should accept signed message with (3+3+1+1+1)/4 weight', async () => {
             const signers = [0, 1, 2, 3, 4]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             await multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
           })
           it('Should reject signed message with (1)/4 weight', async () => {
             const signers = [3]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject signed message with (1+1)/4 weight', async () => {
             const signers = [2, 3]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject signed message with (1+1+1)/4 weight', async () => {
             const signers = [2, 3, 4]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject signed message with (3)/4 weight', async () => {
             const signers = [0]
-    
+
             const accounts = owners.map((owner, i) => ({
               weight: weights[i],
               owner: signers.includes(i) ? owner : owner.address
             }))
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
@@ -3320,15 +3417,15 @@ contract('MainModule', (accounts: string[]) => {
               weight: weights[i],
               owner: owner.address
             }))
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
           it('Should reject message signed by non-owner', async () => {
             const impostor = new ethers.Wallet(ethers.utils.randomBytes(32))
-    
+
             const signers = [0, 1]
-    
+
             const accounts = [
               ...owners.map((owner, i) => ({
                 weight: weights[i],
@@ -3339,31 +3436,58 @@ contract('MainModule', (accounts: string[]) => {
                 owner: impostor
               }
             ]
-    
+
             const tx = multiSignAndExecuteMetaTx(wallet, accounts, threshold, [transaction], networkId, undefined, mode.force)
             await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
           })
         })
 
         context('Reject invalid signatures', () => {
-          it("Should reject invalid signature type", async () => {
-            const signature = await multiSignMetaTransactions(wallet, [{ weight: 1, owner: owner }], 1, [transaction], networkId, 0, mode.force)
+          it('Should reject invalid signature type', async () => {
+            const signature = await multiSignMetaTransactions(
+              wallet,
+              [{ weight: 1, owner: owner }],
+              1,
+              [transaction],
+              networkId,
+              0,
+              mode.force
+            )
             const invalidSignature = signature.slice(0, -2) + 'ff'
             const tx = wallet.execute([transaction], 0, invalidSignature)
-            const revertError = mode.force ? "SignatureValidator#isValidSignature: UNSUPPORTED_SIGNATURE_TYPE" : "SignatureValidator#recoverSigner: UNSUPPORTED_SIGNATURE_TYPE"
+            const revertError = mode.force
+              ? 'SignatureValidator#isValidSignature: UNSUPPORTED_SIGNATURE_TYPE'
+              : 'SignatureValidator#recoverSigner: UNSUPPORTED_SIGNATURE_TYPE'
             await expect(tx).to.be.rejectedWith(RevertError(revertError))
           })
-          it("Should reject invalid s value", async () => {
-            const sig = await multiSignMetaTransactions(wallet, [{ weight: 1, owner: owner }], 1, [transaction], networkId, 0, mode.force)
+          it('Should reject invalid s value', async () => {
+            const sig = await multiSignMetaTransactions(
+              wallet,
+              [{ weight: 1, owner: owner }],
+              1,
+              [transaction],
+              networkId,
+              0,
+              mode.force
+            )
             const prefix = mode.force ? 118 : 74
-            const invalidSignature = sig.slice(0, prefix) + "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1" + sig.slice(prefix + 64)
+            const invalidSignature =
+              sig.slice(0, prefix) + '7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1' + sig.slice(prefix + 64)
             const tx = wallet.execute([transaction], 0, invalidSignature)
             await expect(tx).to.be.rejectedWith(RevertError("SignatureValidator#recoverSigner: invalid signature 's' value"))
           })
-          it("Should reject invalid v value", async () => {
-            const sig = await multiSignMetaTransactions(wallet, [{ weight: 1, owner: owner }], 1, [transaction], networkId, 0, mode.force)
+          it('Should reject invalid v value', async () => {
+            const sig = await multiSignMetaTransactions(
+              wallet,
+              [{ weight: 1, owner: owner }],
+              1,
+              [transaction],
+              networkId,
+              0,
+              mode.force
+            )
             const prefix = mode.force ? 182 : 138
-            const invalidSignature = sig.slice(0, prefix) + "1a" + sig.slice(prefix + 2)
+            const invalidSignature = sig.slice(0, prefix) + '1a' + sig.slice(prefix + 2)
             const tx = wallet.execute([transaction], 0, invalidSignature)
             await expect(tx).to.be.rejectedWith(RevertError("SignatureValidator#recoverSigner: invalid signature 'v' value"))
           })
@@ -3376,7 +3500,7 @@ contract('MainModule', (accounts: string[]) => {
     let gasBurner: GasBurnerMock
 
     before(async () => {
-      gasBurner = await (new GasBurnerMock__factory()).connect(signer).deploy()
+      gasBurner = await new GasBurnerMock__factory().connect(signer).deploy()
     })
 
     it('Should forward the defined amount of gas', async () => {
@@ -3461,7 +3585,7 @@ contract('MainModule', (accounts: string[]) => {
     it('Should continue execution if optional call runs out of gas', async () => {
       const gas = 10000
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 9512358833
       const valB = web3.utils.randomHex(1600)
@@ -3604,8 +3728,8 @@ contract('MainModule', (accounts: string[]) => {
 
   describe('Internal bundles', () => {
     it('Should execute internal bundle', async () => {
-      const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const expected1 = await web3.utils.randomHex(552)
       const expected2 = await web3.utils.randomHex(24)
@@ -3664,7 +3788,9 @@ contract('MainModule', (accounts: string[]) => {
         []
       ]
 
-      const contracts = await Promise.all(data.flat().map(async () => await (new CallReceiverMock__factory()).connect(signer).deploy()))
+      const contracts = await Promise.all(
+        data.flat().map(async () => await new CallReceiverMock__factory().connect(signer).deploy())
+      )
       const expectedb = await Promise.all(data.flat().map(d => web3.utils.randomHex(d.b)))
 
       const bundles = data.map(bundle => {
@@ -3696,8 +3822,8 @@ contract('MainModule', (accounts: string[]) => {
       lastValsB.forEach((val, i) => expect(val).to.equal(expectedb[i]))
     })
     it('Should execute nested internal bundles', async () => {
-      const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const expected1 = await web3.utils.randomHex(552)
       const expected2 = await web3.utils.randomHex(24)
@@ -3752,9 +3878,9 @@ contract('MainModule', (accounts: string[]) => {
       expect(await callReceiver2.lastValB()).to.equal(expected2)
     })
     it('Should revert bundle without reverting transaction', async () => {
-      const callReceiver1 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver2 = await (new CallReceiverMock__factory()).connect(signer).deploy()
-      const callReceiver3 = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver1 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver2 = await new CallReceiverMock__factory().connect(signer).deploy()
+      const callReceiver3 = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const expected1 = await web3.utils.randomHex(552)
       const expected2 = await web3.utils.randomHex(24)
@@ -3820,7 +3946,6 @@ contract('MainModule', (accounts: string[]) => {
     })
   })
 })
-
 
 // 0x000102010b1f05b9dd385e2683500bdfec03b53b0d9acb8f004700010001d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b020303
 // 0x000102010b1f05b9dd385e2683500bdfec03b53b0d9acb8f004700010001d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b0203

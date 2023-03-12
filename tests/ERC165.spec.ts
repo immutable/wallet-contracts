@@ -7,7 +7,6 @@ import { Factory__factory, MainModule__factory, MainModuleUpgradable__factory, E
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR)
 
-
 const interfaceIds = [
   'IModuleHooks',
   'IERC223Receiver',
@@ -38,17 +37,19 @@ contract('ERC165', () => {
     // get signer and provider from hardhat
     signer = (await hardhat.getSigners())[0]
     // provider = hardhat.provider
-    
+
     // Get network ID
     networkId = process.env.NET_ID ? Number(process.env.NET_ID) : await web3.eth.net.getId()
 
     // Deploy wallet factory
-    factory = await (new Factory__factory()).connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy()
     // Deploy MainModule
-    mainModule = await (new MainModule__factory()).connect(signer).deploy(factory.address)
-    moduleUpgradable = await (new MainModuleUpgradable__factory()).connect(signer).deploy()
+    mainModule = await new MainModule__factory().connect(signer).deploy(factory.address)
+    moduleUpgradable = await new MainModuleUpgradable__factory().connect(signer).deploy()
     // Deploy ERC165 Checker
-    erc165checker = await (new ERC165CheckerMock__factory()).connect(signer).deploy()
+    erc165checker = await new ERC165CheckerMock__factory().connect(signer).deploy()
+    // Grant deployer role to signer
+    await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
   })
 
   beforeEach(async () => {

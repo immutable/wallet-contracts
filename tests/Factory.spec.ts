@@ -13,8 +13,10 @@ contract('Factory', (accounts: string[]) => {
 
   beforeEach(async () => {
     signer = (await hardhat.getSigners())[0]
-    moduleMock = await (new ModuleMock__factory()).connect(signer).deploy()
-    factory = await (new Factory__factory()).connect(signer).deploy()
+    moduleMock = await new ModuleMock__factory().connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy()
+    // Grant deployer role to signer
+    await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
   })
 
   describe('Deploy wallets', () => {

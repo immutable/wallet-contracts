@@ -4,39 +4,82 @@ import type { Listener, Provider } from "@ethersproject/providers";
 import type { TypedEventFilter, TypedEvent, TypedListener, OnEvent, PromiseOrValue } from "./common";
 export interface FactoryInterface extends utils.Interface {
     functions: {
+        "DEFAULT_ADMIN_ROLE()": FunctionFragment;
+        "DEPLOYER_ROLE()": FunctionFragment;
         "deploy(address,bytes32)": FunctionFragment;
         "getAddress(address,bytes32)": FunctionFragment;
-        "owner()": FunctionFragment;
-        "renounceOwnership()": FunctionFragment;
-        "transferOwnership(address)": FunctionFragment;
+        "getRoleAdmin(bytes32)": FunctionFragment;
+        "grantRole(bytes32,address)": FunctionFragment;
+        "hasRole(bytes32,address)": FunctionFragment;
+        "renounceRole(bytes32,address)": FunctionFragment;
+        "revokeRole(bytes32,address)": FunctionFragment;
+        "supportsInterface(bytes4)": FunctionFragment;
     };
-    getFunction(nameOrSignatureOrTopic: "deploy" | "getAddress" | "owner" | "renounceOwnership" | "transferOwnership"): FunctionFragment;
+    getFunction(nameOrSignatureOrTopic: "DEFAULT_ADMIN_ROLE" | "DEPLOYER_ROLE" | "deploy" | "getAddress" | "getRoleAdmin" | "grantRole" | "hasRole" | "renounceRole" | "revokeRole" | "supportsInterface"): FunctionFragment;
+    encodeFunctionData(functionFragment: "DEFAULT_ADMIN_ROLE", values?: undefined): string;
+    encodeFunctionData(functionFragment: "DEPLOYER_ROLE", values?: undefined): string;
     encodeFunctionData(functionFragment: "deploy", values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]): string;
     encodeFunctionData(functionFragment: "getAddress", values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]): string;
-    encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-    encodeFunctionData(functionFragment: "renounceOwnership", values?: undefined): string;
-    encodeFunctionData(functionFragment: "transferOwnership", values: [PromiseOrValue<string>]): string;
+    encodeFunctionData(functionFragment: "getRoleAdmin", values: [PromiseOrValue<BytesLike>]): string;
+    encodeFunctionData(functionFragment: "grantRole", values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]): string;
+    encodeFunctionData(functionFragment: "hasRole", values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]): string;
+    encodeFunctionData(functionFragment: "renounceRole", values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]): string;
+    encodeFunctionData(functionFragment: "revokeRole", values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]): string;
+    encodeFunctionData(functionFragment: "supportsInterface", values: [PromiseOrValue<BytesLike>]): string;
+    decodeFunctionResult(functionFragment: "DEFAULT_ADMIN_ROLE", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "DEPLOYER_ROLE", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "deploy", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "getAddress", data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: "renounceOwnership", data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: "transferOwnership", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "getRoleAdmin", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "renounceRole", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "supportsInterface", data: BytesLike): Result;
     events: {
-        "OwnershipTransferred(address,address)": EventFragment;
+        "RoleAdminChanged(bytes32,bytes32,bytes32)": EventFragment;
+        "RoleGranted(bytes32,address,address)": EventFragment;
+        "RoleRevoked(bytes32,address,address)": EventFragment;
         "WalletDeployed(address,address,bytes32)": EventFragment;
     };
-    getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "RoleAdminChanged"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "RoleGranted"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "RoleRevoked"): EventFragment;
     getEvent(nameOrSignatureOrTopic: "WalletDeployed"): EventFragment;
 }
-export interface OwnershipTransferredEventObject {
-    previousOwner: string;
-    newOwner: string;
+export interface RoleAdminChangedEventObject {
+    role: string;
+    previousAdminRole: string;
+    newAdminRole: string;
 }
-export type OwnershipTransferredEvent = TypedEvent<[
+export type RoleAdminChangedEvent = TypedEvent<[
+    string,
     string,
     string
-], OwnershipTransferredEventObject>;
-export type OwnershipTransferredEventFilter = TypedEventFilter<OwnershipTransferredEvent>;
+], RoleAdminChangedEventObject>;
+export type RoleAdminChangedEventFilter = TypedEventFilter<RoleAdminChangedEvent>;
+export interface RoleGrantedEventObject {
+    role: string;
+    account: string;
+    sender: string;
+}
+export type RoleGrantedEvent = TypedEvent<[
+    string,
+    string,
+    string
+], RoleGrantedEventObject>;
+export type RoleGrantedEventFilter = TypedEventFilter<RoleGrantedEvent>;
+export interface RoleRevokedEventObject {
+    role: string;
+    account: string;
+    sender: string;
+}
+export type RoleRevokedEvent = TypedEvent<[
+    string,
+    string,
+    string
+], RoleRevokedEventObject>;
+export type RoleRevokedEventFilter = TypedEventFilter<RoleRevokedEvent>;
 export interface WalletDeployedEventObject {
     wallet: string;
     mainModule: string;
@@ -63,68 +106,105 @@ export interface Factory extends BaseContract {
     once: OnEvent<this>;
     removeListener: OnEvent<this>;
     functions: {
+        DEFAULT_ADMIN_ROLE(overrides?: CallOverrides): Promise<[string]>;
+        DEPLOYER_ROLE(overrides?: CallOverrides): Promise<[string]>;
         deploy(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: PayableOverrides & {
             from?: PromiseOrValue<string>;
         }): Promise<ContractTransaction>;
         getAddress(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<[string] & {
             _address: string;
         }>;
-        owner(overrides?: CallOverrides): Promise<[string]>;
-        renounceOwnership(overrides?: Overrides & {
+        getRoleAdmin(role: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<[string]>;
+        grantRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<ContractTransaction>;
-        transferOwnership(newOwner: PromiseOrValue<string>, overrides?: Overrides & {
+        hasRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<[boolean]>;
+        renounceRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<ContractTransaction>;
+        revokeRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
+            from?: PromiseOrValue<string>;
+        }): Promise<ContractTransaction>;
+        supportsInterface(interfaceId: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<[boolean]>;
     };
+    DEFAULT_ADMIN_ROLE(overrides?: CallOverrides): Promise<string>;
+    DEPLOYER_ROLE(overrides?: CallOverrides): Promise<string>;
     deploy(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: PayableOverrides & {
         from?: PromiseOrValue<string>;
     }): Promise<ContractTransaction>;
     getAddress(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<string>;
-    owner(overrides?: CallOverrides): Promise<string>;
-    renounceOwnership(overrides?: Overrides & {
+    getRoleAdmin(role: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<string>;
+    grantRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
         from?: PromiseOrValue<string>;
     }): Promise<ContractTransaction>;
-    transferOwnership(newOwner: PromiseOrValue<string>, overrides?: Overrides & {
+    hasRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<boolean>;
+    renounceRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
         from?: PromiseOrValue<string>;
     }): Promise<ContractTransaction>;
+    revokeRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
+        from?: PromiseOrValue<string>;
+    }): Promise<ContractTransaction>;
+    supportsInterface(interfaceId: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<boolean>;
     callStatic: {
+        DEFAULT_ADMIN_ROLE(overrides?: CallOverrides): Promise<string>;
+        DEPLOYER_ROLE(overrides?: CallOverrides): Promise<string>;
         deploy(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<string>;
         getAddress(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<string>;
-        owner(overrides?: CallOverrides): Promise<string>;
-        renounceOwnership(overrides?: CallOverrides): Promise<void>;
-        transferOwnership(newOwner: PromiseOrValue<string>, overrides?: CallOverrides): Promise<void>;
+        getRoleAdmin(role: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<string>;
+        grantRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<void>;
+        hasRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<boolean>;
+        renounceRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<void>;
+        revokeRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<void>;
+        supportsInterface(interfaceId: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<boolean>;
     };
     filters: {
-        "OwnershipTransferred(address,address)"(previousOwner?: PromiseOrValue<string> | null, newOwner?: PromiseOrValue<string> | null): OwnershipTransferredEventFilter;
-        OwnershipTransferred(previousOwner?: PromiseOrValue<string> | null, newOwner?: PromiseOrValue<string> | null): OwnershipTransferredEventFilter;
+        "RoleAdminChanged(bytes32,bytes32,bytes32)"(role?: PromiseOrValue<BytesLike> | null, previousAdminRole?: PromiseOrValue<BytesLike> | null, newAdminRole?: PromiseOrValue<BytesLike> | null): RoleAdminChangedEventFilter;
+        RoleAdminChanged(role?: PromiseOrValue<BytesLike> | null, previousAdminRole?: PromiseOrValue<BytesLike> | null, newAdminRole?: PromiseOrValue<BytesLike> | null): RoleAdminChangedEventFilter;
+        "RoleGranted(bytes32,address,address)"(role?: PromiseOrValue<BytesLike> | null, account?: PromiseOrValue<string> | null, sender?: PromiseOrValue<string> | null): RoleGrantedEventFilter;
+        RoleGranted(role?: PromiseOrValue<BytesLike> | null, account?: PromiseOrValue<string> | null, sender?: PromiseOrValue<string> | null): RoleGrantedEventFilter;
+        "RoleRevoked(bytes32,address,address)"(role?: PromiseOrValue<BytesLike> | null, account?: PromiseOrValue<string> | null, sender?: PromiseOrValue<string> | null): RoleRevokedEventFilter;
+        RoleRevoked(role?: PromiseOrValue<BytesLike> | null, account?: PromiseOrValue<string> | null, sender?: PromiseOrValue<string> | null): RoleRevokedEventFilter;
         "WalletDeployed(address,address,bytes32)"(wallet?: PromiseOrValue<string> | null, mainModule?: PromiseOrValue<string> | null, salt?: null): WalletDeployedEventFilter;
         WalletDeployed(wallet?: PromiseOrValue<string> | null, mainModule?: PromiseOrValue<string> | null, salt?: null): WalletDeployedEventFilter;
     };
     estimateGas: {
+        DEFAULT_ADMIN_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
+        DEPLOYER_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
         deploy(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: PayableOverrides & {
             from?: PromiseOrValue<string>;
         }): Promise<BigNumber>;
         getAddress(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<BigNumber>;
-        owner(overrides?: CallOverrides): Promise<BigNumber>;
-        renounceOwnership(overrides?: Overrides & {
+        getRoleAdmin(role: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<BigNumber>;
+        grantRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<BigNumber>;
-        transferOwnership(newOwner: PromiseOrValue<string>, overrides?: Overrides & {
+        hasRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<BigNumber>;
+        renounceRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<BigNumber>;
+        revokeRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
+            from?: PromiseOrValue<string>;
+        }): Promise<BigNumber>;
+        supportsInterface(interfaceId: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<BigNumber>;
     };
     populateTransaction: {
+        DEFAULT_ADMIN_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+        DEPLOYER_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
         deploy(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: PayableOverrides & {
             from?: PromiseOrValue<string>;
         }): Promise<PopulatedTransaction>;
         getAddress(_mainModule: PromiseOrValue<string>, _salt: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<PopulatedTransaction>;
-        owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-        renounceOwnership(overrides?: Overrides & {
+        getRoleAdmin(role: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<PopulatedTransaction>;
+        grantRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<PopulatedTransaction>;
-        transferOwnership(newOwner: PromiseOrValue<string>, overrides?: Overrides & {
+        hasRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: CallOverrides): Promise<PopulatedTransaction>;
+        renounceRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
             from?: PromiseOrValue<string>;
         }): Promise<PopulatedTransaction>;
+        revokeRole(role: PromiseOrValue<BytesLike>, account: PromiseOrValue<string>, overrides?: Overrides & {
+            from?: PromiseOrValue<string>;
+        }): Promise<PopulatedTransaction>;
+        supportsInterface(interfaceId: PromiseOrValue<BytesLike>, overrides?: CallOverrides): Promise<PopulatedTransaction>;
     };
 }
