@@ -12,7 +12,7 @@ describe('Wallet Factory', function () {
     const [owner, acc1] = await ethers.getSigners()
 
     const WalletFactory = await ethers.getContractFactory('Factory')
-    const factory = await WalletFactory.deploy()
+    const factory = await WalletFactory.deploy(owner.address)
 
     // Grant deployer role to owner
     await factory.connect(owner).grantRole(await factory.DEPLOYER_ROLE(), await owner.getAddress())

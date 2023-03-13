@@ -9,7 +9,7 @@ const FactoryArtifact = artifacts.require('Factory')
 const MainModuleArtifact = artifacts.require('MainModule')
 
 const runs = 256
-import { web3 } from 'hardhat'
+import { web3, ethers as hh } from 'hardhat'
 
 const optimalGasLimit = ethers.constants.Two.pow(22)
 
@@ -32,8 +32,12 @@ contract('MainModule', () => {
   let networkId
 
   before(async () => {
+    // Get signer
+    const [signer] = await hh.getSigners()
     // Deploy wallet factory
-    factory = (await FactoryArtifact.new()) as Factory
+    factory = (await FactoryArtifact.new(signer.address)) as Factory
+    // Grant deployer role to owner
+    await factory.grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
     // Deploy MainModule
     module = (await MainModuleArtifact.new(factory.address)) as MainModule
     // Get network ID
@@ -41,7 +45,7 @@ contract('MainModule', () => {
   })
 
   if (process.env.BENCHMARK) {
-    describe.only('Benchmark', function() {
+    describe.only('Benchmark', function () {
       ;(this as any).timeout(0)
 
       it('Deploy a wallet', async () => {

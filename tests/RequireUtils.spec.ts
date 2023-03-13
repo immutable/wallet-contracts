@@ -41,7 +41,7 @@ contract('Require utils', (accounts: string[]) => {
     networkId = process.env.NET_ID ? parseInt(process.env.NET_ID) : await web3.eth.net.getId()
 
     // Deploy wallet factory
-    factory = await new Factory__factory().connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy(await signer.getAddress())
     // Grant deployer role to signer
     await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
     // Deploy MainModule

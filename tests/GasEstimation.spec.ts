@@ -65,7 +65,7 @@ contract('Estimate gas usage', (accounts: string[]) => {
     callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
     // Deploy wallet factory
-    factory = await new Factory__factory().connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy(await signer.getAddress())
     // Grant deployer role to signer
     await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
 
