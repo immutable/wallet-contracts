@@ -60,7 +60,7 @@ const _abi = [
     stateMutability: "nonpayable",
     type: "function",
   },
-] as const;
+];
 
 export class IModuleHooks__factory {
   static readonly abi = _abi;
