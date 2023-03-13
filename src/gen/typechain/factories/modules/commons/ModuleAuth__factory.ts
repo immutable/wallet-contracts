@@ -77,7 +77,7 @@ const _abi = [
     stateMutability: "pure",
     type: "function",
   },
-] as const;
+];
 
 export class ModuleAuth__factory {
   static readonly abi = _abi;

@@ -116,7 +116,7 @@ const _abi = [
     stateMutability: "nonpayable",
     type: "function",
   },
-] as const;
+];
 
 export class ModuleAuthUpgradable__factory {
   static readonly abi = _abi;

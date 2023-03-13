@@ -32,22 +32,22 @@ export interface OwnershipTransferredEventObject {
     previousOwner: string;
     newOwner: string;
 }
-export type OwnershipTransferredEvent = TypedEvent<[
+export declare type OwnershipTransferredEvent = TypedEvent<[
     string,
     string
 ], OwnershipTransferredEventObject>;
-export type OwnershipTransferredEventFilter = TypedEventFilter<OwnershipTransferredEvent>;
+export declare type OwnershipTransferredEventFilter = TypedEventFilter<OwnershipTransferredEvent>;
 export interface WalletDeployedEventObject {
     wallet: string;
     mainModule: string;
     salt: string;
 }
-export type WalletDeployedEvent = TypedEvent<[
+export declare type WalletDeployedEvent = TypedEvent<[
     string,
     string,
     string
 ], WalletDeployedEventObject>;
-export type WalletDeployedEventFilter = TypedEventFilter<WalletDeployedEvent>;
+export declare type WalletDeployedEventFilter = TypedEventFilter<WalletDeployedEvent>;
 export interface Factory extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;
