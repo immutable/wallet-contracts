@@ -17,8 +17,8 @@ export interface GasBurnerMockInterface extends utils.Interface {
 export interface ProvidedGasEventObject {
     _val: BigNumber;
 }
-export type ProvidedGasEvent = TypedEvent<[BigNumber], ProvidedGasEventObject>;
-export type ProvidedGasEventFilter = TypedEventFilter<ProvidedGasEvent>;
+export declare type ProvidedGasEvent = TypedEvent<[BigNumber], ProvidedGasEventObject>;
+export declare type ProvidedGasEventFilter = TypedEventFilter<ProvidedGasEvent>;
 export interface GasBurnerMock extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

@@ -64,22 +64,22 @@ export interface RequiredConfigEventObject {
     _threshold: BigNumber;
     _signers: string;
 }
-export type RequiredConfigEvent = TypedEvent<[
+export declare type RequiredConfigEvent = TypedEvent<[
     string,
     string,
     BigNumber,
     string
 ], RequiredConfigEventObject>;
-export type RequiredConfigEventFilter = TypedEventFilter<RequiredConfigEvent>;
+export declare type RequiredConfigEventFilter = TypedEventFilter<RequiredConfigEvent>;
 export interface RequiredSignerEventObject {
     _wallet: string;
     _signer: string;
 }
-export type RequiredSignerEvent = TypedEvent<[
+export declare type RequiredSignerEvent = TypedEvent<[
     string,
     string
 ], RequiredSignerEventObject>;
-export type RequiredSignerEventFilter = TypedEventFilter<RequiredSignerEvent>;
+export declare type RequiredSignerEventFilter = TypedEventFilter<RequiredSignerEvent>;
 export interface RequireUtils extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

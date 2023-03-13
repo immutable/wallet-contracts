@@ -20,10 +20,10 @@ export interface ModuleCreatorInterface extends utils.Interface {
 export interface CreatedContractEventObject {
     _contract: string;
 }
-export type CreatedContractEvent = TypedEvent<[
+export declare type CreatedContractEvent = TypedEvent<[
     string
 ], CreatedContractEventObject>;
-export type CreatedContractEventFilter = TypedEventFilter<CreatedContractEvent>;
+export declare type CreatedContractEventFilter = TypedEventFilter<CreatedContractEvent>;
 export interface ModuleCreator extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

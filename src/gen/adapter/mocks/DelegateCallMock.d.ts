@@ -23,8 +23,8 @@ export interface DelegateCallMockInterface extends utils.Interface {
 export interface ReadedEventObject {
     _val: BigNumber;
 }
-export type ReadedEvent = TypedEvent<[BigNumber], ReadedEventObject>;
-export type ReadedEventFilter = TypedEventFilter<ReadedEvent>;
+export declare type ReadedEvent = TypedEvent<[BigNumber], ReadedEventObject>;
+export declare type ReadedEventFilter = TypedEventFilter<ReadedEvent>;
 export interface DelegateCallMock extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;
