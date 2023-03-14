@@ -2,7 +2,18 @@ import { ethers as hardhat, web3 } from 'hardhat'
 import { ethers } from 'ethers'
 import { expect, signAndExecuteMetaTx, RevertError, encodeImageHash, addressOf, encodeNonce, walletSign } from './utils'
 
-import { MainModule, Factory, RequireUtils, CallReceiverMock, RequireFreshSigner, Factory__factory, MainModule__factory, RequireUtils__factory, RequireFreshSigner__factory, CallReceiverMock__factory } from '../src'
+import {
+  MainModule,
+  Factory,
+  RequireUtils,
+  CallReceiverMock,
+  RequireFreshSigner,
+  Factory__factory,
+  MainModule__factory,
+  RequireUtils__factory,
+  RequireFreshSigner__factory,
+  CallReceiverMock__factory
+} from '../src'
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR)
 
@@ -30,13 +41,15 @@ contract('Require utils', (accounts: string[]) => {
     networkId = process.env.NET_ID ? parseInt(process.env.NET_ID) : await web3.eth.net.getId()
 
     // Deploy wallet factory
-    factory = await (new Factory__factory()).connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy(await signer.getAddress())
+    // Grant deployer role to signer
+    await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
     // Deploy MainModule
-    mainModule = await (new MainModule__factory()).connect(signer).deploy(factory.address)
+    mainModule = await new MainModule__factory().connect(signer).deploy(factory.address)
     // Deploy expirable util
-    requireUtils = await (new RequireUtils__factory()).connect(signer).deploy(factory.address, mainModule.address)
+    requireUtils = await new RequireUtils__factory().connect(signer).deploy(factory.address, mainModule.address)
     // Deploy require fresh signer lib
-    requireFreshSigner = await (new RequireFreshSigner__factory()).connect(signer).deploy(requireUtils.address)
+    requireFreshSigner = await new RequireFreshSigner__factory().connect(signer).deploy(requireUtils.address)
   })
 
   beforeEach(async () => {
@@ -59,7 +72,7 @@ contract('Require utils', (accounts: string[]) => {
 
   describe('Require fresh signer', () => {
     it('Should pass if signer is new', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await signAndExecuteMetaTx(wallet, owner, stubTxns, networkId)
 
       const valA = 5423
@@ -110,20 +123,13 @@ contract('Require utils', (accounts: string[]) => {
             gasLimit: ethers.constants.Zero,
             target: requireUtils.address,
             value: ethers.constants.Zero,
-            data: requireUtils.interface.encodeFunctionData(
-              'publishInitialSigners', [
-                wallet.address,
-                digest,
-                1,
-                signature,
-                true
-              ])
+            data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [wallet.address, digest, 1, signature, true])
           }
         ],
         networkId
       )
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await signAndExecuteMetaTx(wallet, owner, stubTxns, networkId)
 
       const valA = 5423
@@ -149,12 +155,12 @@ contract('Require utils', (accounts: string[]) => {
       ]
 
       const tx = signAndExecuteMetaTx(wallet, owner, transactions, networkId)
-      await expect(tx).to.be.rejectedWith(RevertError("RequireFreshSigner#requireFreshSigner: DUPLICATED_SIGNER"))
+      await expect(tx).to.be.rejectedWith(RevertError('RequireFreshSigner#requireFreshSigner: DUPLICATED_SIGNER'))
     })
   })
   describe('Require min-nonce', () => {
     it('Should pass nonce increased from self-wallet', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await signAndExecuteMetaTx(wallet, owner, stubTxns, networkId)
 
       const valA = 5423
@@ -190,7 +196,7 @@ contract('Require utils', (accounts: string[]) => {
       await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
       const wallet2 = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt2), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await signAndExecuteMetaTx(wallet2, owner2, stubTxns, networkId)
 
       const valA = 5423
@@ -226,7 +232,7 @@ contract('Require utils', (accounts: string[]) => {
       await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
       const wallet2 = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       try {
         await signAndExecuteMetaTx(wallet2, owner2, stubTxns, networkId)
@@ -260,7 +266,7 @@ contract('Require utils', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#requireMinNonce: NONCE_BELOW_REQUIRED'))
     })
     it('Should fail if nonce is below required on self-wallet on a different space', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
       await signAndExecuteMetaTx(wallet, owner, stubTxns, networkId)
 
       const valA = 5423
@@ -273,9 +279,10 @@ contract('Require utils', (accounts: string[]) => {
           gasLimit: optimalGasLimit,
           target: requireUtils.address,
           value: ethers.constants.Zero,
-          data: requireUtils.interface.encodeFunctionData(
-            'requireMinNonce', [wallet.address, encodeNonce(ethers.constants.Two, ethers.constants.One)]
-          )
+          data: requireUtils.interface.encodeFunctionData('requireMinNonce', [
+            wallet.address,
+            encodeNonce(ethers.constants.Two, ethers.constants.One)
+          ])
         },
         {
           delegateCall: false,
@@ -291,7 +298,7 @@ contract('Require utils', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#requireMinNonce: NONCE_BELOW_REQUIRED'))
     })
     it('Should fail if nonce is below required on self-wallet', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -327,7 +334,7 @@ contract('Require utils', (accounts: string[]) => {
       await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#requireNonExpired: EXPIRED'))
     })
     it('Should pass bundle if non expired', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -356,7 +363,7 @@ contract('Require utils', (accounts: string[]) => {
       expect(await callReceiver.lastValB()).to.equal(valB)
     })
     it('Should fail bundle if expired', async () => {
-      const callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
