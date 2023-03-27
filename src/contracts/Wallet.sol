@@ -1,59 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.7.6;
+pragma solidity ^0.8.3;
 
-/**
-    Minimal upgradeable proxy implementation, delegates all calls to the address
-    defined by the storage slot matching the wallet address.
-
-    Inspired by EIP-1167 Implementation (https://eips.ethereum.org/EIPS/eip-1167)
-
-    deployed code:
-
-        0x00    0x36         0x36      CALLDATASIZE      cds
-        0x01    0x3d         0x3d      RETURNDATASIZE    0 cds
-        0x02    0x3d         0x3d      RETURNDATASIZE    0 0 cds
-        0x03    0x37         0x37      CALLDATACOPY
-        0x04    0x3d         0x3d      RETURNDATASIZE    0
-        0x05    0x3d         0x3d      RETURNDATASIZE    0 0
-        0x06    0x3d         0x3d      RETURNDATASIZE    0 0 0
-        0x07    0x36         0x36      CALLDATASIZE      cds 0 0 0
-        0x08    0x3d         0x3d      RETURNDATASIZE    0 cds 0 0 0
-        0x09    0x30         0x30      ADDRESS           addr 0 cds 0 0 0
-        0x0A    0x54         0x54      SLOAD             imp 0 cds 0 0 0
-        0x0B    0x5a         0x5a      GAS               gas imp 0 cds 0 0 0
-        0x0C    0xf4         0xf4      DELEGATECALL      suc 0
-        0x0D    0x3d         0x3d      RETURNDATASIZE    rds suc 0
-        0x0E    0x82         0x82      DUP3              0 rds suc 0
-        0x0F    0x80         0x80      DUP1              0 0 rds suc 0
-        0x10    0x3e         0x3e      RETURNDATACOPY    suc 0
-        0x11    0x90         0x90      SWAP1             0 suc
-        0x12    0x3d         0x3d      RETURNDATASIZE    rds 0 suc
-        0x13    0x91         0x91      SWAP2             suc 0 rds
-        0x14    0x60 0x18    0x6018    PUSH1             0x18 suc 0 rds
-    /-- 0x16    0x57         0x57      JUMPI             0 rds
-    |   0x17    0xfd         0xfd      REVERT
-    \-> 0x18    0x5b         0x5b      JUMPDEST          0 rds
-        0x19    0xf3         0xf3      RETURN
-
-    flat deployed code: 0x363d3d373d3d3d363d30545af43d82803e903d91601857fd5bf3
-
-    deploy function:
-
-        0x00    0x60 0x3a    0x603a    PUSH1             0x3a
-        0x02    0x60 0x0e    0x600e    PUSH1             0x0e 0x3a
-        0x04    0x3d         0x3d      RETURNDATASIZE    0 0x0e 0x3a
-        0x05    0x39         0x39      CODECOPY
-        0x06    0x60 0x1a    0x601a    PUSH1             0x1a
-        0x08    0x80         0x80      DUP1              0x1a 0x1a
-        0x09    0x51         0x51      MLOAD             imp 0x1a
-        0x0A    0x30         0x30      ADDRESS           addr imp 0x1a
-        0x0B    0x55         0x55      SSTORE            0x1a
-        0x0C    0x3d         0x3d      RETURNDATASIZE    0 0x1a
-        0x0D    0xf3         0xf3      RETURN
-        [...deployed code]
-
-    flat deploy function: 0x603a600e3d39601a805130553df3363d3d373d3d3d363d30545af43d82803e903d91601857fd5bf3
-*/
+// Holds the creation code of the Proxy.sol used by smart contract wallet instances
 library Wallet {
-  bytes internal constant creationCode = hex"603a600e3d39601a805130553df3363d3d373d3d3d363d30545af43d82803e903d91601857fd5bf3";
+  bytes internal constant creationCode = hex"608060405234801561001057600080fd5b5060405161029f38038061029f8339818101604052810190610032919061009e565b803055506100cb565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061006b82610040565b9050919050565b61007b81610060565b811461008657600080fd5b50565b60008151905061009881610072565b92915050565b6000602082840312156100b4576100b361003b565b5b60006100c284828501610089565b91505092915050565b6101c5806100da6000396000f3fe6080604052600436106100225760003560e01c806390611127146100a857610076565b36610076573373ffffffffffffffffffffffffffffffffffffffff16347f606834f57405380c4fb88d1f4850326ad3885f014bab3b568dfbf7a041eef73860405161006c90610113565b60405180910390a3005b60006100806100d3565b90503660008037600080366000845af43d6000803e80600081146100a3573d6000f35b3d6000fd5b3480156100b457600080fd5b506100bd6100d3565b6040516100ca9190610174565b60405180910390f35b60003054905090565b600082825260208201905092915050565b50565b60006100fd6000836100dc565b9150610108826100ed565b600082019050919050565b6000602082019050818103600083015261012c816100f0565b9050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061015e82610133565b9050919050565b61016e81610153565b82525050565b60006020820190506101896000830184610165565b9291505056fea2646970667358221220d43fa02972046db2bc81804ebf600d5b46b97e55c738ea899a28224e111b588564736f6c63430008110033";
 }

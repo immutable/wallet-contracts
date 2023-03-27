@@ -85,7 +85,7 @@ contract('GuestModule', (accounts: string[]) => {
         }
       ]
 
-      const tx = guestModule.selfExecute(transactions, { gasLimit: 100_000 })
+      const tx = guestModule.selfExecute(transactions)
       await expect(tx).to.be.rejectedWith(RevertError('GuestModule#_executeGuest: delegateCall not allowed'))
     })
     it('Should not accept ETH', async () => {

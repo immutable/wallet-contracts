@@ -87,7 +87,7 @@ contract('MainModule', (accounts: string[]) => {
   beforeEach(async () => {
     owner = new ethers.Wallet(ethers.utils.randomBytes(32))
     const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
-    await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+    await factory.deploy(mainModule.address, salt, {gasLimit: 200000})
     wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
   })
 
@@ -98,12 +98,12 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // Top level wallet
       const salt = encodeImageHash(1, [{ weight: 1, address: wallet_a.address }])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const message = ethers.utils.hexlify(ethers.utils.randomBytes(95))
@@ -129,12 +129,12 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // Top level wallet
       const salt = encodeImageHash(1, [{ weight: 1, address: wallet_a.address }])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -177,13 +177,13 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // WalletB
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_b = encodeImageHash(1, [{ weight: 1, address: owner_b.address }])
-      await factory.deploy(mainModule.address, salt_b, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_b)
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
@@ -191,7 +191,7 @@ contract('MainModule', (accounts: string[]) => {
         { weight: 1, address: wallet_a.address },
         { weight: 1, address: wallet_b.address }
       ])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -249,7 +249,7 @@ contract('MainModule', (accounts: string[]) => {
       // Wallet A
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // Owner B
@@ -260,7 +260,7 @@ contract('MainModule', (accounts: string[]) => {
         { weight: 1, address: wallet_a.address },
         { weight: 1, address: owner_b.address }
       ])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -377,7 +377,7 @@ contract('MainModule', (accounts: string[]) => {
             childs.map(c => ({ weight: 1, address: c.owner.address }))
           )
 
-          await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+          await factory.deploy(mainModule.address, salt)
           const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
           return {
@@ -437,13 +437,13 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // WalletB
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_b = encodeImageHash(1, [{ weight: 1, address: owner_b.address }])
-      await factory.deploy(mainModule.address, salt_b, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_b)
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
@@ -451,7 +451,7 @@ contract('MainModule', (accounts: string[]) => {
         { weight: 1, address: wallet_a.address },
         { weight: 1, address: wallet_b.address }
       ])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -507,13 +507,13 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // WalletB
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_b = encodeImageHash(1, [{ weight: 1, address: owner_b.address }])
-      await factory.deploy(mainModule.address, salt_b, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_b)
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // Top level wallet
@@ -521,7 +521,7 @@ contract('MainModule', (accounts: string[]) => {
         { weight: 1, address: wallet_a.address },
         { weight: 1, address: wallet_b.address }
       ])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -577,19 +577,19 @@ contract('MainModule', (accounts: string[]) => {
       // WalletA
       const owner_a = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_a = encodeImageHash(1, [{ weight: 1, address: owner_a.address }])
-      await factory.deploy(mainModule.address, salt_a, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_a)
       const wallet_a = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_a), signer)
 
       // WalletB
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_b = encodeImageHash(1, [{ weight: 1, address: owner_b.address }])
-      await factory.deploy(mainModule.address, salt_b, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_b)
       const wallet_b = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_b), signer)
 
       // WalletC
       const owner_c = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt_c = encodeImageHash(1, [{ weight: 1, address: owner_c.address }])
-      await factory.deploy(mainModule.address, salt_c, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt_c)
       const wallet_c = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt_c), signer)
 
       // Top level wallet
@@ -598,7 +598,7 @@ contract('MainModule', (accounts: string[]) => {
         { weight: 1, address: wallet_b.address },
         { weight: 2, address: wallet_c.address }
       ])
-      await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+      await factory.deploy(mainModule.address, salt)
       const wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
 
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
@@ -1688,7 +1688,7 @@ contract('MainModule', (accounts: string[]) => {
         expect(await requireUtils.knownImageHashes(wallet2addr)).to.equal(ethers.constants.HashZero)
       })
       it('Should publish configuration of deployed wallet', async () => {
-        await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+        await factory.deploy(mainModule.address, salt2)
         const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
         await signAndExecuteMetaTx(
           wallet2,
@@ -1752,7 +1752,7 @@ contract('MainModule', (accounts: string[]) => {
         await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH'))
       })
       it('Should fail to publish wrong configuration of a non-updated wallet', async () => {
-        await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+        await factory.deploy(mainModule.address, salt2)
         const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
         const tx = signAndExecuteMetaTx(
           wallet2,
@@ -1800,7 +1800,7 @@ contract('MainModule', (accounts: string[]) => {
             {
               delegateCall: false,
               revertOnError: true,
-              gasLimit: ethers.constants.Zero,
+              gasLimit: 300_000,
               target: requireUtils.address,
               value: ethers.constants.Zero,
               data: requireUtils.interface.encodeFunctionData('publishConfig', [
@@ -1829,7 +1829,7 @@ contract('MainModule', (accounts: string[]) => {
         expect(await requireUtils.knownImageHashes(wallet2addr)).to.equal(salt2)
       })
       it('Should publish configuration of a deployed wallet', async () => {
-        await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+        await factory.deploy(mainModule.address, salt2)
         const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
         const tx = await signAndExecuteMetaTx(
           wallet2,
@@ -1867,7 +1867,7 @@ contract('MainModule', (accounts: string[]) => {
         expect(await requireUtils.knownImageHashes(wallet2addr)).to.equal(salt2)
       })
       it('Should publish configuration of an updated wallet', async () => {
-        await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+        await factory.deploy(mainModule.address, salt2)
         const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
 
         const newOwnerA = ethers.Wallet.createRandom()
@@ -1976,7 +1976,7 @@ contract('MainModule', (accounts: string[]) => {
         await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH'))
       })
       it('Should fail to publish wrong configuration of a deployed wallet', async () => {
-        await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+        await factory.deploy(mainModule.address, salt2)
         const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
         const tx = signAndExecuteMetaTx(
           wallet2,
@@ -2115,7 +2115,7 @@ contract('MainModule', (accounts: string[]) => {
                   { weight: 1, address: ownern2b.address }
                 ]
                 const nsalt = encodeImageHash(2, nconfig)
-                await factory.deploy(mainModule.address, nsalt, { gasLimit: 100_000 })
+                await factory.deploy(mainModule.address, nsalt)
                 const nwalletaddr = addressOf(factory.address, mainModule.address, nsalt)
                 owner2b = {
                   address: nwalletaddr,
@@ -2252,7 +2252,7 @@ contract('MainModule', (accounts: string[]) => {
             expect(await requireUtils.knownImageHashes(wallet2addr)).to.equal(o.indexed ? salt2 : ethers.constants.HashZero)
           })
           it('Should publish signers of a deployed wallet', async () => {
-            await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt2)
             const tx = await signAndExecuteMetaTx(
               wallet,
               owner,
@@ -2428,7 +2428,7 @@ contract('MainModule', (accounts: string[]) => {
             )
           })
           it('Should fail to publish signers of deployed wallet with invalid signature', async () => {
-            await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt2)
 
             const invalidSignature = await walletMultiSign(
               [
@@ -2466,7 +2466,7 @@ contract('MainModule', (accounts: string[]) => {
             )
           })
           it('Should fail to publish signers of updated wallet with invalid signature', async () => {
-            await factory.deploy(mainModule.address, salt2, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt2)
 
             const wallet2 = await MainModule__factory.connect(wallet2addr, signer)
 
@@ -2821,7 +2821,7 @@ contract('MainModule', (accounts: string[]) => {
               }
             ])
 
-            await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt)
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
           it('Should accept signed message by first owner', async () => {
@@ -2948,7 +2948,7 @@ contract('MainModule', (accounts: string[]) => {
               }
             ])
 
-            await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt)
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
           it('Should accept signed message by both owners', async () => {
@@ -3056,7 +3056,7 @@ contract('MainModule', (accounts: string[]) => {
               }
             ])
 
-            await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt)
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
 
@@ -3266,7 +3266,7 @@ contract('MainModule', (accounts: string[]) => {
               }))
             )
 
-            await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt)
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
 
@@ -3324,7 +3324,7 @@ contract('MainModule', (accounts: string[]) => {
               }))
             )
 
-            await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+            await factory.deploy(mainModule.address, salt)
             wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
           })
 
