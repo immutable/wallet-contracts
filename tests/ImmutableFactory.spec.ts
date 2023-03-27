@@ -99,7 +99,7 @@ describe('Wallet Factory', function () {
       }
     })
 
-    it('Should be able to deploy with a custom module', async function () {
+    it('Should be able to deploy with a custom module and retrieve the address of the custom module as an implementation', async function () {
       const { owner, factory, customModule } = await loadFixture(setupFactoryFixture)
 
       const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
@@ -111,6 +111,11 @@ describe('Wallet Factory', function () {
       // check functionality
       await contract.setStr('new_string')
       expect(await contract.getStr()).to.equal('new_string')
+
+      // Retrive implementation from Proxy's storage
+      const Proxy = ethers.getContractFactory('Proxy')
+      const proxy = (await Proxy).attach(addressOf(factory.address, customModule.address, salt))
+      expect(await proxy.PROXY_getImplementation()).to.be.equal(customModule.address)
     })
 
     it('Should not be able to deploy multiple wallets with the same salt', async function () {
@@ -306,7 +311,12 @@ describe('Wallet Factory', function () {
       )) as MainModule
 
       const networkId = (await ethers.provider.getNetwork()).chainId
-
+    
+      // Retrive implementation from Proxy's storage
+      const Proxy = ethers.getContractFactory('Proxy')
+      const proxy = (await Proxy).attach(addressOf(factory.address, mainModule.address, salt))
+      expect(await proxy.PROXY_getImplementation()).to.be.equal(mainModule.address)
+ 
       // upgrade implementation tx
       const transaction = {
         delegateCall: false,
@@ -339,6 +349,7 @@ describe('Wallet Factory', function () {
         addressOf(factory.address, mainModule.address, salt) // still generate using the original module address
       )
       expect(updatedWallet.address).to.equal(originalWallet.address) // wallet address remains unchanged
+      expect(await proxy.PROXY_getImplementation()).to.be.equal(customModule.address) // proxy now set to custom module address
       await updatedWallet.setStr('new_string')
       expect(await updatedWallet.getStr()).to.equal('new_string')
       await expect(originalWallet.nonce()).to.be.revertedWithoutReason() // original wallet functions no longer exposed

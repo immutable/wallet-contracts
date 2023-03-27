@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 import '@openzeppelin/contracts/access/AccessControl.sol';
+import "./Wallet.sol";
 
 /**
  * @title Factory
@@ -8,11 +9,6 @@ import '@openzeppelin/contracts/access/AccessControl.sol';
  * deploy new Sequence wallet instances to those addresses
  */
 contract Factory is AccessControl {
-  // transparent proxy creation code from https://github.com/0xsequence/wallet-contracts/blob/9e7bb05e40078b6564bd0d7fec1308c6ae2cc100/src/contracts/Wallet.sol
-  // to change the wallet creation code, need to deploy a new factory contract
-  bytes private constant walletCreationCode =
-    hex'603a600e3d39601a805130553df3363d3d373d3d3d363d30545af43d82803e903d91601857fd5bf3';
-
   // Role to deploy new wallets
   bytes32 public constant DEPLOYER_ROLE = keccak256('DEPLOYER_ROLE');
 
@@ -35,7 +31,7 @@ contract Factory is AccessControl {
         bytes1(0xff),
         address(this),
         _salt,
-        keccak256(abi.encodePacked(walletCreationCode, uint256(uint160(_mainModule))))
+        keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule))))
       )
     );
     return address(uint160(uint256(_hash)));
@@ -51,7 +47,7 @@ contract Factory is AccessControl {
    *      passed for each transaction.
    */
   function deploy(address _mainModule, bytes32 _salt) public payable onlyRole(DEPLOYER_ROLE) returns (address _contract) {
-    bytes memory code = abi.encodePacked(walletCreationCode, uint256(uint160(_mainModule)));
+    bytes memory code = abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule)));
     assembly {
       _contract := create2(callvalue(), add(code, 32), mload(code), _salt)
     }

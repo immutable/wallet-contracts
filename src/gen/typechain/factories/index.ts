@@ -6,3 +6,4 @@ export * as migrations from "./migrations";
 export * as mocks from "./mocks";
 export * as modules from "./modules";
 export { Factory__factory } from "./Factory__factory";
+export { Proxy__factory } from "./Proxy__factory";

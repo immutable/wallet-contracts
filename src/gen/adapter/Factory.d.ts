@@ -52,45 +52,45 @@ export interface RoleAdminChangedEventObject {
     previousAdminRole: string;
     newAdminRole: string;
 }
-export declare type RoleAdminChangedEvent = TypedEvent<[
+export type RoleAdminChangedEvent = TypedEvent<[
     string,
     string,
     string
 ], RoleAdminChangedEventObject>;
-export declare type RoleAdminChangedEventFilter = TypedEventFilter<RoleAdminChangedEvent>;
+export type RoleAdminChangedEventFilter = TypedEventFilter<RoleAdminChangedEvent>;
 export interface RoleGrantedEventObject {
     role: string;
     account: string;
     sender: string;
 }
-export declare type RoleGrantedEvent = TypedEvent<[
+export type RoleGrantedEvent = TypedEvent<[
     string,
     string,
     string
 ], RoleGrantedEventObject>;
-export declare type RoleGrantedEventFilter = TypedEventFilter<RoleGrantedEvent>;
+export type RoleGrantedEventFilter = TypedEventFilter<RoleGrantedEvent>;
 export interface RoleRevokedEventObject {
     role: string;
     account: string;
     sender: string;
 }
-export declare type RoleRevokedEvent = TypedEvent<[
+export type RoleRevokedEvent = TypedEvent<[
     string,
     string,
     string
 ], RoleRevokedEventObject>;
-export declare type RoleRevokedEventFilter = TypedEventFilter<RoleRevokedEvent>;
+export type RoleRevokedEventFilter = TypedEventFilter<RoleRevokedEvent>;
 export interface WalletDeployedEventObject {
     wallet: string;
     mainModule: string;
     salt: string;
 }
-export declare type WalletDeployedEvent = TypedEvent<[
+export type WalletDeployedEvent = TypedEvent<[
     string,
     string,
     string
 ], WalletDeployedEventObject>;
-export declare type WalletDeployedEventFilter = TypedEventFilter<WalletDeployedEvent>;
+export type WalletDeployedEventFilter = TypedEventFilter<WalletDeployedEvent>;
 export interface Factory extends BaseContract {
     connect(signerOrProvider: Signer | Provider | string): this;
     attach(addressOrName: string): this;

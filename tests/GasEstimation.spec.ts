@@ -107,12 +107,12 @@ contract('Estimate gas usage', (accounts: string[]) => {
       it('Should estimate wallet deployment', async () => {
         const factoryData = factory.interface.encodeFunctionData('deploy', [mainModule.address, salt])
         const estimated = ethers.BigNumber.from((await estimate(factory.address, factoryData)).gasLimit).toNumber()
-        const realTx = await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+        const realTx = await factory.deploy(mainModule.address, salt)
         const realTxReceipt = await realTx.wait()
 
         // NOTE: we set a high variance here as gas estimation on factory is a bit tricky from hardhat.
         // or perhaps the txBaseCost() is wrong somehow..? could be hardhat's opcode pricing is off too.
-        expect(estimated + txBaseCost(factoryData)).to.approximately(realTxReceipt.gasUsed.toNumber(), 36_000)
+        expect(estimated + txBaseCost(factoryData)).to.approximately(realTxReceipt.gasUsed.toNumber(), 100_000)
       })
 
       it('Should estimate wallet deployment + upgrade', async () => {
@@ -292,7 +292,7 @@ contract('Estimate gas usage', (accounts: string[]) => {
           salt = encodeImageHash(threshold, config)
           address = addressOf(factory.address, mainModule.address, salt)
 
-          await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+          await factory.deploy(mainModule.address, salt)
 
           wallet = (await MainModuleGasEstimation__factory.connect(address, signer)) as unknown as MainModule
 

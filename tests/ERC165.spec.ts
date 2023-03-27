@@ -55,7 +55,7 @@ contract('ERC165', () => {
   beforeEach(async () => {
     owner = new ethers.Wallet(ethers.utils.randomBytes(32))
     const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
-    await factory.deploy(mainModule.address, salt, { gasLimit: 100_000 })
+    await factory.deploy(mainModule.address, salt)
     wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
   })
 
