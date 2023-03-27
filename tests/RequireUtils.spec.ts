@@ -123,7 +123,7 @@ contract('Require utils', (accounts: string[]) => {
           {
             delegateCall: false,
             revertOnError: true,
-            gasLimit: optimalGasLimit,
+            gasLimit: ethers.constants.Zero,
             target: requireUtils.address,
             value: ethers.constants.Zero,
             data: requireUtils.interface.encodeFunctionData('publishInitialSigners', [wallet.address, digest, 1, signature, true])
