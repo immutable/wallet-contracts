@@ -13,7 +13,6 @@ contract Proxy {
 
     ///     =====   Constructor  =====
 
-
     /// @dev Sets implementation contract on deployment
     constructor(address _implementation) {
         assembly {
