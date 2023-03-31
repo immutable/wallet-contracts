@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 import '@openzeppelin/contracts/access/AccessControl.sol';
-import "./Wallet.sol";
+import './Wallet.sol';
 
 /**
  * @title Factory
@@ -51,7 +51,7 @@ contract Factory is AccessControl {
     assembly {
       _contract := create2(callvalue(), add(code, 32), mload(code), _salt)
     }
-    // check deployment success
+    // check deployment success, increases gas cost by ~35
     require(_contract != address(0), 'WalletFactory: deployment failed');
     // emit event, increases gas cost by ~2k
     emit WalletDeployed(_contract, _mainModule, _salt);

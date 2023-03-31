@@ -2,11 +2,11 @@
 pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "../commons/interfaces/IModuleCalls.sol";
-import "../commons/interfaces/IModuleAuthUpgradable.sol";
-import "../../interfaces/IERC1271Wallet.sol";
-import "../../utils/SignatureValidator.sol";
-import "../../utils/LibBytes.sol";
+import '../commons/interfaces/IModuleCalls.sol';
+import '../commons/interfaces/IModuleAuthUpgradable.sol';
+import '../../interfaces/IERC1271Wallet.sol';
+import '../../utils/SignatureValidator.sol';
+import '../../utils/LibBytes.sol';
 
 contract RequireUtils is SignatureValidator {
   using LibBytes for bytes;
@@ -23,24 +23,16 @@ contract RequireUtils is SignatureValidator {
 
   // Creation code of Proxy.sol. Set as state variable here to avoid compiler conflicts with library
   bytes private constant walletCreationCode =
-  hex'608060405234801561001057600080fd5b5060405161029f38038061029f8339818101604052810190610032919061009e565b803055506100cb565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061006b82610040565b9050919050565b61007b81610060565b811461008657600080fd5b50565b60008151905061009881610072565b92915050565b6000602082840312156100b4576100b361003b565b5b60006100c284828501610089565b91505092915050565b6101c5806100da6000396000f3fe6080604052600436106100225760003560e01c806390611127146100a857610076565b36610076573373ffffffffffffffffffffffffffffffffffffffff16347f606834f57405380c4fb88d1f4850326ad3885f014bab3b568dfbf7a041eef73860405161006c90610113565b60405180910390a3005b60006100806100d3565b90503660008037600080366000845af43d6000803e80600081146100a3573d6000f35b3d6000fd5b3480156100b457600080fd5b506100bd6100d3565b6040516100ca9190610174565b60405180910390f35b60003054905090565b600082825260208201905092915050565b50565b60006100fd6000836100dc565b9150610108826100ed565b600082019050919050565b6000602082019050818103600083015261012c816100f0565b9050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061015e82610133565b9050919050565b61016e81610153565b82525050565b60006020820190506101896000830184610165565b9291505056fea2646970667358221220d43fa02972046db2bc81804ebf600d5b46b97e55c738ea899a28224e111b588564736f6c63430008110033';
+    hex'608060405234801561001057600080fd5b506040516101e03803806101e08339818101604052810190610032919061009e565b803055506100cb565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061006b82610040565b9050919050565b61007b81610060565b811461008657600080fd5b50565b60008151905061009881610072565b92915050565b6000602082840312156100b4576100b361003b565b5b60006100c284828501610089565b91505092915050565b610106806100da6000396000f3fe608060405260043610601f5760003560e01c80639061112714604b576025565b36602557005b366000803760008036600030545af43d6000803e80600081146046573d6000f35b3d6000fd5b348015605657600080fd5b50605d6071565b6040516068919060b7565b60405180910390f35b60003054905090565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600060a382607a565b9050919050565b60b181609a565b82525050565b600060208201905060ca600083018460aa565b9291505056fea264697066735822122074fe0440d390429dff5a892d64613758f7c145bfd7856e0ab26b6c7d42efe80764736f6c63430008110033';
 
   struct Member {
     uint256 weight;
     address signer;
   }
 
-  event RequiredConfig(
-    address indexed _wallet,
-    bytes32 indexed _imageHash,
-    uint256 _threshold,
-    bytes _signers
-  );
+  event RequiredConfig(address indexed _wallet, bytes32 indexed _imageHash, uint256 _threshold, bytes _signers);
 
-  event RequiredSigner(
-    address indexed _wallet,
-    address indexed _signer
-  );
+  event RequiredSigner(address indexed _wallet, address indexed _signer);
 
   mapping(address => uint256) public lastSignerUpdate;
   mapping(address => uint256) public lastWalletUpdate;
@@ -59,14 +51,9 @@ contract RequireUtils is SignatureValidator {
    * @param _wallet      Sequence wallet
    * @param _threshold   Thershold of the current configuration
    * @param _members     Members of the current configuration
-   * @param _index       True if an index in contract-storage is desired 
+   * @param _index       True if an index in contract-storage is desired
    */
-  function publishConfig(
-    address _wallet,
-    uint256 _threshold,
-    Member[] calldata _members,
-    bool _index
-  ) external {
+  function publishConfig(address _wallet, uint256 _threshold, Member[] calldata _members, bool _index) external {
     // Compute expected imageHash
     bytes32 imageHash = bytes32(uint256(_threshold));
     for (uint256 i = 0; i < _members.length; i++) {
@@ -78,21 +65,13 @@ contract RequireUtils is SignatureValidator {
     if (succeed && data.length == 32) {
       // Check contract defined
       bytes32 currentImageHash = abi.decode(data, (bytes32));
-      require(currentImageHash == imageHash, "RequireUtils#publishConfig: UNEXPECTED_IMAGE_HASH");
+      require(currentImageHash == imageHash, 'RequireUtils#publishConfig: UNEXPECTED_IMAGE_HASH');
     } else {
       // Check counter-factual
-      require(address(
-        uint256(
-          keccak256(
-            abi.encodePacked(
-              byte(0xff),
-              FACTORY,
-              imageHash,
-              INIT_CODE_HASH
-            )
-          )
-        )
-      ) == _wallet, "RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
+      require(
+        address(uint256(keccak256(abi.encodePacked(bytes1(0xff), FACTORY, imageHash, INIT_CODE_HASH)))) == _wallet,
+        'RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH'
+      );
 
       // Register known image-hash for counter-factual wallet
       if (_index) knownImageHashes[_wallet] = imageHash;
@@ -121,7 +100,7 @@ contract RequireUtils is SignatureValidator {
    * @param _hash        Any hash signed by the wallet
    * @param _sizeMembers Number of members on the counter-factual configuration
    * @param _signature   Signature for the given hash
-   * @param _index       True if an index in contract-storage is desired 
+   * @param _index       True if an index in contract-storage is desired
    */
   function publishInitialSigners(
     address _wallet,
@@ -132,21 +111,18 @@ contract RequireUtils is SignatureValidator {
   ) external {
     // Decode and index signature
     (
-      uint16 threshold,  // required threshold signature
-      uint256 rindex     // read index
+      uint16 threshold, // required threshold signature
+      uint256 rindex // read index
     ) = _signature.readFirstUint16();
 
     // Generate sub-digest
-    bytes32 subDigest; {
-      uint256 chainId; assembly { chainId := chainid() }
-      subDigest = keccak256(
-        abi.encodePacked(
-          "\x19\x01",
-          chainId,
-          _wallet,
-          _hash
-        )
-      );
+    bytes32 subDigest;
+    {
+      uint256 chainId;
+      assembly {
+        chainId := chainid()
+      }
+      subDigest = keccak256(abi.encodePacked('\x19\x01', chainId, _wallet, _hash));
     }
 
     // Recover signature
@@ -157,7 +133,9 @@ contract RequireUtils is SignatureValidator {
 
     while (rindex < _signature.length) {
       // Read next item type and addrWeight
-      uint256 flag; uint256 addrWeight; address addr;
+      uint256 flag;
+      uint256 addrWeight;
+      address addr;
       (flag, addrWeight, rindex) = _signature.readUint8Uint8(rindex);
 
       if (flag == FLAG_ADDRESS) {
@@ -183,13 +161,13 @@ contract RequireUtils is SignatureValidator {
           // Read dynamic size signature
           bytes memory signature;
           (signature, rindex) = _signature.readBytes(rindex, size);
-          require(isValidSignature(subDigest, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
+          require(isValidSignature(subDigest, addr, signature), 'ModuleAuth#_signatureValidation: INVALID_SIGNATURE');
         }
 
         // Publish signer
         _publishSigner(_wallet, addr, _index);
       } else {
-        revert("RequireUtils#publishInitialSigners: INVALID_SIGNATURE_FLAG");
+        revert('RequireUtils#publishInitialSigners: INVALID_SIGNATURE_FLAG');
       }
 
       // Store member on array
@@ -200,21 +178,13 @@ contract RequireUtils is SignatureValidator {
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
 
-    require(membersIndex == _sizeMembers, "RequireUtils#publishInitialSigners: INVALID_MEMBERS_COUNT");
+    require(membersIndex == _sizeMembers, 'RequireUtils#publishInitialSigners: INVALID_MEMBERS_COUNT');
 
     // Check against counter-factual imageHash
-    require(address(
-      uint256(
-        keccak256(
-          abi.encodePacked(
-            byte(0xff),
-            FACTORY,
-            imageHash,
-            INIT_CODE_HASH
-          )
-        )
-      )
-    ) == _wallet, "RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
+    require(
+      address(uint256(keccak256(abi.encodePacked(bytes1(0xff), FACTORY, imageHash, INIT_CODE_HASH)))) == _wallet,
+      'RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH'
+    );
 
     // Emit event for easy config retrieval
     emit RequiredConfig(_wallet, imageHash, threshold, abi.encode(members));
@@ -238,7 +208,7 @@ contract RequireUtils is SignatureValidator {
    * @param _expiration  Expiration to check
    */
   function requireNonExpired(uint256 _expiration) external view {
-    require(block.timestamp < _expiration, "RequireUtils#requireNonExpired: EXPIRED");
+    require(block.timestamp < _expiration, 'RequireUtils#requireNonExpired: EXPIRED');
   }
 
   /**
@@ -251,7 +221,7 @@ contract RequireUtils is SignatureValidator {
   function requireMinNonce(address _wallet, uint256 _nonce) external view {
     (uint256 space, uint256 nonce) = _decodeNonce(_nonce);
     uint256 currentNonce = IModuleCalls(_wallet).readNonce(space);
-    require(currentNonce >= nonce, "RequireUtils#requireMinNonce: NONCE_BELOW_REQUIRED");
+    require(currentNonce >= nonce, 'RequireUtils#requireMinNonce: NONCE_BELOW_REQUIRED');
   }
 
   /**
