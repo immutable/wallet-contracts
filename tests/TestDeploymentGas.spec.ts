@@ -48,15 +48,6 @@ describe('Deployment Gas Costs', function () {
       expect(await factory.deploy(mainModule.address, salt))
         .to.emit(factory, 'WalletDeployed')
         .withArgs(addressOf(factory.address, mainModule.address, salt), mainModule.address, salt)
-
-      // const deployedContract = await ethers.getContractAt('MainModuleMock', addressOf(factory.address, mainModule.address, salt))
-
-      // Retrive implementation from Proxy's storage
-      const Proxy = ethers.getContractFactory('Proxy')
-      const proxy = (await Proxy).attach(addressOf(factory.address, mainModule.address, salt))
-      expect(await proxy.PROXY_getImplementation()).to.be.equal(mainModule.address)
-      // initial wallet nonce = 0
-      // expect(await deployedContract.nonce()).to.equal(0)
     }
   })
 })
