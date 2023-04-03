@@ -12,3 +12,6 @@ coverage
 coverage.json
 
 config/*.env
+
+.idea
+.DS_Store
