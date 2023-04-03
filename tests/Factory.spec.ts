@@ -13,25 +13,27 @@ contract('Factory', (accounts: string[]) => {
 
   beforeEach(async () => {
     signer = (await hardhat.getSigners())[0]
-    moduleMock = await (new ModuleMock__factory()).connect(signer).deploy()
-    factory = await (new Factory__factory()).connect(signer).deploy()
+    moduleMock = await new ModuleMock__factory().connect(signer).deploy()
+    factory = await new Factory__factory().connect(signer).deploy(await signer.getAddress())
+    // Grant deployer role to signer
+    await factory.connect(signer).grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
   })
 
   describe('Deploy wallets', () => {
     it('Should deploy wallet', async () => {
       // const saltHash = encodeImageHash(1, [{ weight: 1, address: accounts[0] }])
       const hash = ethers.utils.hexlify(ethers.utils.randomBytes(32))
-      await factory.deploy(moduleMock.address, hash, { gasLimit: 100_000 })
+      await factory.deploy(moduleMock.address, hash)
     })
     it('Should predict wallet address', async () => {
       const hash = ethers.utils.hexlify(ethers.utils.randomBytes(32))
       const predict = addressOf(factory.address, moduleMock.address, hash)
-      await factory.deploy(moduleMock.address, hash, { gasLimit: 100_000 })
+      await factory.deploy(moduleMock.address, hash)
       expect(await web3.eth.getCode(predict)).to.not.equal('0x')
     })
     it('Should initialize with main module', async () => {
       const hash = ethers.utils.hexlify(ethers.utils.randomBytes(32))
-      await factory.deploy(moduleMock.address, hash, { gasLimit: 100_000 })
+      await factory.deploy(moduleMock.address, hash)
       const address = addressOf(factory.address, moduleMock.address, hash)
       const wallet = await ModuleMock__factory.connect(address, signer)
       const receipt = await (await wallet.ping()).wait()

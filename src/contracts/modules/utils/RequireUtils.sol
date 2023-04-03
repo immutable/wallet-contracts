@@ -9,7 +9,7 @@ import "../../utils/SignatureValidator.sol";
 import "../../utils/LibBytes.sol";
 import "../../Wallet.sol";
 
-contract RequireUtils is SignatureValidator {
+contract RequireUtils is SignatureValidator, Wallet {
   using LibBytes for bytes;
 
   uint256 private constant NONCE_BITS = 96;
@@ -46,7 +46,7 @@ contract RequireUtils is SignatureValidator {
 
   constructor(address _factory, address _mainModule) public {
     FACTORY = _factory;
-    INIT_CODE_HASH = keccak256(abi.encodePacked(Wallet.creationCode, uint256(_mainModule)));
+    INIT_CODE_HASH = keccak256(abi.encodePacked(creationCode, uint256(_mainModule)));
   }
 
   /**
