@@ -11,13 +11,13 @@ import "../../Wallet.sol";
  *  This module allows wallets to be deployed with a default configuration
  *  without using any aditional contract storage
  */
-abstract contract ModuleAuthFixed is ModuleAuth, Wallet {
+abstract contract ModuleAuthFixed is ModuleAuth {
   bytes32 public immutable INIT_CODE_HASH;
   address public immutable FACTORY;
 
   constructor(address _factory) {
     // Build init code hash of the deployed wallets using that module
-    bytes32 initCodeHash = keccak256(abi.encodePacked(creationCode, uint256(address(this))));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(address(this))));
 
     INIT_CODE_HASH = initCodeHash;
     FACTORY = _factory;
