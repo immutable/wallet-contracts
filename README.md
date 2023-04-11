@@ -1,6 +1,25 @@
 Sequence Smart Wallet Contracts
 ===============================
 
+## Immutable Changes
+
+The following repo is a fork of Sequence's [wallet-contracts repo](https://github.com/0xsequence/wallet-contracts).
+The following changes have been made:
+
+* The minimal wallet proxy contract (bytecode of which is in src/contracts/Wallet.sol) now supports a function 
+  ```PROXY_getImplementation``` to return the address of the implementation contract pointed to by the proxy 
+  contract.
+* The interface for the ```PROXY_getImplementation``` function is defined in src/contracts/IWalletProxy.sol.
+* The source code for the new bytecode is in src/contracts/WalletProxy.yul.
+* Tests for the new features have been included in ImmutableFactory.spec.ts.
+* All references to the bytecode of the proxy now use the definition in src/contracts/Wallet.sol (rather 
+  than having their own definition).
+
+
+## Original start of readme
+
+
+
 Ethereum contracts for the Sequence Smart Wallet at [https://sequence.app](https://sequence.app).
 
 For more information see, [https://sequence.build](https://sequence.build)
@@ -74,5 +93,5 @@ in their toolchains as our build and contract packages are separated.
 ## LICENSE
 
 Copyright (c) 2017-present [Horizon Blockchain Games Inc](https://horizon.io).
-
+Copyright (c) 2023 Immutable Pty Ltd
 Licensed under [Apache-2.0](https://github.com/0xsequence/erc-1155/blob/master/LICENSE)
