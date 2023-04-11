@@ -112,9 +112,8 @@ describe('Wallet Factory', function () {
       await contract.setStr('new_string')
       expect(await contract.getStr()).to.equal('new_string')
 
-      // Retrive implementation from Proxy's storage
-      const Proxy = ethers.getContractFactory('Proxy')
-      const proxy = (await Proxy).attach(addressOf(factory.address, customModule.address, salt))
+      // Retrieve implementation from Proxy's storage
+      const proxy = await ethers.getContractAt('IWalletProxy', await addressOf(factory.address, customModule.address, salt))
       expect(await proxy.PROXY_getImplementation()).to.be.equal(customModule.address)
     })
 
@@ -312,9 +311,8 @@ describe('Wallet Factory', function () {
 
       const networkId = (await ethers.provider.getNetwork()).chainId
     
-      // Retrive implementation from Proxy's storage
-      const Proxy = ethers.getContractFactory('Proxy')
-      const proxy = (await Proxy).attach(addressOf(factory.address, mainModule.address, salt))
+      // Retrieve implementation from Proxy's storage
+      const proxy = await ethers.getContractAt('IWalletProxy', await addressOf(factory.address, mainModule.address, salt))
       expect(await proxy.PROXY_getImplementation()).to.be.equal(mainModule.address)
  
       // upgrade implementation tx
