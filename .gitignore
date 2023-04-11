@@ -12,5 +12,12 @@ coverage
 coverage.json
 
 config/*.env
+
 src/gen
 src/artifacts
+
+# MAC OS custom directory attributes file.
+.DS_Store
+
+# IntelliJ IDE directory
+.idea
