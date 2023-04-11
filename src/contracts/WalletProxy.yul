@@ -1,8 +1,10 @@
-// Copyright (c) Immutable Pty Ltd 2023
+// Copyright (c) Immutable Pty Ltd 2018 - 2023
 // SPDX-License-Identifier: Apache-2.0
-
-// The following in Yul code that creates a minimalist transparent proxy.
-
+//
+// This Yul code creates a minimalist transparent proxy with a function to fetch
+// the address of the contract being proxied to using the interface described in
+// IWalletProxy.sol .
+//
 object "ProxyGetImplYul" {
     // This is the initcode of the contract.
     code {
