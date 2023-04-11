@@ -14,6 +14,12 @@ object "ProxyGetImplYul" {
         // codecopy(t, f, s)
         // This will turn into a memory->memory copy for Ewasm and
         // a codecopy for EVM
+        // The constant 0x54 is datasize("runtime") + 32. The solc compiler is
+        // unable to do constant addition as part of the compilation process, hence
+        // the constant.
+        // If the runtime code is to be updated, uncomment the following line, and comment
+        // out the following line, so that datasize("runtime") can be determined. It will
+        // be the byte following the 0x60 push1 opcode.
 //        datacopy(returndatasize(), dataoffset("runtime"), add(datasize("runtime"), 32))
         datacopy(returndatasize(), dataoffset("runtime"), 0x54)
 
@@ -46,10 +52,6 @@ object "ProxyGetImplYul" {
             // calldatacopy(t, f, s)
             calldatacopy(returndatasize(), returndatasize(), calldatasize())
 
-            // Load the implemntation address. This is stored at a storage
-            // location defined by the address of this contract.
-//            let implAddress := sload(address())
-
             // Use returndatasize to load zero.
             let zero := returndatasize()
 
@@ -60,7 +62,7 @@ object "ProxyGetImplYul" {
             // mem[out…(out+outsize)) returning 0 on error 
             // (eg. out of gas) and 1 on success
             // delegatecall(g, a, in, insize, out, outsize)
-//            let success := delegatecall(gas(), implAddress, returndatasize(), calldatasize(), returndatasize(), returndatasize())
+            // Use sload(address()) to load the implemntation address.
             let success := delegatecall(gas(), sload(address()), returndatasize(), calldatasize(), returndatasize(), returndatasize())
 
             // Copy the return result to memory location 0.
