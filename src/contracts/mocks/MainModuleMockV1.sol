@@ -7,7 +7,7 @@ import "../modules/MainModuleDynamicAuth.sol";
 
 contract MainModuleMockV1 is MainModuleDynamicAuth {
     constructor(address _factory, address _startup) MainModuleDynamicAuth(_factory, _startup) {
-        // Nothing to do. 
+        // solhint-disable-next-line no-empty-blocks
     }
 
 
