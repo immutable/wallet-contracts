@@ -6,9 +6,8 @@ pragma experimental ABIEncoderV2;
 import "../modules/MainModuleDynamicAuth.sol";
 
 contract MainModuleMockV1 is MainModuleDynamicAuth {
-    constructor(address _factory, address _startup) MainModuleDynamicAuth(_factory, _startup) {
-        // solhint-disable-next-line no-empty-blocks
-    }
+    // solhint-disable-next-line no-empty-blocks
+    constructor(address _factory, address _startup) MainModuleDynamicAuth(_factory, _startup) {}
 
 
 }

@@ -26,11 +26,8 @@ contract MainModuleDynamicAuth is
   ModuleCreator
 {
 
-  constructor(
-    address _factory, address _startup
-  ) ModuleAuthDynamic (
-    _factory, _startup
-  ) { }
+  // solhint-disable-next-line no-empty-blocks
+  constructor(address _factory, address _startup) ModuleAuthDynamic (_factory, _startup) { }
 
 
   /**

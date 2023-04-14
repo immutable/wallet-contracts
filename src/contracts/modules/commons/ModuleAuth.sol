@@ -163,6 +163,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
    *      could make transactions impossible to execute as all the signers must be
    *      passed for each transaction.
    */
+  // solhint-disable-next-line no-empty-blocks
   function updateImageHashInternal(bytes32 _imageHash) internal virtual {
     // Default implementation does nothing
   }
