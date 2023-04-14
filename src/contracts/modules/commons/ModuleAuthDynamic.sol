@@ -28,8 +28,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
    */
   function _isValidImage(bytes32 _imageHash) internal view override returns (bool, bool) {
     bytes32 storedImageHash = ModuleStorage.readBytes32(IMAGE_HASH_KEY);
-    bool needToUpdateImageHash = (storedImageHash == 0);
-    if (needToUpdateImageHash) {
+    if (storedImageHash == 0) {
       // No image hash stored. Check that the image hash was used as the salt when 
       // deploying the wallet proxy contract.
       bool authenticated = address(
@@ -44,11 +43,12 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
           )
         )
       ) == address(this);
+      // Indicate need to update = true. This will trigger a call to store the image hash
       return (authenticated, true);
     }
 
     // Image hash has been stored. 
-    return (((_imageHash != bytes32(0) && _imageHash == ModuleStorage.readBytes32(IMAGE_HASH_KEY))), false);
+    return ((_imageHash != bytes32(0) && _imageHash == storedImageHash), false);
   }
 }
 
