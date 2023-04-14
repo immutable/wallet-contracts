@@ -200,8 +200,6 @@ describe('Wallet Factory', function () {
     })
 
 
-
-
     it('Deploying using upgrade should work', async function () {
       const { factory, startupWalletImpl, latestWalletImplLocator } = await loadFixture(setupStartupFixture)
 
@@ -255,6 +253,66 @@ describe('Wallet Factory', function () {
       expect(await walletAsProxy.PROXY_getImplementation()).to.equal(mainModuleV2.address)
     })
 
+
+
+
+    it('Should be able to execute multiple meta transactions', async function () {
+      const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
+
+      const acc = ethers.Wallet.createRandom()
+      const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
+
+
+      //console.log("Deploy wallet proxy using MainModuleMockV1")
+      await factory.deploy(startupWalletImpl.address, salt)
+      const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
+
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
+
+      // Now check that a transaction can be executed
+      // This will be authenticated based on the deployed address
+      const valA = 7
+      const valB = '0x0d'
+      const CallReceiver = await ethers.getContractFactory('CallReceiverMock')
+      const callReceiver = await CallReceiver.deploy()
+
+      const networkId = (await ethers.provider.getNetwork()).chainId
+      let nonce = await walletMainModule.nonce()
+      let transaction = {
+        delegateCall: false,
+        revertOnError: true,
+        gasLimit: ethers.constants.Two.pow(21),
+        target: callReceiver.address,
+        value: ethers.constants.Zero,
+        data: callReceiver.interface.encodeFunctionData('testCall', [valA, valB])
+      }
+      await signAndExecuteMetaTx(walletMainModule, acc, [transaction], networkId, nonce)
+
+      // Check that the values in the target contract were altered
+      expect(await callReceiver.lastValA()).to.equal(valA)
+      expect(await callReceiver.lastValB()).to.equal(valB)
+
+
+      // Now check that a second transaction can be executed
+      // This will be authenticated solely based on the image Hash
+      const valC = 6
+      const valD = '0x053456'
+
+      nonce = await walletMainModule.nonce()
+      transaction = {
+        delegateCall: false,
+        revertOnError: true,
+        gasLimit: ethers.constants.Two.pow(21),
+        target: callReceiver.address,
+        value: ethers.constants.Zero,
+        data: callReceiver.interface.encodeFunctionData('testCall', [valC, valD])
+      }
+      await signAndExecuteMetaTx(walletMainModule, acc, [transaction], networkId, nonce)
+
+      // Check that the values in the target contract were altered
+      expect(await callReceiver.lastValA()).to.equal(valC)
+      expect(await callReceiver.lastValB()).to.equal(valD)
+    })
 
   })
 })
