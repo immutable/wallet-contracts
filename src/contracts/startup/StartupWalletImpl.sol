@@ -11,16 +11,20 @@ import "./ILatestWalletImplLocator.sol";
  *        needs to change.
  *        Note that this code executed in the context of the WalletProxy.yul. As such,
  *        the address of the Latest Wallet Implementation Locator contract needs to be
- *        inserted directly into the code of the contract.
+ *        inserted directly into the code of the contract. This is achieved by using an 
+ *        immutable variable.
  */
 contract StartupWalletImpl {
-    // This value will be removed from the bytecode and patched with the address of the locator contract.
-    uint160 private constant LOCATION_OF_ADDRESS = 0x00123456789A123456789A123456789A123456789A;
+    address public immutable walletImplementationLocator;
+
+    constructor (address _walletImplementationLocator) {
+        walletImplementationLocator = _walletImplementationLocator;
+    }
 
 
     fallback() external payable {
         // Get the address of the latest version of the wallet implementation.
-        ILatestWalletImplLocator locator = ILatestWalletImplLocator(address(LOCATION_OF_ADDRESS));
+        ILatestWalletImplLocator locator = ILatestWalletImplLocator(walletImplementationLocator);
         address latestImplAddr = locator.latestWalletImplementation();
 
         // solhint-disable-next-line no-inline-assembly

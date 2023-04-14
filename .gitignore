@@ -21,3 +21,4 @@ src/artifacts
 
 # IntelliJ IDE directory
 .idea
+*.iml

@@ -20,12 +20,10 @@ contract LatestWalletImplLocator is ILatestWalletImplLocator, AccessControl {
     /**
      * @param _admin Role that can grant / revoke roles: DEFAULT_ADMIN and IMPLCHANGER.
      * @param _implChanger Initial address that can change the latest wallet implementation address.
-     * @param _initialImpl  The initial wallet implementation address.
      */
-    constructor(address _admin, address _implChanger, address _initialImpl) {
+    constructor(address _admin, address _implChanger) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(IMPLCHANGER_ROLE, _implChanger);
-        latestWalletImplementation = _initialImpl;
     }
 
 
