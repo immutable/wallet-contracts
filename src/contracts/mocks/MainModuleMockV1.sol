@@ -6,7 +6,9 @@ pragma experimental ABIEncoderV2;
 import "../modules/MainModuleDynamicAuth.sol";
 
 contract MainModuleMockV1 is MainModuleDynamicAuth {
-    constructor(address _factory, address _startup) MainModuleDynamicAuth(_factory, _startup) {}
+    constructor(address _factory, address _startup) MainModuleDynamicAuth(_factory, _startup) {
+        // Nothing to do. 
+    }
 
 
 }
