@@ -3,7 +3,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { addressOf, encodeImageHash, multiSignAndExecuteMetaTx, signAndExecuteMetaTx } from './utils/helpers'
+import { addressOf, encodeImageHash, multiSignMetaTransactions, encodeMetaTransactionsData, signAndExecuteMetaTx } from './utils/helpers'
 import { CustomModule__factory, MainModule } from '../src/gen/typechain'
 import { startup } from 'src/gen/adapter'
 
@@ -314,5 +314,55 @@ describe('Wallet Factory', function () {
       expect(await callReceiver.lastValB()).to.equal(valD)
     })
 
+
+//     it('Check isSignatureValid before the first transaction', async function () {
+//       const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
+
+//       const acc = ethers.Wallet.createRandom()
+//       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
+
+
+//       //console.log("Deploy wallet proxy using MainModuleMockV1")
+//       await factory.deploy(startupWalletImpl.address, salt)
+//       const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
+
+//       const wallet = await ethers.getContractAt('MainModuleMockV1', deployedAddress)
+//       const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
+
+//       expect(await wallet.version()).to.equal(1)
+
+
+//       const accounts = [{weight: 1, owner: acc}] 
+//       const threshold = 1
+//       const forceDynamicSize = false;
+
+//       const networkId = (await ethers.provider.getNetwork()).chainId
+//       let nonce = await walletMainModule.nonce()
+
+//       const valA = 7
+//       const valB = '0x0d'
+//       const CallReceiver = await ethers.getContractFactory('CallReceiverMock')
+//       const callReceiver = await CallReceiver.deploy()
+//       const transaction = {
+//         delegateCall: false,
+//         revertOnError: true,
+//         gasLimit: ethers.constants.Two.pow(21),
+//         target: callReceiver.address,
+//         value: ethers.constants.Zero,
+//         data: callReceiver.interface.encodeFunctionData('testCall', [valA, valB])
+//       }
+//       const txs = [transaction]
+      
+//       const signature = await multiSignMetaTransactions(walletMainModule, accounts, threshold, txs, networkId, nonce, forceDynamicSize)
+//       const data = encodeMetaTransactionsData(wallet.address, txs, networkId, nonce)
+
+//       const hash = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['bytes'], [data]))
+
+//       const isValidSigFuncSelector = await wallet.isValidSignature(hash, signature)
+// //      const isValidSigFuncSelector = await wallet.isValidSignature(data, signature)
+//       expect(isValidSigFuncSelector).to.equal(0x20c13b0b)
+//     })
+
   })
 })
+
