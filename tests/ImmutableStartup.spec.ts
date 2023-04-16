@@ -3,7 +3,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { addressOf, encodeImageHash, multiSignMetaTransactions, encodeMetaTransactionsData, signAndExecuteMetaTx } from './utils/helpers'
+import { addressOf, encodeImageHash, walletSign, signAndExecuteMetaTx } from './utils/helpers'
 import { CustomModule__factory, MainModule } from '../src/gen/typechain'
 import { startup } from 'src/gen/adapter'
 
@@ -315,53 +315,44 @@ describe('Wallet Factory', function () {
     })
 
 
-//     it('Check isSignatureValid before the first transaction', async function () {
-//       const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
+    it('Check isSignatureValid before the first transaction', async function () {
+      const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
 
-//       const acc = ethers.Wallet.createRandom()
-//       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
-
-
-//       //console.log("Deploy wallet proxy using MainModuleMockV1")
-//       await factory.deploy(startupWalletImpl.address, salt)
-//       const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
-
-//       const wallet = await ethers.getContractAt('MainModuleMockV1', deployedAddress)
-//       const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
-
-//       expect(await wallet.version()).to.equal(1)
+      const acc = ethers.Wallet.createRandom()
+      const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
 
 
-//       const accounts = [{weight: 1, owner: acc}] 
-//       const threshold = 1
-//       const forceDynamicSize = false;
+      //console.log("Deploy wallet proxy using MainModuleMockV1")
+      await factory.deploy(startupWalletImpl.address, salt)
+      const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
 
-//       const networkId = (await ethers.provider.getNetwork()).chainId
-//       let nonce = await walletMainModule.nonce()
+      const wallet = await ethers.getContractAt('MainModuleMockV1', deployedAddress)
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
 
-//       const valA = 7
-//       const valB = '0x0d'
-//       const CallReceiver = await ethers.getContractFactory('CallReceiverMock')
-//       const callReceiver = await CallReceiver.deploy()
-//       const transaction = {
-//         delegateCall: false,
-//         revertOnError: true,
-//         gasLimit: ethers.constants.Two.pow(21),
-//         target: callReceiver.address,
-//         value: ethers.constants.Zero,
-//         data: callReceiver.interface.encodeFunctionData('testCall', [valA, valB])
-//       }
-//       const txs = [transaction]
-      
-//       const signature = await multiSignMetaTransactions(walletMainModule, accounts, threshold, txs, networkId, nonce, forceDynamicSize)
-//       const data = encodeMetaTransactionsData(wallet.address, txs, networkId, nonce)
+      expect(await wallet.version()).to.equal(1)
 
-//       const hash = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['bytes'], [data]))
+      const networkId = (await ethers.provider.getNetwork()).chainId
 
-//       const isValidSigFuncSelector = await wallet.isValidSignature(hash, signature)
-// //      const isValidSigFuncSelector = await wallet.isValidSignature(data, signature)
-//       expect(isValidSigFuncSelector).to.equal(0x20c13b0b)
-//     })
+      const data = await ethers.utils.randomBytes(95)
+      let messageSubDigest = ethers.utils.solidityPack(
+        ['string', 'uint256', 'address', 'bytes'],
+        ['\x19\x01', networkId, wallet.address, ethers.utils.keccak256(data)]
+      )
+
+      const hash = ethers.utils.keccak256(data)
+      const hashSubDigest = ethers.utils.solidityPack(
+        ['string', 'uint256', 'address', 'bytes'],
+        ['\x19\x01', networkId, wallet.address, ethers.utils.solidityPack(['bytes32'], [hash])]
+      )
+
+      let signature = await walletSign(acc, messageSubDigest)
+      let isValidSigFuncSelector = await wallet['isValidSignature(bytes,bytes)'](data, signature)
+      expect(parseInt(isValidSigFuncSelector, 16)).to.equal(0x20c13b0b)
+
+      signature = await walletSign(acc, hashSubDigest)
+      isValidSigFuncSelector = await wallet['isValidSignature(bytes32,bytes)'](hash, signature)
+      expect(parseInt(isValidSigFuncSelector, 16)).to.equal(0x1626ba7e)
+    })
 
   })
 })
