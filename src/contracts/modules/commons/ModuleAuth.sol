@@ -49,7 +49,32 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes32 _hash,
     bytes memory _signature
   )
-    internal override view returns (bool)
+    internal override returns (bool)
+  {
+    (bool verified, bool needsUpdate, bytes32 imageHash) = _signatureValidationWithUpdateCheck(_hash, _signature);
+    if (needsUpdate) {
+      updateImageHashInternal(imageHash);
+    }
+    return verified;
+  }
+
+  function _signatureValidationInternal(
+    bytes32 _hash,
+    bytes memory _signature
+  )
+    internal view returns (bool)
+  {
+    (bool verified, , ) = _signatureValidationWithUpdateCheck(_hash, _signature);
+    return verified;
+  }
+
+
+
+  function _signatureValidationWithUpdateCheck(
+    bytes32 _hash,
+    bytes memory _signature
+  )
+    internal view returns (bool, bool, bytes32)
   {
     (
       uint16 threshold,  // required threshold signature
@@ -102,15 +127,17 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
 
-    return totalWeight >= threshold && _isValidImage(imageHash);
+    (bool verified, bool needsUpdate) = _isValidImage(imageHash);
+    return ((totalWeight >= threshold && verified), needsUpdate, imageHash);
   }
+
 
   /**
    * @notice Validates the signature image
    * @param _imageHash Hashed image of signature
-   * @return true if the signature image is valid
+   * @return true if the signature image is valid, and true if the image hash should be updated.
    */
-  function _isValidImage(bytes32 _imageHash) internal virtual view returns (bool);
+  function _isValidImage(bytes32 _imageHash) internal view virtual returns (bool, bool);
 
   /**
    * @notice Will hash _data to be signed (similar to EIP-712)
@@ -130,6 +157,20 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   }
 
   /**
+   * @notice Updates the signers configuration of the wallet
+   * @param _imageHash New required image hash of the signature
+   * @dev It is recommended to not have more than 200 signers as opcode repricing
+   *      could make transactions impossible to execute as all the signers must be
+   *      passed for each transaction.
+   */
+  // solhint-disable-next-line no-empty-blocks
+  function updateImageHashInternal(bytes32 _imageHash) internal virtual {
+    // Default implementation does nothing
+  }
+  
+
+
+  /**
    * @notice Verifies whether the provided signature is valid with respect to the provided data
    * @dev MUST return the correct magic value if the signature provided is valid for the provided data
    *   > The bytes4 magic value to return when signature is valid is 0x20c13b0b : bytes4(keccak256("isValidSignature(bytes,bytes)"))
@@ -143,9 +184,10 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes calldata _signatures
   ) external override view returns (bytes4) {
     // Validate signatures
-    if (_signatureValidation(_subDigest(keccak256(_data)), _signatures)) {
+    if (_signatureValidationInternal(_subDigest(keccak256(_data)), _signatures)) {
       return SELECTOR_ERC1271_BYTES_BYTES;
     }
+    return 0;
   }
 
   /**
@@ -162,9 +204,10 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes calldata _signatures
   ) external override view returns (bytes4) {
     // Validate signatures
-    if (_signatureValidation(_subDigest(_hash), _signatures)) {
+    if (_signatureValidationInternal(_subDigest(_hash), _signatures)) {
       return SELECTOR_ERC1271_BYTES32_BYTES;
     }
+    return 0;
   }
 
   /**

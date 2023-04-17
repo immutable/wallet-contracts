@@ -10,10 +10,19 @@ The following changes have been made:
   ```PROXY_getImplementation``` to return the address of the implementation contract pointed to by the proxy 
   contract.
 * The interface for the ```PROXY_getImplementation``` function is defined in src/contracts/IWalletProxy.sol.
-* The source code for the new bytecode is in src/contracts/WalletProxy.yul.
-* Tests for the new features have been included in ImmutableFactory.spec.ts.
-* All references to the bytecode of the proxy now use the definition in src/contracts/Wallet.sol (rather 
+* The source code for the new bytecode is in ```src/contracts/WalletProxy.yul```.
+* All references to the bytecode of the proxy now use the definition in ```src/contracts/Wallet.sol``` (rather 
   than having their own definition).
+* ```StartupWalletImpl.sol``` is a minimal initial implementation that updates the implementation 
+  address and then delegate calls to the wallet implementation. This contract determines the 
+  latest wallet implementation contract to use by contacting the new contract ```LatestWalletImplLocator.sol```.
+* ```MainModuleDynamicAuth.sol``` which uses ```ModuleAuth.sol``` is a type of wallet implementation 
+  that initially does authentication by checking that the contract address matches being generated
+  using the image hash, the factory contract, and the proxy start-up bytes (which include the address
+  of the wallet implementation contract: the instance of ```StartupWalletImpl```). The image hash is stored and subsequence transactions verify by comparing the calculated image hash with the stored 
+  image hash.
+* Tests for the new wallet factory features have been included in ```ImmutableFactory.spec.ts```.
+* Tests for the startup and dynamic authentication have been included in ```ImmutableStartup.spec.ts```.
 
 
 ## Original start of readme

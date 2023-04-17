@@ -35,9 +35,7 @@ contract('MainModule', () => {
     // Get signer
     const [signer] = await hh.getSigners()
     // Deploy wallet factory
-    factory = (await FactoryArtifact.new(signer.address)) as Factory
-    // Grant deployer role to owner
-    await factory.grantRole(await factory.DEPLOYER_ROLE(), await signer.getAddress())
+    factory = (await FactoryArtifact.new(signer.address, await signer.getAddress())) as Factory
     // Deploy MainModule
     module = (await MainModuleArtifact.new(factory.address)) as MainModule
     // Get network ID

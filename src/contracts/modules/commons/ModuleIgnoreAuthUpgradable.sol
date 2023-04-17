@@ -41,11 +41,11 @@ abstract contract ModuleIgnoreAuthUpgradable is IModuleAuthUpgradable, ModuleAut
   /**
    * @notice Removes the signature validation from the module, by returning true for any _imageHash
    * @param _imageHash Hash image of signature
-   * @return true always
+   * @return true always, hence always valid, and false always, indicating no update required
    */
-  function _isValidImage(bytes32 _imageHash) internal override view returns (bool) {
+  function _isValidImage(bytes32 _imageHash) internal override view returns (bool, bool) {
     // Still validates the imageHash using the original mechanism for a more acurate estimation
-    return (_imageHash != bytes32(0) && _imageHash == ModuleStorage.readBytes32(IMAGE_HASH_KEY)) || true;
+    return (true, false);
   }
 
   /**

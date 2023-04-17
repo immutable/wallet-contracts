@@ -14,9 +14,9 @@ contract Factory is AccessControl {
 
   event WalletDeployed(address indexed wallet, address indexed mainModule, bytes32 salt);
 
-  constructor(address admin) {
-    // Grant default admin role to admin address
-    _grantRole(DEFAULT_ADMIN_ROLE, admin);
+  constructor(address _admin, address _deployer) {
+    _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+    _grantRole(DEPLOYER_ROLE, _deployer);
   }
 
   /**
