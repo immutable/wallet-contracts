@@ -25,7 +25,7 @@ contract Factory is AccessControl {
    * @param _salt Salt used to generate the address
    * @return _address The deterministic address
    */
-  function getAddress(address _mainModule, bytes32 _salt) public view returns (address _address) {
+  function getAddress(address _mainModule, bytes32 _salt) external view returns (address _address) {
     bytes32 _hash = keccak256(
       abi.encodePacked(
         bytes1(0xff),
@@ -46,7 +46,7 @@ contract Factory is AccessControl {
    *      could make transactions impossible to execute as all the signers must be
    *      passed for each transaction.
    */
-  function deploy(address _mainModule, bytes32 _salt) public payable onlyRole(DEPLOYER_ROLE) returns (address _contract) {
+  function deploy(address _mainModule, bytes32 _salt) external payable onlyRole(DEPLOYER_ROLE) returns (address _contract) {
     bytes memory code = abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule)));
     assembly {
       _contract := create2(callvalue(), add(code, 32), mload(code), _salt)
