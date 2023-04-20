@@ -1,6 +1,6 @@
 // Copyright Immutable Pty Ltd 2018 - 2023
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.7.6;
+pragma solidity ^0.8.17;
 
 import "./ModuleAuthUpgradable.sol";
 import "../../Wallet.sol";
@@ -12,7 +12,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
 
   constructor(address _factory, address _startupWalletImpl) {
     // Build init code hash of the deployed wallets using that module
-    bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(_startupWalletImpl)));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(_startupWalletImpl))));
 
     INIT_CODE_HASH = initCodeHash;
     FACTORY = _factory;
@@ -32,10 +32,10 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
       // No image hash stored. Check that the image hash was used as the salt when 
       // deploying the wallet proxy contract.
       bool authenticated = address(
-        uint256(
+        bytes20(
           keccak256(
             abi.encodePacked(
-              byte(0xff),
+              bytes1(0xff),
               FACTORY,
               _imageHash,
               INIT_CODE_HASH
