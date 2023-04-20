@@ -30,7 +30,7 @@ abstract contract ModuleAuthFixed is ModuleAuth {
    */
   function _isValidImage(bytes32 _imageHash) internal view override returns (bool, bool) {
     return ((address(
-      bytes20(
+      uint160(uint256(
         keccak256(
           abi.encodePacked(
             bytes1(0xff),
@@ -39,7 +39,7 @@ abstract contract ModuleAuthFixed is ModuleAuth {
             INIT_CODE_HASH
           )
         )
-      )
+      ))
     ) == address(this)), false);
   }
 }

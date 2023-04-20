@@ -32,7 +32,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
       // No image hash stored. Check that the image hash was used as the salt when 
       // deploying the wallet proxy contract.
       bool authenticated = address(
-        bytes20(
+        uint160(uint256(
           keccak256(
             abi.encodePacked(
               bytes1(0xff),
@@ -41,7 +41,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
               INIT_CODE_HASH
             )
           )
-        )
+        ))
       ) == address(this);
       // Indicate need to update = true. This will trigger a call to store the image hash
       return (authenticated, true);

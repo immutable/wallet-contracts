@@ -79,7 +79,7 @@ contract RequireUtils is SignatureValidator {
     } else {
       // Check counter-factual
       require(address(
-        bytes20(
+        uint160(uint256(
           keccak256(
             abi.encodePacked(
               bytes1(0xff),
@@ -88,7 +88,7 @@ contract RequireUtils is SignatureValidator {
               INIT_CODE_HASH
             )
           )
-        )
+        ))
       ) == _wallet, "RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
 
       // Register known image-hash for counter-factual wallet
@@ -201,7 +201,7 @@ contract RequireUtils is SignatureValidator {
 
     // Check against counter-factual imageHash
     require(address(
-      bytes20(
+      uint160(uint256(
         keccak256(
           abi.encodePacked(
             bytes1(0xff),
@@ -210,7 +210,7 @@ contract RequireUtils is SignatureValidator {
             INIT_CODE_HASH
           )
         )
-      )
+      ))
     ) == _wallet, "RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
 
     // Emit event for easy config retrieval
