@@ -85,7 +85,7 @@ contract('MainModule', (accounts: string[]) => {
   beforeEach(async () => {
     owner = new ethers.Wallet(ethers.utils.randomBytes(32))
     const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
-    await factory.deploy(mainModule.address, salt, {gasLimit: 200000})
+    await factory.deploy(mainModule.address, salt, { gasLimit: 200000 })
     wallet = await MainModule__factory.connect(addressOf(factory.address, mainModule.address, salt), signer)
   })
 
@@ -3518,7 +3518,7 @@ contract('MainModule', (accounts: string[]) => {
       expect(reported).to.be.lt.BN(gas)
     })
     it('Should forward different amounts of gas', async () => {
-      const gasA = 10000
+      const gasA = 10100
       const gasB = 350000
 
       const transactions = [

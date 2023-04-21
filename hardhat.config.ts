@@ -6,7 +6,7 @@ import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-web3'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomicfoundation/hardhat-chai-matchers'
-import "@tenderly/hardhat-tenderly"
+import '@tenderly/hardhat-tenderly'
 
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
@@ -18,7 +18,7 @@ const ganacheNetwork = {
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: "0.8.17" }, { version: "0.7.6" }],
+    compilers: [{ version: '0.8.17' }],
     settings: {
       optimizer: {
         enabled: true,
@@ -69,8 +69,8 @@ const config: HardhatUserConfig = {
   },
   // @ts-ignore
   tenderly: {
-    project: "horizon/sequence-dev-1",
-    username: "Agusx1211-horizon",
+    project: 'horizon/sequence-dev-1',
+    username: 'Agusx1211-horizon'
   }
 }
 
