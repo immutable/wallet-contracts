@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.7.6;
+pragma solidity 0.8.17;
 
 import "./ModuleAuth.sol";
 import "../../Wallet.sol";
@@ -17,7 +17,7 @@ abstract contract ModuleAuthFixed is ModuleAuth {
 
   constructor(address _factory) {
     // Build init code hash of the deployed wallets using that module
-    bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(address(this))));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(address(this)))));
 
     INIT_CODE_HASH = initCodeHash;
     FACTORY = _factory;
@@ -30,16 +30,16 @@ abstract contract ModuleAuthFixed is ModuleAuth {
    */
   function _isValidImage(bytes32 _imageHash) internal view override returns (bool, bool) {
     return ((address(
-      uint256(
+      uint160(uint256(
         keccak256(
           abi.encodePacked(
-            byte(0xff),
+            bytes1(0xff),
             FACTORY,
             _imageHash,
             INIT_CODE_HASH
           )
         )
-      )
+      ))
     ) == address(this)), false);
   }
 }

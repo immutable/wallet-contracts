@@ -1,7 +1,6 @@
 // Copyright Immutable Pty Ltd 2018 - 2023
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.7.6;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.17;
 
 import "./commons/ModuleAuthDynamic.sol";
 import "./commons/ModuleHooks.sol";

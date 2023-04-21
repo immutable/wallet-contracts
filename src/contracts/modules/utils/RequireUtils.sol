@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.7.6;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.17;
 
 import "../commons/interfaces/IModuleCalls.sol";
 import "../commons/interfaces/IModuleAuthUpgradable.sol";
@@ -46,7 +45,7 @@ contract RequireUtils is SignatureValidator {
 
   constructor(address _factory, address _mainModule) public {
     FACTORY = _factory;
-    INIT_CODE_HASH = keccak256(abi.encodePacked(Wallet.creationCode, uint256(_mainModule)));
+    INIT_CODE_HASH = keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule))));
   }
 
   /**
@@ -79,16 +78,16 @@ contract RequireUtils is SignatureValidator {
     } else {
       // Check counter-factual
       require(address(
-        uint256(
+        uint160(uint256(
           keccak256(
             abi.encodePacked(
-              byte(0xff),
+              bytes1(0xff),
               FACTORY,
               imageHash,
               INIT_CODE_HASH
             )
           )
-        )
+        ))
       ) == _wallet, "RequireUtils#publishConfig: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
 
       // Register known image-hash for counter-factual wallet
@@ -201,16 +200,16 @@ contract RequireUtils is SignatureValidator {
 
     // Check against counter-factual imageHash
     require(address(
-      uint256(
+      uint160(uint256(
         keccak256(
           abi.encodePacked(
-            byte(0xff),
+            bytes1(0xff),
             FACTORY,
             imageHash,
             INIT_CODE_HASH
           )
         )
-      )
+      ))
     ) == _wallet, "RequireUtils#publishInitialSigners: UNEXPECTED_COUNTERFACTUAL_IMAGE_HASH");
 
     // Emit event for easy config retrieval
