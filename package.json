@@ -42,6 +42,7 @@
   "devDependencies": {
     "@0xsequence/deployer": "^0.21.5",
     "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/hardware-wallets": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",

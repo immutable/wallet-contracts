@@ -9,6 +9,7 @@ import {
   ImmutableSigner__factory
 } from '../src/gen/typechain'
 
+import { LedgerSigner } from '@ethersproject/hardware-wallets'
 import { ContractFactory, BigNumber, providers, Wallet } from 'ethers'
 import fs from 'fs'
 
@@ -23,7 +24,10 @@ const prompt = ora()
  */
 
 const provider = new providers.Web3Provider(network.provider.send)
-const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
+
+const signer = new LedgerSigner(provider)
+// const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
+
 const txParams = {
   gasLimit: 6000000,
   gasPrice: BigNumber.from(10).pow(9).mul(2)
