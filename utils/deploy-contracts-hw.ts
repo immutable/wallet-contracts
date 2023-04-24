@@ -1,4 +1,4 @@
-import { network, run, tenderly } from 'hardhat'
+import { network, run, tenderly, ethers } from 'hardhat'
 import * as _ from 'lodash'
 import ora from 'ora'
 
@@ -75,14 +75,15 @@ const main = async () => {
   // TODO: check nonces?
   // FIXME: try/catch deployment errors?
   // FIXME: check expected addresses to verify if the contracts are already deployed?
-  const walletFactory = await new Factory__factory().connect(signer).deploy(adminAddress, deployerAddress, txParams)
+  const Factory = await ethers.getContractFactory('Factory')
+  const walletFactory = await Factory.connect(signer).deploy(adminAddress, deployerAddress, txParams)
   prompt.info(`Wallet Factory: ${walletFactory.address}`)
 
-  const mainModule = await new MainModule__factory().connect(signer).deploy(walletFactory.address, txParams)
-  prompt.info(`Main Module: ${mainModule.address}`)
+  // const mainModule = await new MainModule__factory().connect(signer).deploy(walletFactory.address, txParams)
+  // prompt.info(`Main Module: ${mainModule.address}`)
 
-  const immutableSigner = await new ImmutableSigner__factory().connect(signer).deploy(adminAddress, txParams)
-  prompt.info(`Immutable Signer: ${immutableSigner.address}`)
+  // const immutableSigner = await new ImmutableSigner__factory().connect(signer).deploy(adminAddress, txParams)
+  // prompt.info(`Immutable Signer: ${immutableSigner.address}`)
 
   // prompt.start(`writing deployment information to ${network.name}.json`)
   // fs.writeFileSync(
