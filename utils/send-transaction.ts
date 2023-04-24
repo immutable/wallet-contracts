@@ -36,7 +36,7 @@ const main = async () => {
   prompt.info(`Local User Address: ${await userSigner.getAddress()}`)
   prompt.info(`Local User Balance: ${await userSigner.getBalance()}`)
 
-  const walletAddress = '0xbC1BCA6D28444A1253303d262a6050295B809D38'
+  const walletAddress = '0x10672b50F596b1A995a97BAB087227E4A74dd63D'
   const networkId = 5
 
   // Connect to the generated user address

@@ -24,14 +24,14 @@ const prompt = ora()
  *   3. Deploy Immutable Signer
  */
 
-const provider = new providers.JsonRpcProvider('https://eth-goerli.g.alchemy.com/v2/SbVLuhFIDqX1e7AvsGoEdZBQWvSHdCBF')
+const provider = new providers.Web3Provider(network.provider.send)
 
 const signer = new LedgerSigner(provider, "hid", "44'/60'/0'/0/0")
-// const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
+//const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
 
 const txParams = {
-  gasLimit: 6000000,
-  gasPrice: BigNumber.from(10).pow(9).mul(16)
+  gasPrice: BigNumber.from(10).pow(9).mul(8),
+  type: 0,
 }
 
 const attempVerify = async <T extends ContractFactory>(
@@ -77,14 +77,18 @@ const main = async () => {
   // FIXME: try/catch deployment errors?
   // FIXME: check expected addresses to verify if the contracts are already deployed?
   const Factory = await ethers.getContractFactory('Factory')
-  const walletFactory = await Factory.connect(signer).deploy(adminAddress, deployerAddress, txParams)
+  const walletFactory = await Factory.connect(signer).deploy(adminAddress, deployerAddress, {...txParams, nonce: 4})
+  await walletFactory.deployed()
+
   prompt.info(`Wallet Factory: ${walletFactory.address}`)
 
-  // const mainModule = await new MainModule__factory().connect(signer).deploy(walletFactory.address, txParams)
-  // prompt.info(`Main Module: ${mainModule.address}`)
+  const mainModule = await new MainModule__factory().connect(signer).deploy(walletFactory.address, {...txParams, nonce: 5})
+  await mainModule.deployed()
+  prompt.info(`Main Module: ${mainModule.address}`)
 
-  // const immutableSigner = await new ImmutableSigner__factory().connect(signer).deploy(adminAddress, txParams)
-  // prompt.info(`Immutable Signer: ${immutableSigner.address}`)
+  const immutableSigner = await new ImmutableSigner__factory().connect(signer).deploy(adminAddress, {...txParams, nonce: 6})
+  await immutableSigner.deployed()
+  prompt.info(`Immutable Signer: ${immutableSigner.address}`)
 
   // prompt.start(`writing deployment information to ${network.name}.json`)
   // fs.writeFileSync(
@@ -106,9 +110,9 @@ const main = async () => {
 
   prompt.start(`verifying contracts`)
 
-  await attempVerify('Factory', Factory__factory, walletFactory.address)
-  await attempVerify('MainModule', MainModule__factory, mainModule.address, walletFactory.address)
-  await attempVerify('ImmutableSigner', ImmutableSigner__factory, immutableSigner.address, adminAddress)
+  // await attempVerify('Factory', Factory__factory, walletFactory.address)
+  // await attempVerify('MainModule', MainModule__factory, mainModule.address, walletFactory.address)
+  // await attempVerify('ImmutableSigner', ImmutableSigner__factory, immutableSigner.address, adminAddress)
 
   prompt.succeed()
 }
