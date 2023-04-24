@@ -30,7 +30,7 @@ const signer = new LedgerSigner(provider)
 
 const txParams = {
   gasLimit: 6000000,
-  gasPrice: BigNumber.from(10).pow(9).mul(2)
+  gasPrice: BigNumber.from(10).pow(9).mul(16)
 }
 
 const attempVerify = async <T extends ContractFactory>(
