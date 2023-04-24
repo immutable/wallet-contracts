@@ -74,8 +74,8 @@ export const networkRpcUrl = (network: EthereumNetworksTypes): string => {
       return 'https://nodes.sequence.app/avalanche-testnet'
 
     case 'goerli':
-      return 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'
-    // return 'https://eth-goerli.g.alchemy.com/v2/demo'
+      // return 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'
+      return 'https://eth-goerli.g.alchemy.com/v2/SbVLuhFIDqX1e7AvsGoEdZBQWvSHdCBF'
 
     default:
       return `https://${network}.infura.io/v3/${config['INFURA_API_KEY']}`
