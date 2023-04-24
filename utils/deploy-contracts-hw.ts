@@ -10,6 +10,7 @@ import {
 } from '../src/gen/typechain'
 
 import { LedgerSigner } from '@ethersproject/hardware-wallets'
+//import { LedgerSigner } from "@anders-t/ethers-ledger";
 import { ContractFactory, BigNumber, providers, Wallet } from 'ethers'
 import fs from 'fs'
 
@@ -25,12 +26,11 @@ const prompt = ora()
 
 const provider = new providers.Web3Provider(network.provider.send)
 
-const signer = new LedgerSigner(provider)
+const signer = new LedgerSigner(provider, "hid", "44'/60'/0'/0/0")
 // const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
 
 const txParams = {
   gasLimit: 6000000,
-  gasPrice: BigNumber.from(10).pow(9).mul(2)
 }
 
 const attempVerify = async <T extends ContractFactory>(

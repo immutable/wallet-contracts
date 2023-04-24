@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@0xsequence/deployer": "^0.21.5",
+    "@anders-t/ethers-ledger": "^1.0.4",
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/hardware-wallets": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
@@ -73,6 +74,7 @@
     "hardhat": "2.12.2",
     "hardhat-gas-reporter": "^1.0.9",
     "husky": "^4.2.3",
+    "node-hid": "^2.1.2",
     "rimraf": "^3.0.2",
     "solhint": "^3.3.4",
     "solidity-coverage": "^0.8.2",
