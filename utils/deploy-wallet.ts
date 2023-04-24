@@ -21,7 +21,7 @@ const userSigner = new Wallet('de380aa2999ac73079de7be1a10c2c7dd84eef06d51bfd9d5
 const txParams = {
   type: 0,
   gasLimit: 6000000,
-  gasPrice: BigNumber.from(10).pow(9).mul(2)
+  gasPrice: BigNumber.from(10).pow(9).mul(12)
 }
 
 const main = async () => {
@@ -36,12 +36,15 @@ const main = async () => {
   const walletDeployTx = await walletFactory.deploy(
     // Main Module
     '0x1C9d87494629A124C974EE8637F058Bd7b4b18D2',
-    // User EOA
-    encodeImageHash(2, [{ weight: 2, address: '0xEE7Ae158b79Fb581055E7d6313A4a5c4bFC7D1b0' }]),
-    txParams
+    encodeImageHash(1, [
+      // User EOA
+      { weight: 1, address: '0xEE7Ae158b79Fb581055E7d6313A4a5c4bFC7D1b0' },
+      // Immutable Signer
+      { weight: 1, address: '0x2CFA8f64e1B49A2DF28532D1D30Cda45117cF778' }
+    ])
   )
 
-  prompt.info(`User SCW Address: ${walletDeployTx.hash}`)
+  prompt.info(`Wallet deployment transaction hash: ${walletDeployTx.hash}`)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
