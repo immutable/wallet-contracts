@@ -23,7 +23,7 @@ const prompt = ora()
  *   3. Deploy Immutable Signer
  */
 
-const provider = new providers.Web3Provider(network.provider.send)
+const provider = new providers.JsonRpcProvider('https://eth-goerli.g.alchemy.com/v2/SbVLuhFIDqX1e7AvsGoEdZBQWvSHdCBF')
 
 const signer = new LedgerSigner(provider)
 // const signer = new Wallet('46143d571a8ba0e97e2d9322502b5eaf686b58f26d62967a123d5825ae68a7b7').connect(provider)
