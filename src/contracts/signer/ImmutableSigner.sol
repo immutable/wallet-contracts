@@ -1,6 +1,6 @@
 // Copyright Immutable Pty Ltd 2023
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import {SignatureValidator} from '../utils/SignatureValidator.sol';
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
