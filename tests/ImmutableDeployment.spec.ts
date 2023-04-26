@@ -40,7 +40,7 @@ describe('E2E Immutable Wallet Deployment', () => {
 
     immutableSigner = await new ImmutableSigner__factory()
       .connect(contractDeployerEOA)
-      .deploy(await adminEOA.getAddress(), await immutableEOA.getAddress())
+      .deploy(await adminEOA.getAddress(), await adminEOA.getAddress(), await immutableEOA.getAddress())
   })
 
   it('Should create deterministic contract addresses', async () => {
