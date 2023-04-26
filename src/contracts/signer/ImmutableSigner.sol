@@ -15,8 +15,9 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
   bytes32 public constant SIGNER_ADMIN = keccak256('SIGNER_ADMIN');
 
   // TODO: initialize the signer?
-  constructor(address _signerAdmin) {
+  constructor(address _signerAdmin, address _signer) {
     _grantRole(SIGNER_ADMIN, _signerAdmin);
+    signer = _signer;
   }
 
   function updateSigner(address _newSigner) public onlyRole(SIGNER_ADMIN) {
