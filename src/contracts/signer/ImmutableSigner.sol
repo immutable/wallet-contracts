@@ -39,7 +39,7 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
    * @param _signature  Signature byte array associated with _data
    * @return magicValue Magic value 0x1626ba7e if the signature is valid and 0x0 otherwise
    */
-  function isValidSignature(bytes32 _hash, bytes memory _signature) public view returns (bytes4) {
+  function isValidSignature(bytes32 _hash, bytes memory _signature) external view returns (bytes4) {
     if (recoverSigner(_hash, _signature) == signer) {
       return ERC1271_MAGICVALUE_BYTES32;
     }
