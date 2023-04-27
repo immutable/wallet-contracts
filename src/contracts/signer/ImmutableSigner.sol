@@ -29,6 +29,14 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
   }
 
   /*
+   * @dev Grants SIGNER_ADMIN_ROLE to an user.
+   * @param _signerAdmin Address that will be allowed to update the wallet signer.
+   */
+  function grantSignerRole(address _signerAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _grantRole(SIGNER_ADMIN_ROLE, _signerAdmin);
+  }
+
+  /*
    * @dev Updates the authorized public key address
    * @param _newSigner The address of the new authorized signer.
    */
