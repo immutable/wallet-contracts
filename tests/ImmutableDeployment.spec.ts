@@ -42,9 +42,7 @@ describe('E2E Immutable Wallet Deployment', () => {
       .connect(contractDeployerEOA)
       .deploy(await adminEOA.getAddress(), await walletDeployerEOA.getAddress())
 
-    mainModule = await new MainModule__factory()
-      .connect(contractDeployerEOA)
-      .deploy(factory.address)
+    mainModule = await new MainModule__factory().connect(contractDeployerEOA).deploy(factory.address)
 
     immutableSigner = await new ImmutableSigner__factory()
       .connect(contractDeployerEOA)
@@ -84,7 +82,6 @@ describe('E2E Immutable Wallet Deployment', () => {
     const walletAddress = addressOf(factory.address, mainModule.address, walletSalt)
     const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
     await walletDeploymentTx.wait()
-
 
     // Connect to the generated user address
     const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
@@ -133,7 +130,6 @@ describe('E2E Immutable Wallet Deployment', () => {
     const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
     await walletDeploymentTx.wait()
 
-
     // Connect to the generated user address
     const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
 
@@ -166,7 +162,9 @@ describe('E2E Immutable Wallet Deployment', () => {
       false
     )
 
-    await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith('ModuleAuth#_signatureValidation: INVALID_SIGNATURE')
+    await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
+      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+    )
   })
 
   it('Should not execute a transaction signed by the ImmutableSigner with the incorrect data', async () => {
@@ -178,7 +176,6 @@ describe('E2E Immutable Wallet Deployment', () => {
     const walletAddress = addressOf(factory.address, mainModule.address, walletSalt)
     const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
     await walletDeploymentTx.wait()
-
 
     // Connect to the generated user address
     const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
@@ -218,6 +215,65 @@ describe('E2E Immutable Wallet Deployment', () => {
       false
     )
 
-    await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith('ModuleAuth#_signatureValidation: INVALID_SIGNATURE')
+    await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
+      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+    )
+  })
+
+  it('Should not execute a transaction signed by an outdated signer', async () => {
+    // Deploy wallet
+    const walletSalt = encodeImageHash(2, [
+      { weight: 1, address: await userEOA.getAddress() },
+      { weight: 1, address: immutableSigner.address }
+    ])
+    const walletAddress = addressOf(factory.address, mainModule.address, walletSalt)
+    const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
+    await walletDeploymentTx.wait()
+
+    // Connect to the generated user address
+    const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
+
+    // Transfer funds to the SCW
+    const transferTx = await relayerEOA.sendTransaction({ to: walletAddress, value: 1 })
+    await transferTx.wait()
+
+    // Change the signer
+    expect(await immutableSigner.connect(adminEOA).updateSigner(await randomEOA.getAddress()))
+      .to.emit(immutableSigner, 'SignerUpdated')
+      .withArgs(await immutableEOA.getAddress(), await randomEOA.getAddress())
+
+    // Return funds
+    const transaction = {
+      delegateCall: false,
+      revertOnError: true,
+      gasLimit: 1000000,
+      target: await relayerEOA.getAddress(),
+      value: 1,
+      data: []
+    }
+
+    // Build meta-transaction
+    const networkId = (await hardhat.provider.getNetwork()).chainId
+    const nonce = 0
+    const data = encodeMetaTransactionsData(wallet.address, [transaction], networkId, nonce)
+
+    const signature = await walletMultiSign(
+      [
+        { weight: 1, owner: userEOA as ethers.Wallet },
+        // 03 -> Call the address' isValidSignature()
+        {
+          weight: 1,
+          owner: immutableSigner.address,
+          signature: (await ethSign(immutableEOA as ethers.Wallet, data)) + '03'
+        }
+      ],
+      2,
+      data,
+      false
+    )
+
+    await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
+      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+    )
   })
 })

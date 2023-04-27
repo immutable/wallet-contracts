@@ -10,16 +10,21 @@ import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
  *
  * @notice ERC-1271 Wallet implementation. Verifies signatures using a public
  * key in storage matching an offchain private key. The key can be upgraded by
- * the role SIGNER_ADMIN, set during initialization.
+ * the role SIGNER_ADMIN_ROLE, set during initialization.
  */
 contract ImmutableSigner is SignatureValidator, AccessControl {
   address public signer;
 
-  bytes32 public constant SIGNER_ADMIN = keccak256('SIGNER_ADMIN');
+  bytes32 public constant SIGNER_ADMIN_ROLE = keccak256('SIGNER_ADMIN_ROLE');
+
+  /*
+   * @notice Emitted whenever
+   */
+  event SignerUpdated(address indexed _previousSigner, address indexed _newSigner);
 
   constructor(address _rootAdmin, address _signerAdmin, address _signer) {
     _grantRole(DEFAULT_ADMIN_ROLE, _rootAdmin);
-    _grantRole(SIGNER_ADMIN, _signerAdmin);
+    _grantRole(SIGNER_ADMIN_ROLE, _signerAdmin);
     signer = _signer;
   }
 
@@ -27,8 +32,11 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
    * @dev Updates the authorized public key address
    * @param _newSigner The address of the new authorized signer.
    */
-  function updateSigner(address _newSigner) public onlyRole(SIGNER_ADMIN) {
+  function updateSigner(address _newSigner) public onlyRole(SIGNER_ADMIN_ROLE) {
+    address previousSigner = signer;
     signer = _newSigner;
+
+    emit SignerUpdated(previousSigner, _newSigner);
   }
 
   /**
