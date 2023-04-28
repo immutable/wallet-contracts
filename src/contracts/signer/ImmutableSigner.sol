@@ -18,7 +18,7 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
   bytes32 public constant SIGNER_ADMIN_ROLE = keccak256('SIGNER_ADMIN_ROLE');
 
   /*
-   * @notice Emitted whenever
+   * @notice Emitted whenever the authorized signer is updated
    */
   event SignerUpdated(address indexed _previousSigner, address indexed _newSigner);
 
