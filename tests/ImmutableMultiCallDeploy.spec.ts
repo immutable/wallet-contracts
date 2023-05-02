@@ -22,7 +22,6 @@ describe('Wallet Factory', function () {
 
     const MultiCall = await ethers.getContractFactory('MultiCallDeploy')
     const multiCall = await MultiCall.deploy(owner.address, executor.address)
-    await multiCall.connect(owner).grantExecutorRole(executor.address)
 
     const deployerRole = await factory.DEPLOYER_ROLE()
     await factory.connect(owner).grantRole(deployerRole, multiCall.address)
