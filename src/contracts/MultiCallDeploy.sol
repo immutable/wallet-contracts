@@ -22,7 +22,7 @@ contract MultiCallDeploy is AccessControl {
 
     /*
     * @dev Grants EXECUTOR_ROLE to an user.
-    * @param _executor Address that will be allowed to execute functions.
+    * @param _executor Address that will be allowed to execute functions
     */
     function grantExecutorRole(address _executor) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _grantRole(EXECUTOR_ROLE, _executor);
