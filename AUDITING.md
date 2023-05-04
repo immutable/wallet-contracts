@@ -6,32 +6,34 @@ As part of building the [Immutable Passport][passport] wallet, we are implementi
 
 The need for SCWs is driven by wanting to make accounts more secure in the case of externally owned accounts private key exfiltration on mobile platforms through malicious apps embedding Passport wallets through WebViews. The extra security comes from the wallets being multisig and verifying transactions using signatures from two parties: Immutable itself and the user. In this case, even when the user key is compromised, exfiltration of funds is still not possible.
 
-Immutable signs transactions after an OTP 2FA, which translates to 2FA security for the user assets. The wallets are counterfactual because since we use a StarkEx L2, the users might not need to interact with the address on EVM networks unless they are bridging their assets. This is, however, not the only use case, as we also want to support users native to zkEVM networks (or other EVM-compatible networks) in the future and not only StarkEx [^1].
+Immutable signs transactions after an OTP 2FA, which translates to 2FA security for the user assets. The wallets are counterfactual because we use a StarkEx L2 and the users might not need to interact with the address on EVM networks unless they are bridging their assets. This is, however, not the only use case, as we also want to support users native to zkEVM networks (or other EVM-compatible networks) not only StarkEx [^1].
 
 [^1]:
     One caveat we have identified is that different theoretically
     EVM-compatible networks have slightly different `CREATE2` behavior, which
     could lead to an user having different addresses in different networks.
 
-To implement this, we are using [0xSequence’s smart contract wallet][0xSequence], with modifications to the [factory contract][upstream-factory-contract] to better support counterfactual addresses and other details related to our implementation, for example access control and emitting events. We also added new supporting infrastructure and functionality:
+To implement this, we have modified the [0xSequence's smart contract wallet][0xSequence] to include the following features:
 
-[0xSequence]: https://github.com/0xsequence/wallet-contracts
-[upstream-factory-contract]: https://github.com/0xsequence/wallet-contracts/blob/master/src/contracts/Factory.sol
-
-- New [MainModule][main-module] to support wallets which can update their list of signers.
-- New [StartupWallet][startup-wallet] which acts as a temporary wallet placeholder that finds the
-  latest implementation at runtime during the execution of the first
-  transaction.
-- A [MultiCall contract][multicall-contract] that enables the SCW deployment to be bundled with its
-  first transaction.
-- [ImmutableSigner][immutable-signer]: a simplified SCW that can be used as a signer for the main
-  0xSequence wallet, enabling key rotation without changing the main wallet
-  signers.
-- An improved [Proxy contract][proxy-contract] that is gas-efficient and enables onchain
-  implementation address retrieval.
+- Modified [Factory contract][upstream-factory-contract] with better
+  counterfactual addresses support.
+- New [MainModule][main-module] to support wallets which can update their list
+  of signers.
+- New [StartupWallet][startup-wallet] which acts as a temporary main wallet
+  module placeholder that finds the latest implementation at runtime during the
+  execution of the first transaction.
+- A [MultiCall contract][multicall-contract] that enables the SCW deployment to
+  be bundled with its first transaction.
+- [ImmutableSigner][immutable-signer]: a simplified SCW that can be used as a
+  signer for the main 0xSequence wallet, enabling key rotation without changing
+  the main wallet signer.
+- An improved [Proxy contract][proxy-contract] that is gas-efficient and enables
+  onchain implementation address retrieval.
 
 A more exhaustive list of changes can be found in the [README.md](README.md).
 
+[0xSequence]: https://github.com/0xsequence/wallet-contracts
+[upstream-factory-contract]: https://github.com/0xsequence/wallet-contracts/blob/master/src/contracts/Factory.sol
 [main-module]: https://github.com/immutable/wallet-contracts/blob/main/src/contracts/modules/MainModuleDynamicAuth.sol
 [startup-wallet]: https://github.com/immutable/wallet-contracts/blob/main/src/contracts/startup/StartupWalletImpl.sol
 [multicall-contract]: https://github.com/immutable/wallet-contracts/blob/main/src/contracts/MultiCallDeploy.sol
@@ -63,7 +65,48 @@ Respectively building contract artifacts and running the test suites.
 
 ## Architecture
 
-![High Level Diagram](docs/img/high-level-diagram.png 'Interactions between the different contracts in this repo')
+![High Level Diagram](docs/img/high-level-diagram.jpg 'Interactions between the different contracts in this repo')
+
+The core functionality of the wallet is executing transactions. It also makes sure that:
+
+- The deployment and the first meta transaction of a wallet are executed as a
+  single root transaction.
+- The deployed wallet implementation is the latest at the time of deployment.
+- The wallet can modify its signers, given authorization from the previous
+  signers.
+- Immutable is one of the signers in all wallets, and is able to rotate its key
+  without changing the signer address.
+
+All of those constraints are displayed in the above diagram. The first ever
+transaction for a smart contract wallet would:
+
+1. An EOA with `EXECUTOR_ROLE` calls the `MultiCallDeploy.sol` contract to deploy
+   the user wallet and execute a transaction.
+2. `Factory.sol` deploys an instance of `WalletProxy.yul` to a deterministic
+   address (the user wallet address) based on its own address, the
+   `StartupWalletImpl.sol` address and the signers to the user SCW.
+3. `MultiCallDeploy.sol` calls the `execute()` function on the
+   `WalletProxy.yul`, which will delegate the call to the `StartupWalletImpl.sol`.
+4. `StartupWalletImpl.sol` then finds the most recent wallet implementation
+   address (`MainModuleDynamicAuth.sol`) using `LatestWalletImplLocator.sol`,
+   updates the proxy to point to the implementation in subsequent calls, and
+   delegates the call again to `MainModuleDynamicAuth.sol`.
+5. `MainModuleDynamicAuth.sol` verifies the singnature in the transaction by
+   checking the recovered signer against the user EOA and by calling
+   `ImmutableSigner.sol` (which is the second signer in the multisig).
+6. The transaction gets executed.
+
+In subsequent transactions the flow is much simpler:
+
+1. An EOA with `EXECUTOR_ROLE` calls the `MultiCallDeploy.sol` to execute a
+   transaction.
+2. `MultiCallDeploy.sol` calls the `execute()` function on the
+   `WalletProxy.yul`, which will delegate the call to the
+   `MainModuleDynamicAuth.sol`.
+3. `MainModuleDynamicAuth.sol` verifies the singnature in the transaction by
+   checking the recovered signer against the user EOA and by calling
+   `ImmutableSigner.sol` (which is the second signer in the multisig).
+4. The transaction gets executed.
 
 ## Incremental Deployment
 
@@ -90,7 +133,7 @@ The wallet factory contract interacts with other contracts and externally owned 
   - Admin: can grant and revoke "Wallet Deployment" permissions to addresses.
 - Contracts
   - Wallet Proxies
-  - Wallet Main Module (or simply _"Wallet"_)
+  - StartupWalletImpl
 
 [^4]:
     Note that we support both cases where those are the same EOA or different
@@ -98,9 +141,9 @@ The wallet factory contract interacts with other contracts and externally owned 
 
 ![Data Flow](docs/img/data-flow.jpg)
 
-The wallet factory contract is a modified version of the 0xSequence factory contract, and the Wallet Main Module is a customized 0xSequence wallet contract.
+The wallet factory contract is a modified version of the 0xSequence factory contract, and the StartupWalletImpl contract takes care of updating the proxy to point to the latest wallet implementation address and delegating to that address.
 
-Upgradeability of the wallet implementation is achieved by having the wallet main module contract update the address used by the Wallet Proxy (which is possible because the wallet proxy uses a delegate call).
+Upgradeability of the wallet implementation is achieved by having the wallet main module contract (i.e.: the wallet implementation) update the address used by the wallet proxy (which is possible because the wallet proxy uses a delegate call).
 
 Upgradeability of signers is achieved by storing a hash of the signers in the wallet storage and allowing the wallet to call itself to change the stored value.
 
