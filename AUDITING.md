@@ -246,6 +246,15 @@ It has four sections:
 
 [new-testing]: https://github.com/immutable/wallet-contracts/blob/main/tests/ImmutableFactory.spec.ts
 
+### ImmutableSigner.spec.ts
+
+Focuses on unit testing the `ImmutableSigner.sol` contract.
+
+- Allows valid signatures.
+- Disallows invalid signatures.
+- Properly rotates signers.
+- Proper RBAC controls work.
+
 # Added contracts
 
 ## MultiCallDeploy
