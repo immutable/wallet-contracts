@@ -68,29 +68,6 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
   }
 
   /*
-   * @dev Updates the authorized public key address. Allows a secondary rollover
-   * public key to remain active until a specified timestmap.
-   *
-   * @param _newSigner The address of the new authorized signer.
-   * @param _rolloverSigner A temporary authorized signer.
-   * @param _rolloverValidUntil Timestamp after which the temporary signer is expired.
-   */
-  function updateSignerWithRolloverPeriod(
-    address _newSigner,
-    address _rolloverSigner,
-    uint256 _rolloverValidUntil
-  ) public onlyRole(SIGNER_ADMIN_ROLE) {
-    address previousSigner = primarySigner;
-    primarySigner = _newSigner;
-
-    rolloverSigner.signer = _rolloverSigner;
-    rolloverSigner.validUntil = _rolloverValidUntil;
-
-    emit PrimarySignerUpdated(previousSigner, _newSigner);
-    emit RolloverSignerEnabled(_rolloverSigner, _rolloverValidUntil);
-  }
-
-  /*
    * @dev Updates the authorized public key address. Allows the previous public
    * key to remain valid for a specified rollover period.
    *
