@@ -108,6 +108,20 @@ In subsequent transactions the flow is much simpler:
    `ImmutableSigner.sol` (which is the second signer in the multisig).
 4. The transaction gets executed.
 
+> 🔀 **Alternate Flow**
+>
+> Alternatively, subsequent transactions could also fully skip the
+> `MultiCallDeploy.sol` contract for improved gas usage, although this would
+> require knowledge if `WalletProxy.yul` for the specific wallet in question is
+> deployed or not:
+>
+> 1. An EOA calls `execute()` on `WalletProxy.yul` which delegates to
+>    `MainModuleDynamicAuth.sol`
+> 2. `MainModuleDynamicAuth.sol` verifies the singnature in the transaction by
+>    checking the recovered signer against the user EOA and by calling
+>    `ImmutableSigner.sol` (which is the second signer in the multisig).
+> 3. The transaction gets executed.
+
 ## Incremental Deployment
 
 Since we are building counterfactual infrastructure, it has several levels of materialization, i.e.: it’s incrementally deployed. These levels are:
@@ -225,26 +239,65 @@ Here we walk through the end to end user journeys to give some extra context.
 
 ## Testing
 
-We run tests against the full 0xSequence wallet contracts testing suite to ensure no regression has been introduced with our Factory changes, in addition to a new smaller testing suite written by us for the factory contract specifically. These are all hardhat based tests.
+We run tests against the full 0xSequence wallet contracts testing suite to
+ensure no regression has been introduced with our changes, in addition to a new
+smaller testing suite written by us for the additional contracts. These
+are all hardhat based tests.
 
-The 0xSequence testing suite was modified in three aspects, however:
+The 0xSequence testing suite was modified in some aspects, however:
 
-- Gas was increased in gas testing, due to the extra instructions added to `deploy()`.
-- Code was added to give `DEPLOYER_ROLE` to the testing addresses so they could call `deploy()`.
-- Code that required the `deploy()` function to not revert when deployment failed was modified to expect a revert
+- Gas limits were changed in some places.
+- Code was added to give `DEPLOYER_ROLE` to the testing addresses so they could
+  call `Factory.deploy()`.
+- Code that required the `Factory.deploy()` function to not revert when
+  deployment failed was modified to expect a revert.
+- Changes to constructor arguments were reflected in tests.
 
 ## New Testing Suite
 
-The [new testing suite][new-testing] has some overlap with 0xSequence’s original suite but focuses specifically on the factory contract.
+The [new testing suite][new-testing] has some overlap with 0xSequence’s original
+suite but focuses specifically on the added contracts. The new test files use
+the `Immutable` prefix to differentiate from existing 0xSequence test files.
 
-It has four sections:
+[new-testing]: https://github.com/immutable/wallet-contracts/blob/main/tests/
+
+### ImmutableDeployment.spec.ts
+
+Focuses on testing the intended end to end deployment, transaction signing and
+transaction execution it's the main testing provided for `ImmutableSigner.sol`.
+It's a good first stop to understanding the architecture.
+
+It tests:
+
+- Deterministic deployment addresses.
+- 2 of 2 transaction execution in the intended configuration.
+- Updating the `ImmutableSigner.sol` EOA signer.
+
+### ImmutableFactory.spec.ts
+
+Has four sections:
 
 - Testing the correctness of the new `getAddress()` function.
 - Testing the correctness of the modified `deploy()` function.
 - Testing negative access to the `deploy()` function.
-- Testing regressions on expected wallet and proxy behavior when using the new factory contract.
+- Testing regressions on expected wallet and proxy behavior when using the new
+  factory contract.
 
-[new-testing]: https://github.com/immutable/wallet-contracts/blob/main/tests/ImmutableFactory.spec.ts
+### ImmutableMultiCallDeploy.spec.ts
+
+- Tests RBAC on the `deployExecute()` and `deployAndExecute()` functions.
+- Tests wallet deployment.
+- Tests transaction execution.
+
+### ImmutableStartup.spec.ts
+
+Tests the process of pointing the wallet proxies to the startup contract
+initially, and then redirecting to the actual implementation after the first
+transaction.
+
+- Tests implementation upgrades using the startup pattern.
+- Tests initialization to latest implementation.
+- Tests default functionality when using the startup pattern.
 
 # Added contracts
 
@@ -283,7 +336,6 @@ ImmutableSigner.sol is a smart contract used to store the public key of the Immu
 ImmutableSigner.sol may only store a single signer address at a time, and uses `updateSigner()` (inclusive of access control) to update the signer to a new signer. This stored signer is what the supplied signatures are validated against.
 
 Delegating the signature validation responsibility to the Immutable signer requires the use of the
-
 `IERC1271` interface. The wallet module will call the interface on the Immutable Signer, supplying a hash and signature, if the validation succeeds, the `IERC1271_MAGICVALUE` is returned, allowing the transaction flow to continue. This validation flow requires the use of `DYNAMIC_SIGNATURE` flag which is set off-chain in the signing process.
 
 ![Immutable Signer](docs/img/immutable-signer.png)
@@ -333,7 +385,7 @@ MainModuleDynamicAuth.sol is one of the main wallet implementations, along MainM
 
 ## Functionality and usage
 
-The main goal of this contract is to be a composite implementation of the behavior in both MainModule.sol and MainModuleUpgradable.sol: it initially users the authorization method of checking the signers in a transaction match the signers used to initialize the SCW address by the wallet factory (i.e.: it’s initially tied to the SCW address), but then it stores that signer hash (called image hash) and uses it in further verifications. This way, the signers of a wallet can be updated without changing the contract address after the initial SCW deployment.
+The main goal of this contract is to be a composite implementation of the behavior in both MainModule.sol and MainModuleUpgradable.sol: it initially uses the authorization method of checking the signers in a transaction match the signers used to initialize the SCW address by the wallet factory (i.e.: it’s initially tied to the SCW address), but then it stores that signer hash (called image hash) and uses it in further verifications. This way, the signers of a wallet can be updated without changing the contract address after the initial SCW deployment.
 
 This check is implemented by `_isValidImage(bytes32)` which is in turn called by the core of the wallet authentication implementation in ModuleAuth.sol.
 
