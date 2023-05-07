@@ -41,8 +41,10 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
     primarySigner = _signer;
 
     // We do not need a rollover signer initially as there's no rollover
-    // happening, so we make sure validUntil is in the past.
-    rolloverSigner.validUntil = 0;
+    // happening, so validUntil must be in the past. Luckily that aligns with
+    // its default initial value.
+    //
+    // rolloverSigner.validUntil = 0;
   }
 
   /*
