@@ -299,6 +299,15 @@ transaction.
 - Tests initialization to latest implementation.
 - Tests default functionality when using the startup pattern.
 
+### ImmutableSigner.spec.ts
+
+Focuses on unit testing the `ImmutableSigner.sol` contract.
+
+- Allows valid signatures.
+- Disallows invalid signatures.
+- Properly rotates signers.
+- Proper RBAC controls work.
+
 # Added contracts
 
 ## MultiCallDeploy
