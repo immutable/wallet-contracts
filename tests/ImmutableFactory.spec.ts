@@ -280,7 +280,7 @@ describe('Wallet Factory', function () {
             },
             {
               weight: 1,
-              owner: signer1 // invalid signer
+              owner: signer1 // invalid  signer
             }
           ],
           2,
