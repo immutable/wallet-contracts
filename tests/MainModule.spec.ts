@@ -33,11 +33,13 @@ import {
   DelegateCallMock__factory,
   HookMock__factory,
   ModuleMock__factory,
+  AlwaysRevertMock__factory,
   MainModule,
   MainModuleUpgradable,
   Factory,
   CallReceiverMock,
   ModuleMock,
+  AlwaysRevertMock,
   HookCallerMock,
   HookMock,
   DelegateCallMock,
@@ -1610,6 +1612,37 @@ contract('MainModule', (accounts: string[]) => {
         const data = ethers.utils.defaultAbiCoder.encode(['bytes4'], [selector])
         await web3.eth.sendTransaction({ from: accounts[0], to: wallet.address, data: data })
       })
+      it('Should not forward msg.data with less than 4 bytes', async () => {
+        const alwaysRevertMock = await new AlwaysRevertMock__factory().connect(signer).deploy()
+        const paddedSelector = '0x11223300'
+
+        const transaction = {
+          delegateCall: false,
+          revertOnError: true,
+          gasLimit: optimalGasLimit,
+          target: wallet.address,
+          value: ethers.constants.Zero,
+          data: wallet.interface.encodeFunctionData('addHook', [paddedSelector, alwaysRevertMock.address])
+        }
+
+        await signAndExecuteMetaTx(wallet, owner, [transaction], networkId)
+
+        // Calling the wallet with '0x112233' should not forward the call to the hook
+        // Here the msg.data.length is < 4, thus the call should not be forwarded to the always reverting mock
+        const tx = hardhat.provider
+          .getSigner()
+          .sendTransaction({ to: wallet.address, data: '0x112233' })
+          .then(t => t.wait())
+        await expect(tx).to.be.fulfilled
+
+        // Calling the wallet with '0x11223300' should forward the call to the hook (and thus revert)
+        const tx2 = hardhat.provider
+          .getSigner()
+          .sendTransaction({ to: wallet.address, data: '0x11223300' })
+          .then(t => t.wait())
+        await expect(tx2).to.be.rejected
+      })
+
       it('Should use hooks storage key', async () => {
         const selector = ethers.utils.id('onHookMockCall(uint256)').substring(0, 10)
         const subkey = ethers.utils.defaultAbiCoder.encode(['bytes4'], [selector])

@@ -24,15 +24,7 @@ describe('E2E Immutable Wallet Deployment', () => {
   const IMMUTABLE_SIGNER_NONCE = 3
 
   beforeEach(async () => {
-    [
-      userEOA,
-      immutableEOA,
-      randomEOA,
-      adminEOA,
-      walletDeployerEOA,
-      relayerEOA,
-      contractDeployerEOA
-    ] = await hardhat.getSigners()
+    ;[userEOA, immutableEOA, randomEOA, adminEOA, walletDeployerEOA, relayerEOA, contractDeployerEOA] = await hardhat.getSigners()
 
     // Matches the production environment where the first transaction (nonce 0)
     // is used for testing.

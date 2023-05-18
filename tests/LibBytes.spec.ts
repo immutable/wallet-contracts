@@ -75,10 +75,7 @@ contract('LibBytes', (accounts: string[]) => {
       expect(res[1]).to.eq.BN(20)
     })
     it('Should read address at given index', async () => {
-      const data = web3.utils
-        .randomHex(13)
-        .concat(addr.slice(2))
-        .concat(web3.utils.randomHex(6).slice(2))
+      const data = web3.utils.randomHex(13).concat(addr.slice(2)).concat(web3.utils.randomHex(6).slice(2))
 
       const res = await libBytes.readAddress(data, 13)
       expect(res[0]).to.equal(addr)
@@ -115,10 +112,7 @@ contract('LibBytes', (accounts: string[]) => {
       expect(res[1]).to.eq.BN(66)
     })
     it('Should read bytes66 at given index', async () => {
-      const data = web3.utils
-        .randomHex(18)
-        .concat(bytes66.slice(2))
-        .concat(web3.utils.randomHex(62).slice(2))
+      const data = web3.utils.randomHex(18).concat(bytes66.slice(2)).concat(web3.utils.randomHex(62).slice(2))
 
       const res = await libBytes.readBytes66(data, 18)
       expect(res[0]).to.equal(bytes66)
@@ -154,10 +148,7 @@ contract('LibBytes', (accounts: string[]) => {
       expect(res).to.equal(bytes32)
     })
     it('Should read bytes32 at given index', async () => {
-      const data = web3.utils
-        .randomHex(12)
-        .concat(bytes32.slice(2))
-        .concat(web3.utils.randomHex(44).slice(2))
+      const data = web3.utils.randomHex(12).concat(bytes32.slice(2)).concat(web3.utils.randomHex(44).slice(2))
 
       const res = await libBytes.readBytes32(data, 12)
       expect(res).to.equal(bytes32)
@@ -209,21 +200,27 @@ contract('LibBytes', (accounts: string[]) => {
     let size
     let bytes
 
-    const modes = [{
-      name: "Big bytes",
-      size: () => ethers.BigNumber.from(web3.utils.randomHex(2)).toNumber()
-    }, {
-      name: "Max bytes",
-      size: () => 65535
-    }, {
-      name: "Small bytes",
-      size: () => ethers.BigNumber.from(web3.utils.randomHex(1)).toNumber()
-    }].concat([...new Array(130)].map((_, i) => ({
-      name: `${i} bytes`,
-      size: () => i
-    })))
+    const modes = [
+      {
+        name: 'Big bytes',
+        size: () => ethers.BigNumber.from(web3.utils.randomHex(2)).toNumber()
+      },
+      {
+        name: 'Max bytes',
+        size: () => 65535
+      },
+      {
+        name: 'Small bytes',
+        size: () => ethers.BigNumber.from(web3.utils.randomHex(1)).toNumber()
+      }
+    ].concat(
+      [...new Array(130)].map((_, i) => ({
+        name: `${i} bytes`,
+        size: () => i
+      }))
+    )
 
-    modes.forEach((mode) => {
+    modes.forEach(mode => {
       context(mode.name, () => {
         beforeEach(async () => {
           size = mode.size()
@@ -237,10 +234,7 @@ contract('LibBytes', (accounts: string[]) => {
           expect(res[1]).to.eq.BN(size)
         })
         it('Should read bytes at given index', async () => {
-          const data = web3.utils
-            .randomHex(12)
-            .concat(bytes.slice(2))
-            .concat(web3.utils.randomHex(44).slice(2))
+          const data = web3.utils.randomHex(12).concat(bytes.slice(2)).concat(web3.utils.randomHex(44).slice(2))
 
           const res = await libBytes.readBytes(data, 12, size)
           expect(res[0]).to.equal(size === 0 ? null : bytes)

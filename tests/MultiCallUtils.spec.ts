@@ -15,8 +15,8 @@ contract('Multi call utils', (accounts: string[]) => {
 
   before(async () => {
     signer = (await hardhat.getSigners())[0]
-    multiCall = await (new MultiCallUtils__factory()).connect(signer).deploy()
-    callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+    multiCall = await new MultiCallUtils__factory().connect(signer).deploy()
+    callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
   })
 
   beforeEach(async () => {
@@ -224,9 +224,7 @@ contract('Multi call utils', (accounts: string[]) => {
           revertOnError: false,
           target: callReceiver.address,
           data: callReceiver.interface.encodeFunctionData('testCall', [111, bytes]),
-          gasLimit: b(2)
-            .pow(256)
-            .sub(b(1)),
+          gasLimit: b(2).pow(256).sub(b(1)),
           value: 0
         }
       ])

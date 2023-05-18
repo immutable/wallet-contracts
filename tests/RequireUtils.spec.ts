@@ -100,9 +100,9 @@ contract('Require utils', (accounts: string[]) => {
       expect((await callReceiver.lastValA()).toNumber()).to.eq.BN(valA)
       expect(await callReceiver.lastValB()).to.equal(valB)
     })
-// TODO: investigate why this is failing with gas limits. 
-// This functionality is for  fast lookup of a wallet of a wallet based on its signer members, 
-// and indendent of required functionality (deployment, upgrading, transaction submission, 2-of-2 multi-sig ect), thus leaving it OOS for now is fine
+    // TODO: investigate why this is failing with gas limits.
+    // This functionality is for  fast lookup of a wallet of a wallet based on its signer members,
+    // and indendent of required functionality (deployment, upgrading, transaction submission, 2-of-2 multi-sig ect), thus leaving it OOS for now is fine
 
     it('Should fail if signer is not new', async () => {
       const message = ethers.utils.hexlify(ethers.utils.randomBytes(96))

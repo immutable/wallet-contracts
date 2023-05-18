@@ -87,7 +87,9 @@ describe('Wallet Factory', function () {
     it('Should fail with a CFA mismatch', async function () {
       const owner_b = new ethers.Wallet(ethers.utils.randomBytes(32))
       const salt = encodeImageHash(1, [{ weight: 1, address: owner_b.address }])
-      const { factory, mainModule, multiCall, acc1, executor, owner, networkId, optimalGasLimit } = await loadFixture(setupFactoryFixture)
+      const { factory, mainModule, multiCall, acc1, executor, owner, networkId, optimalGasLimit } = await loadFixture(
+        setupFactoryFixture
+      )
 
       // CFA
       const cfa = addressOf(factory.address, mainModule.address, salt)
@@ -227,8 +229,16 @@ describe('Wallet Factory', function () {
       const sig = walletMultiSign([{ weight: 1, owner: owner_d }], 1, data, false)
 
       // Execution
-      await expect(multiCall.connect(acc1).deployExecute(mainModule.address, salt, factory.address, [transaction], 0, sig)).to.be.revertedWith("AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63")
-      await expect(multiCall.connect(acc1).deployAndExecute(cfa, mainModule.address, salt, factory.address, [transaction], 0, sig)).to.be.revertedWith("AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63")
+      await expect(
+        multiCall.connect(acc1).deployExecute(mainModule.address, salt, factory.address, [transaction], 0, sig)
+      ).to.be.revertedWith(
+        'AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63'
+      )
+      await expect(
+        multiCall.connect(acc1).deployAndExecute(cfa, mainModule.address, salt, factory.address, [transaction], 0, sig)
+      ).to.be.revertedWith(
+        'AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63'
+      )
     })
   })
 })
