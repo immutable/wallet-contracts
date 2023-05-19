@@ -114,6 +114,7 @@ contract SignatureValidator {
     address _signer,
     bytes memory _signature
   ) internal view returns (bool valid) {
+    // Check for valid signature length
     if (_signature.length == 0) {
       revert("SignatureValidator#isValidSignature: signature is empty");
     }
