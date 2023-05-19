@@ -14,8 +14,6 @@ describe('Wallet Factory', function () {
     const WalletFactory = await ethers.getContractFactory('Factory')
     const factory = await WalletFactory.deploy(owner.address, await owner.getAddress())
 
-    const test =  ethers.abiCoder.encode(["bytes"], ["0x"])
-
     const MainModule = await ethers.getContractFactory('MainModuleMock')
     const mainModule = await MainModule.deploy(factory.address)
 
