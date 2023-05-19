@@ -52,7 +52,7 @@ contract MultiCallUtils {
   }
 
   function callBlockNumber() external view returns (uint256) {
-    return block.gaslimit;
+    return block.number;
   }
 
   function callTimestamp() external view returns (uint256) {
