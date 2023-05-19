@@ -93,6 +93,14 @@ jobs:
             */*/node_modules
           key: ${{ runner.os }}-lerna-${{ hashFiles('**/package.json', '**/yarn.lock') }}
       - run: yarn test
+  slither:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+        with:
+          target: 'src/contracts/'
+
 
   # coverage:
   #   name: Coverage
