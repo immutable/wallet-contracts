@@ -114,6 +114,10 @@ contract SignatureValidator {
     address _signer,
     bytes memory _signature
   ) internal view returns (bool valid) {
+    if (_signature.length == 0) {
+      revert("SignatureValidator#isValidSignature: signature is empty");
+    }
+    
     uint256 signatureType = uint8(_signature[_signature.length - 1]);
 
     if (signatureType == SIG_TYPE_EIP712 || signatureType == SIG_TYPE_ETH_SIGN) {

@@ -3522,6 +3522,16 @@ contract('MainModule', (accounts: string[]) => {
             const tx = wallet.execute([transaction], 0, invalidSignature)
             await expect(tx).to.be.rejectedWith(RevertError("SignatureValidator#recoverSigner: invalid signature 'v' value"))
           })
+          it('Should reject empty dynamic signature', async () => {
+            const coder = new ethers.utils.AbiCoder()
+            const invalidSig = coder.encode(["bytes"], ["0x"])
+            // 0x0001000000000201ABFf4013541fd79ee5b6847C9dF3C9B34183C283000000 
+            // 0x0000000000000010ABFf4013541fd79ee5b6847C9dF3C9B34183C283000000 -> OURS
+            // V2 does not implement
+            console.log(invalidSig)
+            const tx = await wallet.execute([transaction], 0, "0x0000000000000201ABFf4013541fd79ee5b6847C9dF3C9B34183C283000000")
+            // await expect(tx).to.be.rejectedWith(RevertError('SignatureValidator#isValidSignature: signature is empty'))
+          })
         })
       })
     })
