@@ -8,7 +8,7 @@ import { CustomModule__factory, MainModule } from '../src/gen/typechain'
 import { startup } from 'src/gen/adapter'
 
 describe('Wallet Factory', function () {
-  //  let salts: string[] = []
+//  let salts: string[] = []
 
   async function setupStartupFixture() {
     // Contracts are deployed using the first signer/account by default
@@ -20,7 +20,7 @@ describe('Wallet Factory', function () {
     const LatestWalletImplLocator = await ethers.getContractFactory('LatestWalletImplLocator')
     const latestWalletImplLocator = await LatestWalletImplLocator.deploy(owner.address, owner.address)
 
-    const StartupWalletImpl = await ethers.getContractFactory('StartupWalletImpl')
+    const StartupWalletImpl= await ethers.getContractFactory('StartupWalletImpl')
     const startupWalletImpl = await StartupWalletImpl.deploy(latestWalletImplLocator.address)
 
     const MainModule = await ethers.getContractFactory('MainModuleMockV1')
@@ -28,7 +28,11 @@ describe('Wallet Factory', function () {
 
     await latestWalletImplLocator.changeWalletImplementation(mainModuleV1.address)
 
+
+
+
     const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
+
 
     return {
       owner,
@@ -38,20 +42,22 @@ describe('Wallet Factory', function () {
       startupWalletImpl,
       salt,
       latestWalletImplLocator
+
     }
   }
 
   describe('Startup', function () {
+
     it('Should deploy wallet proxy to the expected address', async function () {
       const { factory, startupWalletImpl, salt } = await loadFixture(setupStartupFixture)
 
       expect(await factory.deploy(startupWalletImpl.address, salt))
-        .to.emit(factory, 'WalletDeployed')
-        .withArgs(addressOf(factory.address, startupWalletImpl.address, salt), startupWalletImpl.address, salt)
+          .to.emit(factory, 'WalletDeployed')
+          .withArgs(addressOf(factory.address, startupWalletImpl.address, salt), startupWalletImpl.address, salt)
 
       const deployedContract = await ethers.getContractAt(
-        'MainModuleMockV1',
-        addressOf(factory.address, startupWalletImpl.address, salt)
+          'MainModuleMockV1',
+          addressOf(factory.address, startupWalletImpl.address, salt)
       )
 
       // Attempt a function call to check that the contract has been deployed.
@@ -68,15 +74,16 @@ describe('Wallet Factory', function () {
 
       await factory.deploy(startupWalletImpl.address, salt)
       const deployedContract = await ethers.getContractAt(
-        'IWalletProxy',
-        addressOf(factory.address, startupWalletImpl.address, salt)
-      )
+          'IWalletProxy',
+          addressOf(factory.address, startupWalletImpl.address, salt)
+        )
 
-      expect(await deployedContract.PROXY_getImplementation()).to.equal(startupWalletImpl.address)
+        expect(await deployedContract.PROXY_getImplementation()).to.equal(startupWalletImpl.address)
     })
 
+
     it('Get implementation after first transaction should indicate implementation', async function () {
-      const { factory, mainModuleV1, startupWalletImpl } = await loadFixture(setupStartupFixture)
+      const { factory, mainModuleV1, startupWalletImpl} = await loadFixture(setupStartupFixture)
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
@@ -121,11 +128,15 @@ describe('Wallet Factory', function () {
       expect(await deployedProxy.PROXY_getImplementation()).to.equal(mainModuleV1.address)
     })
 
+
+
+
     it('Should be able to upgrade implementation contracts', async function () {
       const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
+
 
       //console.log("Deploy wallet proxy using MainModuleMockV1")
       await factory.deploy(startupWalletImpl.address, salt)
@@ -135,7 +146,8 @@ describe('Wallet Factory', function () {
       // Check the wallet implementation version
       expect(await wallet.version()).to.equal(1)
 
-      const walletMainModule = (await ethers.getContractAt('MainModuleMockV1', deployedAddress)) as MainModule
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
+
 
       //console.log("Deploy MainModuleMockV2")
       const MainModuleV2 = await ethers.getContractFactory('MainModuleMockV2')
@@ -163,6 +175,7 @@ describe('Wallet Factory', function () {
       // Check the wallet implementation version
       expect(await wallet.version()).to.equal(2)
 
+
       // Now check that a transaction can be executed
       //console.log("Execute a function call to Call Receiver Mock")
       const valA = 7
@@ -186,16 +199,19 @@ describe('Wallet Factory', function () {
       expect(await callReceiver.lastValB()).to.equal(valB)
     })
 
+
     it('Deploying using upgrade should work', async function () {
       const { factory, startupWalletImpl, latestWalletImplLocator } = await loadFixture(setupStartupFixture)
 
       const MainModuleV2 = await ethers.getContractFactory('MainModuleMockV2')
       const mainModuleV2 = await MainModuleV2.deploy(factory.address, startupWalletImpl.address)
-
+      
       await latestWalletImplLocator.changeWalletImplementation(mainModuleV2.address)
+
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
+
 
       //console.log("Deploy wallet proxy using MainModuleMockV2")
       await factory.deploy(startupWalletImpl.address, salt)
@@ -211,7 +227,7 @@ describe('Wallet Factory', function () {
 
       // Now check that a transaction can be executed
       //console.log("Execute a function call to Call Receiver Mock")
-      const walletMainModule = (await ethers.getContractAt('MainModuleMockV1', deployedAddress)) as MainModule
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
       const valA = 7
       const valB = '0x0d'
       const CallReceiver = await ethers.getContractFactory('CallReceiverMock')
@@ -237,17 +253,21 @@ describe('Wallet Factory', function () {
       expect(await walletAsProxy.PROXY_getImplementation()).to.equal(mainModuleV2.address)
     })
 
+
+
+
     it('Should be able to execute multiple meta transactions', async function () {
       const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
 
+
       //console.log("Deploy wallet proxy using MainModuleMockV1")
       await factory.deploy(startupWalletImpl.address, salt)
       const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
 
-      const walletMainModule = (await ethers.getContractAt('MainModuleMockV1', deployedAddress)) as MainModule
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
 
       // Now check that a transaction can be executed
       // This will be authenticated based on the deployed address
@@ -272,6 +292,7 @@ describe('Wallet Factory', function () {
       expect(await callReceiver.lastValA()).to.equal(valA)
       expect(await callReceiver.lastValB()).to.equal(valB)
 
+
       // Now check that a second transaction can be executed
       // This will be authenticated solely based on the image Hash
       const valC = 6
@@ -293,18 +314,20 @@ describe('Wallet Factory', function () {
       expect(await callReceiver.lastValB()).to.equal(valD)
     })
 
+
     it('Check isSignatureValid before the first transaction', async function () {
       const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
 
+
       //console.log("Deploy wallet proxy using MainModuleMockV1")
       await factory.deploy(startupWalletImpl.address, salt)
       const deployedAddress = addressOf(factory.address, startupWalletImpl.address, salt)
 
       const wallet = await ethers.getContractAt('MainModuleMockV1', deployedAddress)
-      const walletMainModule = (await ethers.getContractAt('MainModuleMockV1', deployedAddress)) as MainModule
+      const walletMainModule = await ethers.getContractAt('MainModuleMockV1', deployedAddress) as MainModule
 
       expect(await wallet.version()).to.equal(1)
 
@@ -330,5 +353,7 @@ describe('Wallet Factory', function () {
       isValidSigFuncSelector = await wallet['isValidSignature(bytes32,bytes)'](hash, signature)
       expect(parseInt(isValidSigFuncSelector, 16)).to.equal(0x1626ba7e)
     })
+
   })
 })
+

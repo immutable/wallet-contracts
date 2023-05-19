@@ -280,7 +280,7 @@ describe('Wallet Factory', function () {
             },
             {
               weight: 1,
-              owner: signer1 // invalid  signer
+              owner: signer1 // invalid signer
             }
           ],
           2,
@@ -307,11 +307,11 @@ describe('Wallet Factory', function () {
       )) as MainModule
 
       const networkId = (await ethers.provider.getNetwork()).chainId
-
+    
       // Retrieve implementation from Proxy's storage
       const proxy = await ethers.getContractAt('IWalletProxy', await addressOf(factory.address, mainModule.address, salt))
       expect(await proxy.PROXY_getImplementation()).to.be.equal(mainModule.address)
-
+ 
       // upgrade implementation tx
       const transaction = {
         delegateCall: false,

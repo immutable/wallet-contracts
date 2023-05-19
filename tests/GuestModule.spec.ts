@@ -20,9 +20,9 @@ contract('GuestModule', (accounts: string[]) => {
       signer = (await hardhat.getSigners())[0]
 
       // Deploy
-      guestModule = await new GuestModule__factory().connect(signer).deploy()
-      callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
-      hookMock = await new HookCallerMock__factory().connect(signer).deploy()
+      guestModule = await (new GuestModule__factory()).connect(signer).deploy()
+      callReceiver = await (new CallReceiverMock__factory()).connect(signer).deploy()
+      hookMock = await (new HookCallerMock__factory()).connect(signer).deploy()
     })
 
     let valA
@@ -100,7 +100,7 @@ contract('GuestModule', (accounts: string[]) => {
       await expect(tx).to.be.rejected
     })
     it('Should not be upgradeable', async () => {
-      const mainModule = await new MainModuleUpgradable__factory().connect(signer).deploy()
+      const mainModule = await (new MainModuleUpgradable__factory()).connect(signer).deploy()
       const newImageHash = web3.utils.randomHex(32)
 
       const migrateBundle = [

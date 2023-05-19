@@ -3,21 +3,7 @@ import * as path from 'path'
 import { HttpNetworkConfig } from 'hardhat/types'
 import { ethers } from 'ethers'
 
-type EthereumNetworksTypes =
-  | 'rinkeby'
-  | 'ropsten'
-  | 'kovan'
-  | 'goerli'
-  | 'mainnet'
-  | 'mumbai'
-  | 'matic'
-  | 'arbitrum'
-  | 'arbitrum-testnet'
-  | 'optimism'
-  | 'metis'
-  | 'nova'
-  | 'avalanche'
-  | 'avalanche-testnet'
+type EthereumNetworksTypes = 'rinkeby' | 'ropsten' | 'kovan' | 'goerli' | 'mainnet' | 'mumbai' | 'matic' | 'arbitrum' | 'arbitrum-testnet' | 'optimism' | 'metis' | 'nova' | 'avalanche' | 'avalanche-testnet'
 
 export const getEnvConfig = (env: string) => {
   const envFile = path.resolve(__dirname, `../config/${env}.env`)
@@ -54,7 +40,7 @@ export const networkRpcUrl = (network: EthereumNetworksTypes): string => {
 
     case 'arbitrum-testnet':
       return 'https://rinkeby.arbitrum.io/rpc'
-
+    
     case 'arbitrum':
       return 'https://arb1.arbitrum.io/rpc'
 
@@ -84,7 +70,7 @@ export const networkChainId = (network: EthereumNetworksTypes): number => {
   switch (network) {
     case 'mumbai':
       return 80001
-
+    
     case 'ropsten':
       return 3
 
@@ -93,7 +79,7 @@ export const networkChainId = (network: EthereumNetworksTypes): number => {
 
     case 'arbitrum-testnet':
       return 421611
-
+    
     case 'arbitrum':
       return 42161
 

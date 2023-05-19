@@ -9,6 +9,7 @@ import "./interfaces/IModuleAuth.sol";
 
 import "./ModuleERC165.sol";
 
+
 abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, IERC1271Wallet {
   using LibBytes for bytes;
 
@@ -91,6 +92,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
       // Read next item type and addrWeight
       uint256 flag; uint256 addrWeight; address addr;
       (flag, addrWeight, rindex) = _signature.readUint8Uint8(rindex);
+
       if (flag == FLAG_ADDRESS) {
         // Read plain address
         (addr, rindex) = _signature.readAddress(rindex);
