@@ -99,12 +99,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [install]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Run Slither
-        working-directory: ./src  # Set the working directory for subsequent steps
-        uses: crytic/slither-action@v0.3.0
+      - uses: actions/checkout@v3
+      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+      - run: |
+          echo ${{ github.workspace }}
+          echo $GITHUB_WORKSPACE
 
 
     # name: Slither test
