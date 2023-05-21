@@ -93,15 +93,26 @@ jobs:
             */*/node_modules
           key: ${{ runner.os }}-lerna-${{ hashFiles('**/package.json', '**/yarn.lock') }}
       - run: yarn test
+
   slither:
     name: Slither test
     runs-on: ubuntu-latest
     needs: [install]
-    working-directory: ./src
     steps:
-      - uses: actions/checkout@v3
-      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
+      - name: Run Slither
+        working-directory: ./src  # Set the working directory for subsequent steps
+        uses: crytic/slither-action@v0.3.0
+
+
+    # name: Slither test
+    # runs-on: ubuntu-latest
+    # needs: [install]
+    # steps:
+    #   - uses: actions/checkout@v3
+    #   - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
 
   # coverage:
   #   name: Coverage
