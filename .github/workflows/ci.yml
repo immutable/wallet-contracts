@@ -97,6 +97,7 @@ jobs:
     name: Slither test
     runs-on: ubuntu-latest
     needs: [install]
+    working-directory: ./src
     steps:
       - uses: actions/checkout@v3
       - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
