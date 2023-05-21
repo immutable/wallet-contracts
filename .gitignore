@@ -14,7 +14,8 @@ coverage.json
 config/*.env
 
 src/gen
-src/artifacts
+src/artifacts/contracts
+src/artifacts/@openzeppelin
 
 # MAC OS custom directory attributes file.
 .DS_Store
