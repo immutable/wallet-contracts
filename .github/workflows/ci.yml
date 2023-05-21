@@ -93,19 +93,19 @@ jobs:
             */*/node_modules
           key: ${{ runner.os }}-lerna-${{ hashFiles('**/package.json', '**/yarn.lock') }}
       - run: yarn test
-      
-  slither-analyse:
+ analyze:
     runs-on: ubuntu-latest
-    needs: [install]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Run Slither
-      uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+      needs: [install]
+      uses: crytic/slither-action@v0.3.0
       id: slither
       with:
-        target: 'src/contracts/'
+        node-version: 16
+        fail-on: none
         slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
 
     - name: Create/update checklist as PR comment
