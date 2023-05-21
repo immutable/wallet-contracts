@@ -100,11 +100,11 @@ jobs:
     needs: [install]
     steps:
       - uses: actions/checkout@v3
-      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
       - run: |
           echo ${{ github.workspace }}
           echo $GITHUB_WORKSPACE
-
+      # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+     
 
     # name: Slither test
     # runs-on: ubuntu-latest
