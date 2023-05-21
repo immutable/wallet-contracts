@@ -111,7 +111,7 @@ jobs:
             */*/node_modules
           key: ${{ runner.os }}-lerna-${{ hashFiles('**/package.json', '**/yarn.lock') }}
       - run: |
-          yarn build
+          npx hardhat compile
           cp -r ./src/artifacts/ ./artifacts/
       # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
      
