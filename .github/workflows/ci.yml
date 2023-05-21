@@ -103,7 +103,7 @@ jobs:
       - run: |
           mkdir ./artifacts
           mkdir ./artifacts/build-info
-          cp -r ./src/artifacts/build-info/ ./artifacts/build-info
+          cp -r src/artifacts/build-info/ ./artifacts/build-info
       # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
      
 
