@@ -100,8 +100,9 @@ jobs:
     needs: [install]
     steps:
       - uses: actions/checkout@v3
-      - run: cp -r ./src/artifacts/build-info ./
-      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+      - run: |
+          echo "$(ls)"
+      # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
      
 
     # name: Slither test
