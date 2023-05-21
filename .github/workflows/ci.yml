@@ -100,8 +100,7 @@ jobs:
     needs: [install]
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          echo "$(ls)"
+      - run: cp -r src/artifacts ./
       # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
      
 
