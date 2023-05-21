@@ -101,9 +101,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-          mkdir ./artifacts
-          mkdir ./artifacts/build-info
-          cp -r src/artifacts/build-info/ ./artifacts/build-info
+          yarn build
+          cp -r ./src/artifacts/ ./artifacts/
       # - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
      
 
