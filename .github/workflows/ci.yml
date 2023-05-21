@@ -95,12 +95,12 @@ jobs:
       - run: yarn test
   slither:
     runs-on: ubuntu-latest
+    needs: [install]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Run Slither
-      needs: [install]
       uses: crytic/slither-action@v0.3.0
       id: slither
       with:
