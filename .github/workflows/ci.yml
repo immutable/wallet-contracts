@@ -114,7 +114,7 @@ jobs:
           npx hardhat compile
           cp -r ./src/artifacts/ ./artifacts/
           cp -r ./src/contracts/ ./contracts/
-      - uses: crytic/slither-action@v0.3.0 # Defaults to fail on all
+      - uses: crytic/slither-action@v0.3.0
      
   # coverage:
   #   name: Coverage
