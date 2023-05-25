@@ -3,6 +3,7 @@ import { ethers } from 'ethers'
 import { getContractAddress } from '@ethersproject/address'
 import { Factory, Factory__factory, MainModule, MainModule__factory, ImmutableSigner, ImmutableSigner__factory } from '../src'
 import { encodeImageHash, expect, addressOf, encodeMetaTransactionsData, walletMultiSign, ethSign } from './utils'
+import { parseEther } from 'ethers/lib/utils'
 
 describe('E2E Immutable Wallet Deployment', () => {
   let contractDeployerEOA: ethers.Signer
@@ -24,15 +25,7 @@ describe('E2E Immutable Wallet Deployment', () => {
   const IMMUTABLE_SIGNER_NONCE = 3
 
   beforeEach(async () => {
-    [
-      userEOA,
-      immutableEOA,
-      randomEOA,
-      adminEOA,
-      walletDeployerEOA,
-      relayerEOA,
-      contractDeployerEOA
-    ] = await hardhat.getSigners()
+    ;[userEOA, immutableEOA, randomEOA, adminEOA, walletDeployerEOA, relayerEOA, contractDeployerEOA] = await hardhat.getSigners()
 
     // Matches the production environment where the first transaction (nonce 0)
     // is used for testing.
@@ -71,6 +64,50 @@ describe('E2E Immutable Wallet Deployment', () => {
     expect(factory.address).to.equal(factoryAddress)
     expect(mainModule.address).to.equal(mainModuleAddress)
     expect(immutableSigner.address).to.equal(immutableSignerAddress)
+  })
+
+  // For testing relayer code
+  it.only('Generate a transaction for testing the relayer', async () => {
+    // Deploy wallet
+    const walletSalt = encodeImageHash(2, [
+      { weight: 1, address: await userEOA.getAddress() },
+      { weight: 1, address: immutableSigner.address }
+    ])
+    const walletAddress = addressOf(factory.address, mainModule.address, walletSalt)
+    const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
+    await walletDeploymentTx.wait()
+
+    const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
+
+    // Build the transaction
+    const gasPayment = {
+      delegateCall: false,
+      revertOnError: true,
+      gasLimit: 1_000_000,
+      target: await relayerEOA.getAddress(),
+      value: parseEther('0.001'),
+      data: []
+    }
+
+    const userAction = {
+      delegateCall: false,
+      revertOnError: true,
+      gasLimit: 1_000_000,
+      target: await randomEOA.getAddress(),
+      value: parseEther('0.5'),
+      data: []
+    }
+
+    // Prepare signature
+    const networkId = 1779
+    const nonce = 0
+    const data = encodeMetaTransactionsData(walletAddress, [userAction, gasPayment], networkId, nonce)
+
+    const signature = await walletMultiSign([{ weight: 1, owner: userEOA as ethers.Wallet }], 2, data, false)
+
+    const executionTx = await wallet.populateTransaction.execute([userAction, gasPayment], nonce, signature)
+
+    console.log(executionTx)
   })
 
   it('Should execute a transaction signed by the ImmutableSigner', async () => {
