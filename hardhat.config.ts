@@ -37,10 +37,10 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
-    sepolia: {
-      url: "https://rpc.sepolia.org",
-      accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
-    },
+    // sepolia: {
+    //   url: "https://rpc.sepolia.org",
+    //   accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+    // },
     mainnet: networkConfig('mainnet'),
     ropsten: networkConfig('ropsten'),
     rinkeby: networkConfig('rinkeby'),
@@ -63,7 +63,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY!
+    // apiKey: process.env.ETHERSCAN_API_KEY!
     // apiKey: networkConfig('mainnet').etherscan
   },
   mocha: {

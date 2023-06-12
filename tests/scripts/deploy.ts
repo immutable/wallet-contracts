@@ -64,7 +64,7 @@ async function deploy() {
     console.log("Immutable Signer deployed to: ", immutableSigner.address);
     console.log("Finished deploying contracts")
 
-    // Set implementation address on impl locator to dyanmic module auth address
+    // Set implementation address on impl locator to dyanmic module auth addr
     const tx = await walletImplLocator.connect(walletImplLocatorImplChanger).changeWalletImplementation(mainModule.address);
     await tx.wait();
     console.log("Wallet Implentation Locator implementation changed to: ", mainModule.address);
