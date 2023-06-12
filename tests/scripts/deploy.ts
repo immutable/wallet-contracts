@@ -16,8 +16,6 @@ async function deploy() {
         throw new Error('Etherscan API KEY has not been defined');
     }
 
-    console.log(process.env.ETHERSCAN_API_KEY);
-    return;
     // /dev/imx-evm-relayer/EOA_SUBMITTER
     let relayerSubmitterEOAPubKey = "0xBC52cE84FceFd2D941D1127608D6Cf598f9633d3"
     // /dev/imx-evm-relayer/IMMUTABLE_SIGNER_CONTRACT
@@ -105,9 +103,9 @@ async function deploy() {
     console.log("Wallet Implentation Locator verified")
     await verifyContract(startupWalletImpl.address, [walletImplLocator.address]);
     console.log("Startup Wallet Impl verified")
-    await verifyContract(mainModule.address, [factory.address, startupWalletImpl.address]);
+    await verifyContractModule(mainModule.address, [factory.address, startupWalletImpl.address]);
     console.log("Main Module Dynamic Auth verified")
-    await verifyContract(immutableSigner.address, [signerRootAdminPubKey, signerAdminPubKey, immutableSignerPubKey]);
+    await verifyContract(immutableSigner.address, [signerRootAdminPubKey, signerAdminPubKey, relayerSubmitterEOAPubKey]);
     console.log("Immutable Signer verified")
 }
 
@@ -139,6 +137,19 @@ async function deployImmutableSigner(rootAdminAddr : string, signerAdminAddr : s
 async function deployMultiCallDeploy(adminAddr : string, executorAddr : string) : Promise<ethers.Contract> {
     const MultiCallDeploy = await hardhat.getContractFactory("MultiCallDeploy");
     return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr);
+}
+
+// Requires extra parameter due to similar bytecode with mock
+async function verifyContractModule(contractAddr : string, constructorArgs : string[]) {
+    try {
+        await hre.run("verify:verify", {
+            contract: "contracts/modules/MainModuleDynamicAuth.sol:MainModuleDynamicAuth",
+            address: contractAddr,
+            constructorArguments: constructorArgs,
+        });
+    } catch (error) {
+        expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
+    }
 }
 
 async function verifyContract(contractAddr : string, constructorArgs : string[]) {
