@@ -1,12 +1,11 @@
-import path = require('path');
-import fs = require('fs');
-import hre = require('hardhat')
+import * as path from 'path';
+import * as fs from 'fs';
+import * as hre from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'ethers';
 import { ethers as hardhat } from 'hardhat'
 const { expect } = require('chai');
 require('dotenv').config();
-
 
 const outputPath = path.join(__dirname, './deploy_output.json');
 let deployer : SignerWithAddress;
