@@ -71,9 +71,7 @@ async function deploy() {
 
 
     // Output JSON file with addresses and role addresses
-    let chainID = (await ethers.getDefaultProvider().getNetwork()).chainId;
     const JSONOutput = {
-        chainID: chainID,
         FactoryAddress: factory.address,
         WalletImplLocatorAddress: walletImplLocator.address,
         StartupWalletImplAddress: startupWalletImpl.address,
