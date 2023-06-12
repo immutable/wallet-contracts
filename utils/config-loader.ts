@@ -119,14 +119,14 @@ export const networkChainId = (network: EthereumNetworksTypes): number => {
 }
 
 export const etherscanKey = (network: EthereumNetworksTypes): string => {
-  return process.env.ETHERSCAN_API_KEY!;
-  // const config = getEnvConfig('PROD')
+  // return process.env.ETHERSCAN_API_KEY!;
+  const config = getEnvConfig('PROD')
 
-  // if (network === 'mainnet') {
-  //   return config['ETHERSCAN']
-  // } else {
-  //   return config[`ETHERSCAN_${network.toUpperCase()}`]
-  // }
+  if (network === 'mainnet') {
+    return config['ETHERSCAN']
+  } else {
+    return config[`ETHERSCAN_${network.toUpperCase()}`]
+  }
 }
 
 export const networkConfig = (network: EthereumNetworksTypes): HttpNetworkConfig & { etherscan?: string } => {
@@ -134,13 +134,13 @@ export const networkConfig = (network: EthereumNetworksTypes): HttpNetworkConfig
   return {
     url: networkRpcUrl(network),
     chainId: networkChainId(network),
-    // accounts: {
-    //   mnemonic: config['ETH_MNEMONIC'],
-    //   initialIndex: 0,
-    //   count: 10,
-    //   path: `m/44'/60'/0'/0`
-    // },
-    accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!],
+    accounts: {
+      mnemonic: config['ETH_MNEMONIC'],
+      initialIndex: 0,
+      count: 10,
+      path: `m/44'/60'/0'/0`
+    },
+    // accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!],
     gas: 'auto',
     gasPrice: 'auto',
     gasMultiplier: networkGasMultiplier(network),
