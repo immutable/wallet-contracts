@@ -119,13 +119,14 @@ export const networkChainId = (network: EthereumNetworksTypes): number => {
 }
 
 export const etherscanKey = (network: EthereumNetworksTypes): string => {
-  const config = getEnvConfig('PROD')
+  return process.env.ETHERSCAN_API_KEY!;
+  // const config = getEnvConfig('PROD')
 
-  if (network === 'mainnet') {
-    return config['ETHERSCAN']
-  } else {
-    return config[`ETHERSCAN_${network.toUpperCase()}`]
-  }
+  // if (network === 'mainnet') {
+  //   return config['ETHERSCAN']
+  // } else {
+  //   return config[`ETHERSCAN_${network.toUpperCase()}`]
+  // }
 }
 
 export const networkConfig = (network: EthereumNetworksTypes): HttpNetworkConfig & { etherscan?: string } => {

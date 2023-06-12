@@ -41,6 +41,7 @@ const config: HardhatUserConfig = {
     //   url: "https://rpc.sepolia.org",
     //   accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
     // },
+    sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
     ropsten: networkConfig('ropsten'),
     rinkeby: networkConfig('rinkeby'),
@@ -63,8 +64,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    // apiKey: process.env.ETHERSCAN_API_KEY!
-    // apiKey: networkConfig('mainnet').etherscan
+    apiKey: networkConfig('mainnet').etherscan
   },
   mocha: {
     timeout: process.env.COVERAGE ? 15 * 60 * 1000 : 30 * 1000
