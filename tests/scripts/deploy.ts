@@ -1,8 +1,10 @@
 import path = require('path');
 import fs = require('fs');
+import hre = require('hardhat')
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'ethers';
 import { ethers as hardhat } from 'hardhat'
+const { expect } = require('chai');
 
 const outputPath = path.join(__dirname, './deploy_output.json');
 let deployer : SignerWithAddress;
@@ -22,16 +24,16 @@ async function deploy() {
         signerAdmin,
         signer, // Immutable signer
         multiCallAdmin,
-        multiCallDeployer,
+        multiCallExectutor, // Submitter EOA
     ] = await hardhat.getSigners();
 
     deployer = contractDeployer;
-    // TOTAL deployment cost = 0.009766773 GWEI == 0.000000000009766773 ETHER
+    // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
     // Deployments with esimated gas costs (GWEI)
     console.log("Deploying contracts...");
     // 1. Deploy multi call deploy 
     // EST gas cost: 0.001561956
-    const multiCallDeploy = await deployMultiCallDeploy(multiCallAdmin.address, multiCallDeployer.address);
+    const multiCallDeploy = await deployMultiCallDeploy(multiCallAdmin.address, multiCallExectutor.address);
     console.log("Multi Call Deploy deployed to: ", multiCallDeploy.address);
     // 2. Deploy factory with multi call deploy address as deployer role EST
     // EST gas cost: 0.001239658
@@ -80,9 +82,24 @@ async function deploy() {
         SignerAdminAddress: signerAdmin.address,
         SignerAddress: signer.address,
         MultiCallAdminAddress: multiCallAdmin.address,
-        MultiCallDeployerAddress: multiCallDeployer.address,
+        MultiCallExecutorAddress: multiCallExectutor.address,
     }
     fs.writeFileSync(outputPath, JSON.stringify(JSONOutput, null, 1));
+
+    // Verify contracts on etherscan
+    console.log("Verifying contracts on etherscan...");
+    await verifyContract(multiCallDeploy.address, [multiCallAdmin.address, multiCallExectutor.address]);
+    console.log("Multi Call Deploy verified")
+    await verifyContract(factory.address,  [factoryAdmin.address, factoryDeployer.address]);
+    console.log("Factory verified")
+    await verifyContract(walletImplLocator.address, [walletImplLocatorAdmin.address, walletImplLocatorImplChanger.address]);
+    console.log("Wallet Implentation Locator verified")
+    await verifyContract(startupWalletImpl.address, [walletImplLocator.address]);
+    console.log("Startup Wallet Impl verified")
+    await verifyContract(mainModule.address, [factory.address, startupWalletImpl.address]);
+    console.log("Main Module Dynamic Auth verified")
+    await verifyContract(immutableSigner.address, [signerRootAdmin.address, signerAdmin.address, signer.address]);
+    console.log("Immutable Signer verified")
 }
 
 async function deployFactory(adminAddr : string, deployerAddr : string) : Promise<ethers.Contract> {
@@ -125,6 +142,18 @@ async function deployMultiCallDeploy(adminAddr : string, executorAddr : string) 
     const gasCost = await ethers.getDefaultProvider().estimateGas(MultiCallDeploy.getDeployTransaction(adminAddr, executorAddr));
     console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr);
+}
+
+async function verifyContract(contractAddr : string, constructorArgs : string[]) {
+    try {
+        await hre.run("verify:verify", {
+            address: contractAddr,
+            constructorArguments: constructorArgs,
+        });
+    } catch (error) {
+        expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
+    }
+  
 }
 
 deploy().catch((error) => {
