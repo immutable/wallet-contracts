@@ -5,27 +5,37 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'ethers';
 import { ethers as hardhat } from 'hardhat'
 const { expect } = require('chai');
+require('dotenv').config();
+
 
 const outputPath = path.join(__dirname, './deploy_output.json');
 let deployer : SignerWithAddress;
 
 async function deploy() {
+    if (typeof process.env.ETHERSCAN_API_KEY === 'undefined') {
+        throw new Error('Etherscan API KEY has not been defined');
+    }
+    // /dev/imx-evm-relayer/EOA_SUBMITTER
+    let relayerSubmitterEOAPubKey = "0xBC52cE84FceFd2D941D1127608D6Cf598f9633d3"
+    // /dev/imx-evm-relayer/IMMUTABLE_SIGNER_CONTRACT
+    let immutableSignerPubKey = "0x1cE50560686b1297B6311F36B47dbe5d6E04D0f8"
+    let multiCallAdminPubKey = "0x4226dBE2CBe6Be478315d5ffb29D3FE9256fdE2d"
+    let factoryAdminPubKey = "0xB50dF46bFAeBB3Fb58CBb6B6B70A76A823d1c4d7"
+    let walletImplLocatorAdmin = "0x6918973Aa3A3689eE017aF7F77B08015952cE368"
+    let signerRootAdminPubKey = "0x1768555FAC0920e2EA769cA5299AB6eD4E212bFe"
+    let signerAdminPubKey = "0xB72297fa1839FA4aB4553aeCAB6A2b1C979DF512"
+
     // Required private keys:
     // 1. Deployer
     // 2. walletImplLocatorChanger
     // Get signers for each role
     const [
         contractDeployer,
-        factoryAdmin, 
-        factoryDeployer,
-        walletImplLocatorAdmin,
-        walletImplLocatorImplChanger,
-        signerRootAdmin,
-        signerAdmin,
-        signer, // Immutable signer
-        multiCallAdmin,
-        multiCallExectutor, // Submitter EOA
+        walletImplLocatorImplChanger, 
     ] = await hardhat.getSigners();
+    console.log(contractDeployer.address)
+    console.log(walletImplLocatorImplChanger.address)
+    return;
 
     deployer = contractDeployer;
     // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
@@ -33,15 +43,15 @@ async function deploy() {
     console.log("Deploying contracts...");
     // 1. Deploy multi call deploy 
     // EST gas cost: 0.001561956
-    const multiCallDeploy = await deployMultiCallDeploy(multiCallAdmin.address, multiCallExectutor.address);
+    const multiCallDeploy = await deployMultiCallDeploy(multiCallAdminPubKey, relayerSubmitterEOAPubKey);
     console.log("Multi Call Deploy deployed to: ", multiCallDeploy.address);
     // 2. Deploy factory with multi call deploy address as deployer role EST
     // EST gas cost: 0.001239658
-    const factory = await deployFactory(factoryAdmin.address, multiCallDeploy.address);
+    const factory = await deployFactory(factoryAdminPubKey, multiCallDeploy.address);
     console.log("Factory deployed to: ", factory.address)
     // 3. Deploy wallet impl locator
     // EST gas cost: 0.001021586
-    const walletImplLocator = await deployWalletImplLocator(walletImplLocatorAdmin.address, walletImplLocatorImplChanger.address);
+    const walletImplLocator = await deployWalletImplLocator(walletImplLocatorAdmin, walletImplLocatorImplChanger.address);
     console.log("Wallet Implentation Locator deployed to: ", walletImplLocator.address);
     // 4. Deploy startup wallet impl
     // EST gas cost: 0.000175659
@@ -53,7 +63,7 @@ async function deploy() {
     console.log("Main Module Dynamic Auth deployed to: ", mainModule.address)
     // 6. Deploy immutable signer
     // EST gas cost: 0.001856101
-    const immutableSigner = await deployImmutableSigner(signerRootAdmin.address, signerAdmin.address, signer.address);
+    const immutableSigner = await deployImmutableSigner(signerRootAdminPubKey, signerAdminPubKey, immutableSignerPubKey);
     console.log("Immutable Signer deployed to: ", immutableSigner.address);
     console.log("Finished deploying contracts")
 
@@ -71,76 +81,64 @@ async function deploy() {
         WalletImplLocatorAddress: walletImplLocator.address,
         StartupWalletImplAddress: startupWalletImpl.address,
         MainModuleDynamicAuthAddress: mainModule.address,
-        ImmutableSignerAddress: immutableSigner.address,
+        ImmutableContractSignerAddress: immutableSigner.address,
         MultiCallDeployAddress: multiCallDeploy.address,
         DeployerAddress: deployer.address,
-        FactoryAdminAddress: factoryAdmin.address,
-        FactoryDeployerAddress: factoryDeployer.address,
-        WalletImplLocatorAdminAddress: walletImplLocatorAdmin.address,
+        FactoryAdminAddress: factoryAdminPubKey,
+        FactoryDeployerAddress: relayerSubmitterEOAPubKey,
+        WalletImplLocatorAdminAddress: walletImplLocatorAdmin,
         WalletImplLocatorImplChangerAddress: walletImplLocatorImplChanger.address,
-        SignerRootAdminAddress: signerRootAdmin.address,
-        SignerAdminAddress: signerAdmin.address,
-        SignerAddress: signer.address,
-        MultiCallAdminAddress: multiCallAdmin.address,
-        MultiCallExecutorAddress: multiCallExectutor.address,
+        SignerRootAdminAddress: signerRootAdminPubKey,
+        SignerAdminAddress: signerAdminPubKey,
+        ImmutableSignerAddress: immutableSignerPubKey,
+        MultiCallAdminAddress: multiCallAdminPubKey,
+        MultiCallExecutorAddress: relayerSubmitterEOAPubKey,
     }
     fs.writeFileSync(outputPath, JSON.stringify(JSONOutput, null, 1));
 
     // Verify contracts on etherscan
     console.log("Verifying contracts on etherscan...");
-    await verifyContract(multiCallDeploy.address, [multiCallAdmin.address, multiCallExectutor.address]);
+    await verifyContract(multiCallDeploy.address, [multiCallAdminPubKey, relayerSubmitterEOAPubKey]);
     console.log("Multi Call Deploy verified")
-    await verifyContract(factory.address,  [factoryAdmin.address, factoryDeployer.address]);
+    await verifyContract(factory.address,  [factoryAdminPubKey, relayerSubmitterEOAPubKey]);
     console.log("Factory verified")
-    await verifyContract(walletImplLocator.address, [walletImplLocatorAdmin.address, walletImplLocatorImplChanger.address]);
+    await verifyContract(walletImplLocator.address, [walletImplLocatorAdmin, walletImplLocatorImplChanger.address]);
     console.log("Wallet Implentation Locator verified")
     await verifyContract(startupWalletImpl.address, [walletImplLocator.address]);
     console.log("Startup Wallet Impl verified")
     await verifyContract(mainModule.address, [factory.address, startupWalletImpl.address]);
     console.log("Main Module Dynamic Auth verified")
-    await verifyContract(immutableSigner.address, [signerRootAdmin.address, signerAdmin.address, signer.address]);
+    await verifyContract(immutableSigner.address, [signerRootAdminPubKey, signerAdminPubKey, immutableSignerPubKey]);
     console.log("Immutable Signer verified")
 }
 
 async function deployFactory(adminAddr : string, deployerAddr : string) : Promise<ethers.Contract> {
     const Factory = await hardhat.getContractFactory("Factory");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(Factory.getDeployTransaction(adminAddr, deployerAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await Factory.connect(deployer).deploy(adminAddr, deployerAddr);
 }
 
 async function deployWalletImplLocator(adminAddr : string, implChangerAddr : string) :  Promise<ethers.Contract> {
     const LatestWalletImplLocator = await hardhat.getContractFactory("LatestWalletImplLocator");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(LatestWalletImplLocator.getDeployTransaction(adminAddr, implChangerAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await LatestWalletImplLocator.connect(deployer).deploy(adminAddr, implChangerAddr);
 }
 
 async function deployStartUp(walletImplLocatorAddr : string ) : Promise<ethers.Contract> {
     const StartupWalletImplImpl = await hardhat.getContractFactory("StartupWalletImpl");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(StartupWalletImplImpl.getDeployTransaction(walletImplLocatorAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await StartupWalletImplImpl.connect(deployer).deploy(walletImplLocatorAddr);
 }
 
 async function deployMainModule(factoryAddr : string, startUpAddr : string) : Promise<ethers.Contract>{
     const MainModuleDynamicAuth = await hardhat.getContractFactory("MainModuleDynamicAuth");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(MainModuleDynamicAuth.getDeployTransaction(factoryAddr, startUpAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await MainModuleDynamicAuth.connect(deployer).deploy(factoryAddr, startUpAddr);
 }
 
 async function deployImmutableSigner(rootAdminAddr : string, signerAdminAddr : string, signerAddr : string) : Promise<ethers.Contract> {
     const ImmutableSigner = await hardhat.getContractFactory("ImmutableSigner");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(ImmutableSigner.getDeployTransaction(rootAdminAddr, signerAdminAddr, signerAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await ImmutableSigner.connect(deployer).deploy(rootAdminAddr, signerAdminAddr, signerAddr);
 }
 
 async function deployMultiCallDeploy(adminAddr : string, executorAddr : string) : Promise<ethers.Contract> {
     const MultiCallDeploy = await hardhat.getContractFactory("MultiCallDeploy");
-    const gasCost = await ethers.getDefaultProvider().estimateGas(MultiCallDeploy.getDeployTransaction(adminAddr, executorAddr));
-    console.log(ethers.utils.formatUnits(gasCost, "gwei"));
     return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr);
 }
 
