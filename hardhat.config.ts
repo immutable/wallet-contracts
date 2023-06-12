@@ -31,7 +31,8 @@ const config: HardhatUserConfig = {
   },
   paths: {
     root: 'src',
-    tests: '../tests'
+    tests: '../tests',
+    scripts: "../scripts"
   },
   networks: {
     mainnet: networkConfig('mainnet'),
