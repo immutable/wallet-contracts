@@ -63,7 +63,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: networkConfig('mainnet').etherscan
+    apiKey: process.env.ETHERSCAN_API_KEY
   },
   mocha: {
     timeout: process.env.COVERAGE ? 15 * 60 * 1000 : 30 * 1000

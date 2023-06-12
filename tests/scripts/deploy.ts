@@ -15,6 +15,9 @@ async function deploy() {
     if (typeof process.env.ETHERSCAN_API_KEY === 'undefined') {
         throw new Error('Etherscan API KEY has not been defined');
     }
+
+    console.log(process.env.ETHERSCAN_API_KEY);
+    return;
     // /dev/imx-evm-relayer/EOA_SUBMITTER
     let relayerSubmitterEOAPubKey = "0xBC52cE84FceFd2D941D1127608D6Cf598f9633d3"
     // /dev/imx-evm-relayer/IMMUTABLE_SIGNER_CONTRACT
@@ -28,16 +31,12 @@ async function deploy() {
     // Required private keys:
     // 1. Deployer
     // 2. walletImplLocatorChanger
-    // Get signers for each role
     const [
         contractDeployer,
         walletImplLocatorImplChanger, 
     ] = await hardhat.getSigners();
-    console.log(contractDeployer.address)
-    console.log(walletImplLocatorImplChanger.address)
-    return;
-
     deployer = contractDeployer;
+
     // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
     // Deployments with esimated gas costs (GWEI)
     console.log("Deploying contracts...");
@@ -81,7 +80,7 @@ async function deploy() {
         WalletImplLocatorAddress: walletImplLocator.address,
         StartupWalletImplAddress: startupWalletImpl.address,
         MainModuleDynamicAuthAddress: mainModule.address,
-        ImmutableContractSignerAddress: immutableSigner.address,
+        ImmutableSignerContractAddress: immutableSigner.address,
         MultiCallDeployAddress: multiCallDeploy.address,
         DeployerAddress: deployer.address,
         FactoryAdminAddress: factoryAdminPubKey,
@@ -100,7 +99,7 @@ async function deploy() {
     console.log("Verifying contracts on etherscan...");
     await verifyContract(multiCallDeploy.address, [multiCallAdminPubKey, relayerSubmitterEOAPubKey]);
     console.log("Multi Call Deploy verified")
-    await verifyContract(factory.address,  [factoryAdminPubKey, relayerSubmitterEOAPubKey]);
+    await verifyContract(factory.address,  [factoryAdminPubKey, multiCallDeploy.address]);
     console.log("Factory verified")
     await verifyContract(walletImplLocator.address, [walletImplLocatorAdmin, walletImplLocatorImplChanger.address]);
     console.log("Wallet Implentation Locator verified")
