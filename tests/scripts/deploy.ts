@@ -103,7 +103,7 @@ async function deploy() {
     console.log("Wallet Implentation Locator verified")
     await verifyContract(startupWalletImpl.address, [walletImplLocator.address]);
     console.log("Startup Wallet Impl verified")
-    await verifyContractModule(mainModule.address, [factory.address, startupWalletImpl.address]);
+    await verifyContract(mainModule.address, [factory.address, startupWalletImpl.address], true, "contracts/modules/MainModuleDynamicAuth.sol:MainModuleDynamicAuth");
     console.log("Main Module Dynamic Auth verified")
     await verifyContract(immutableSigner.address, [signerRootAdminPubKey, signerAdminPubKey, relayerSubmitterEOAPubKey]);
     console.log("Immutable Signer verified")
@@ -139,25 +139,20 @@ async function deployMultiCallDeploy(adminAddr : string, executorAddr : string) 
     return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr);
 }
 
-// Requires extra parameter due to similar bytecode with mock
-async function verifyContractModule(contractAddr : string, constructorArgs : string[]) {
+async function verifyContract(contractAddr : string, constructorArgs : string[], requiesContractPath : boolean = false, contractPath : string = "") {
     try {
-        await hre.run("verify:verify", {
-            contract: "contracts/modules/MainModuleDynamicAuth.sol:MainModuleDynamicAuth",
-            address: contractAddr,
-            constructorArguments: constructorArgs,
-        });
-    } catch (error) {
-        expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
-    }
-}
-
-async function verifyContract(contractAddr : string, constructorArgs : string[]) {
-    try {
-        await hre.run("verify:verify", {
-            address: contractAddr,
-            constructorArguments: constructorArgs,
-        });
+        if (requiesContractPath) {
+            await hre.run("verify:verify", {
+                contract: contractPath,
+                address: contractAddr,
+                constructorArguments: constructorArgs,
+            });
+        } else {
+            await hre.run("verify:verify", {
+                address: contractAddr,
+                constructorArguments: constructorArgs,
+            });
+        }
     } catch (error) {
         expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
     }
