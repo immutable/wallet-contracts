@@ -33,7 +33,7 @@ const config: HardhatUserConfig = {
   },
   paths: {
     root: 'src',
-    tests: '../tests',
+    tests: '../tests'
   },
   networks: {
     // Define here to easily specify private keys
