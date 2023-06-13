@@ -3,7 +3,7 @@ import * as path from 'path'
 import { HttpNetworkConfig } from 'hardhat/types'
 import { ethers } from 'ethers'
 
-type EthereumNetworksTypes = 'rinkeby' | 'ropsten' | 'kovan' | 'goerli' | 'mainnet' | 'mumbai' | 'matic' | 'arbitrum' | 'arbitrum-testnet' | 'optimism' | 'metis' | 'nova' | 'avalanche' | 'avalanche-testnet'
+type EthereumNetworksTypes = 'rinkeby' | 'sepolia' |'ropsten' | 'kovan' | 'goerli' | 'mainnet' | 'mumbai' | 'matic' | 'arbitrum' | 'arbitrum-testnet' | 'optimism' | 'metis' | 'nova' | 'avalanche' | 'avalanche-testnet'
 
 export const getEnvConfig = (env: string) => {
   const envFile = path.resolve(__dirname, `../config/${env}.env`)
@@ -58,6 +58,9 @@ export const networkRpcUrl = (network: EthereumNetworksTypes): string => {
 
     case 'avalanche-testnet':
       return 'https://nodes.sequence.app/avalanche-testnet'
+    
+    case 'sepolia':
+        return 'https://rpc.sepolia.org'
 
     default:
       return `https://${network}.infura.io/v3/${config['INFURA_API_KEY']}`
@@ -109,10 +112,14 @@ export const networkChainId = (network: EthereumNetworksTypes): number => {
 
     case 'avalanche-testnet':
       return 43113
+
+    case `sepolia`:
+      return 11155111
   }
 }
 
 export const etherscanKey = (network: EthereumNetworksTypes): string => {
+  // return process.env.ETHERSCAN_API_KEY!;
   const config = getEnvConfig('PROD')
 
   if (network === 'mainnet') {
@@ -133,6 +140,7 @@ export const networkConfig = (network: EthereumNetworksTypes): HttpNetworkConfig
       count: 10,
       path: `m/44'/60'/0'/0`
     },
+    // accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!],
     gas: 'auto',
     gasPrice: 'auto',
     gasMultiplier: networkGasMultiplier(network),

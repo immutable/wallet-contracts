@@ -11,6 +11,8 @@ import '@tenderly/hardhat-tenderly'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 
+require('dotenv').config();
+
 const ganacheNetwork = {
   url: 'http://127.0.0.1:8545',
   blockGasLimit: 6000000000
@@ -34,6 +36,12 @@ const config: HardhatUserConfig = {
     tests: '../tests'
   },
   networks: {
+    // Define here to easily specify private keys
+    // sepolia: {
+    //   url: "https://rpc.sepolia.org",
+    //   accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+    // },
+    sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
     ropsten: networkConfig('ropsten'),
     rinkeby: networkConfig('rinkeby'),
