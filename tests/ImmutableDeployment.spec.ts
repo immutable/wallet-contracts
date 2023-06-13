@@ -66,8 +66,41 @@ describe('E2E Immutable Wallet Deployment', () => {
     expect(immutableSigner.address).to.equal(immutableSignerAddress)
   })
 
+  it.only('Generate a transaction for testing Passport', async () => {
+    // Deploy wallet
+    const walletSalt = encodeImageHash(1, [
+      { weight: 1, address: await userEOA.getAddress() },
+    ])
+    const walletAddress = addressOf(factory.address, mainModule.address, walletSalt)
+    const walletDeploymentTx = await factory.connect(walletDeployerEOA).deploy(mainModule.address, walletSalt)
+    await walletDeploymentTx.wait()
+
+    const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
+
+    // Build a single transaction
+    const userAction = {
+      delegateCall: false,
+      revertOnError: true,
+      gasLimit: 1_000_000,
+      target: await randomEOA.getAddress(),
+      value: parseEther('0.5'),
+      data: []
+    }
+
+    // Prepare signature
+    const networkId = 1779
+    const nonce = 0
+    const data = encodeMetaTransactionsData(walletAddress, [userAction], networkId, nonce)
+
+    const signature = await walletMultiSign([{ weight: 1, owner: userEOA as ethers.Wallet }], 1, data, false)
+
+    const executionTx = await wallet.populateTransaction.execute([userAction], nonce, signature)
+
+    console.log(executionTx)
+  })
+
   // For testing relayer code
-  it.only('Generate a transaction for testing the relayer', async () => {
+  it('Generate a transaction for testing the relayer', async () => {
     // Deploy wallet
     const walletSalt = encodeImageHash(2, [
       { weight: 1, address: await userEOA.getAddress() },
