@@ -3,10 +3,9 @@
 pragma solidity 0.8.17;
 
 import "./commons/ModuleAuthDynamic.sol";
-import "./commons/ModuleHooks.sol";
+import "./commons/ModuleReceivers.sol";
 import "./commons/ModuleCalls.sol";
 import "./commons/ModuleUpdate.sol";
-import "./commons/ModuleCreator.sol";
 
 
 /**
@@ -20,9 +19,8 @@ import "./commons/ModuleCreator.sol";
 contract MainModuleDynamicAuth is
   ModuleAuthDynamic,
   ModuleCalls,
-  ModuleUpdate,
-  ModuleHooks,
-  ModuleCreator
+  ModuleReceivers,
+  ModuleUpdate
 {
 
   // solhint-disable-next-line no-empty-blocks
@@ -42,9 +40,8 @@ contract MainModuleDynamicAuth is
   ) public override(
     ModuleAuthUpgradable,
     ModuleCalls,
-    ModuleUpdate,
-    ModuleHooks,
-    ModuleCreator
+    ModuleReceivers,
+    ModuleUpdate
   ) pure returns (bool) {
     return super.supportsInterface(_interfaceID);
   }
