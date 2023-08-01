@@ -75,7 +75,7 @@ async function deploy() {
     console.log("Finished deploying contracts")
 
     // Fund the implementation changer
-    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "25000000000000" });
+    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "250000000000000" });
     await fundingTx.wait();
 
     console.log("Transfered funds to the wallet locator implementer changer")
