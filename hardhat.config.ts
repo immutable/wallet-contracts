@@ -37,8 +37,8 @@ const config: HardhatUserConfig = {
   networks: {
     // Define here to easily specify private keys
     zkevm: {
-      url: "https://zkevm-rpc.dev.x.immutable.com",
-      accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      url: "https://zkevm-rpc.sandbox.x.immutable.com",
+      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
     },
     sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
