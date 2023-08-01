@@ -8,7 +8,7 @@ import { expect } from 'chai';
 require('dotenv').config();
 
 const outputPath = path.join(__dirname, './deploy_output.json');
-let deployer : SignerWithAddress;
+let deployer: SignerWithAddress;
 
 async function deploy() {
     // if (typeof process.env.ETHERSCAN_API_KEY === 'undefined') {
@@ -31,7 +31,7 @@ async function deploy() {
     // 2. walletImplLocatorChanger
     const [
         contractDeployer,
-        walletImplLocatorImplChanger, 
+        walletImplLocatorImplChanger,
     ] = await hardhat.getSigners();
     deployer = contractDeployer;
 
@@ -75,8 +75,10 @@ async function deploy() {
     console.log("Finished deploying contracts")
 
     // Fund the implementation changer
-    const fundingTx = await deployer.sendTransaction({to: await walletImplLocatorImplChanger.getAddress(), value: "25000000000000"});
+    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "25000000000000" });
     await fundingTx.wait();
+
+    console.log("Transfered funds to the wallet locator implementer changer")
 
     // Set implementation address on impl locator to dyanmic module auth addr
     const tx = await walletImplLocator.connect(walletImplLocatorImplChanger).changeWalletImplementation(mainModule.address);
@@ -115,37 +117,37 @@ async function deploy() {
     console.log("Skipping contract verification... (Etherscan not available on Immutable zkEVM)")
 }
 
-async function deployFactory(adminAddr : string, deployerAddr : string) : Promise<ethers.Contract> {
+async function deployFactory(adminAddr: string, deployerAddr: string): Promise<ethers.Contract> {
     const Factory = await hardhat.getContractFactory("Factory");
     return await Factory.connect(deployer).deploy(adminAddr, deployerAddr);
 }
 
-async function deployWalletImplLocator(adminAddr : string, implChangerAddr : string) :  Promise<ethers.Contract> {
+async function deployWalletImplLocator(adminAddr: string, implChangerAddr: string): Promise<ethers.Contract> {
     const LatestWalletImplLocator = await hardhat.getContractFactory("LatestWalletImplLocator");
     return await LatestWalletImplLocator.connect(deployer).deploy(adminAddr, implChangerAddr);
 }
 
-async function deployStartUp(walletImplLocatorAddr : string ) : Promise<ethers.Contract> {
+async function deployStartUp(walletImplLocatorAddr: string): Promise<ethers.Contract> {
     const StartupWalletImplImpl = await hardhat.getContractFactory("StartupWalletImpl");
     return await StartupWalletImplImpl.connect(deployer).deploy(walletImplLocatorAddr);
 }
 
-async function deployMainModule(factoryAddr : string, startUpAddr : string) : Promise<ethers.Contract>{
+async function deployMainModule(factoryAddr: string, startUpAddr: string): Promise<ethers.Contract> {
     const MainModuleDynamicAuth = await hardhat.getContractFactory("MainModuleDynamicAuth");
     return await MainModuleDynamicAuth.connect(deployer).deploy(factoryAddr, startUpAddr);
 }
 
-async function deployImmutableSigner(rootAdminAddr : string, signerAdminAddr : string, signerAddr : string) : Promise<ethers.Contract> {
+async function deployImmutableSigner(rootAdminAddr: string, signerAdminAddr: string, signerAddr: string): Promise<ethers.Contract> {
     const ImmutableSigner = await hardhat.getContractFactory("ImmutableSigner");
     return await ImmutableSigner.connect(deployer).deploy(rootAdminAddr, signerAdminAddr, signerAddr);
 }
 
-async function deployMultiCallDeploy(adminAddr : string, executorAddr : string) : Promise<ethers.Contract> {
+async function deployMultiCallDeploy(adminAddr: string, executorAddr: string): Promise<ethers.Contract> {
     const MultiCallDeploy = await hardhat.getContractFactory("MultiCallDeploy");
-    return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr, { });
+    return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr, {});
 }
 
-async function verifyContract(contractAddr : string, constructorArgs : any[], requiesContractPath : boolean = false, contractPath : string = "") {
+async function verifyContract(contractAddr: string, constructorArgs: any[], requiesContractPath: boolean = false, contractPath: string = "") {
     try {
         if (requiesContractPath) {
             await hre.run("verify:verify", {
@@ -162,7 +164,7 @@ async function verifyContract(contractAddr : string, constructorArgs : any[], re
     } catch (error) {
         expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
     }
-  
+
 }
 
 deploy().catch((error) => {
