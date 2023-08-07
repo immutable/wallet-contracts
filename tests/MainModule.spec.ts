@@ -3720,6 +3720,24 @@ contract('MainModule', (accounts: string[]) => {
 
       expect(await web3.eth.getBalance(log.args?._contract)).to.eq.BN(99)
     })
+    it('Should revert if contract creation fails', async () => {
+      const deployCode = '0xfb' // Invalid opcode
+
+      const transactions = [
+        {
+          delegateCall: false,
+          revertOnError: true,
+          gasLimit: optimalGasLimit,
+          target: wallet.address,
+          value: ethers.constants.Zero,
+          data: wallet.interface.encodeFunctionData('createContract', [deployCode])
+        }
+      ]
+
+      await expect(
+        signAndExecuteMetaTx(wallet, owner, transactions, networkId)
+      ).to.be.revertedWith('ModuleCreator: creation failed')
+    })
     it('Should fail to create a contract from non-self', async () => {
       const deployCode = CallReceiverMockArtifact.bytecode
 
