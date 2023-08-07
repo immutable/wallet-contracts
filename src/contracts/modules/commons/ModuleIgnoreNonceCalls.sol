@@ -140,7 +140,10 @@ abstract contract ModuleIgnoreNonceCalls is IModuleCalls, IModuleAuth, ModuleERC
     uint256 currentNonce = readNonce(space);
 
     // Verify if nonce is valid
-    // Skip nonce validation for gas estimation
+    // 
+    // Skip nonce validation for gas estimation, but keep the statement to
+    // arrive at a closer gas expenditure when compared with the version in
+    // ModuleCalls.sol
     require(
       (providedNonce == currentNonce) || true,
       "MainModule#_auth: INVALID_NONCE"
