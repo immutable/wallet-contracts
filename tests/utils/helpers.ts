@@ -396,7 +396,7 @@ export function encodeNonce(space: BigNumberish, nonce: BigNumberish) {
 
 export function moduleStorageKey(key: string, subkey?: string): string {
   if (!subkey) {
-    return ethers.utils.id(key)
+    return key;
   }
 
   return ethers.utils.keccak256(

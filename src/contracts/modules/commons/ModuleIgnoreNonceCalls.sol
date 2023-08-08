@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "./ModuleSelfAuth.sol";
 import "./ModuleStorage.sol";
 import "./ModuleERC165.sol";
+import "./NonceKey.sol";
 
 import "./interfaces/IModuleCalls.sol";
 import "./interfaces/IModuleAuth.sol";
@@ -13,9 +14,6 @@ import "./interfaces/IModuleAuth.sol";
     should only be used during gas estimation.
 */
 abstract contract ModuleIgnoreNonceCalls is IModuleCalls, IModuleAuth, ModuleERC165, ModuleSelfAuth {
-  //                       NONCE_KEY = keccak256("org.arcadeum.module.calls.nonce");
-  bytes32 private constant NONCE_KEY = bytes32(0x8d0bf1fd623d628c741362c1289948e57b3e2905218c676d3e69abee36d6ae2e);
-
   uint256 private constant NONCE_BITS = 96;
   bytes32 private constant NONCE_MASK = bytes32((1 << NONCE_BITS) - 1);
 
@@ -34,7 +32,7 @@ abstract contract ModuleIgnoreNonceCalls is IModuleCalls, IModuleAuth, ModuleERC
    * @return The next nonce
    */
   function readNonce(uint256 _space) public override virtual view returns (uint256) {
-    return uint256(ModuleStorage.readBytes32Map(NONCE_KEY, bytes32(_space)));
+    return uint256(ModuleStorage.readBytes32Map(NonceKey.NONCE_KEY, bytes32(_space)));
   }
 
   /**
@@ -43,7 +41,7 @@ abstract contract ModuleIgnoreNonceCalls is IModuleCalls, IModuleAuth, ModuleERC
    * @param _nonce Nonce to write on the space
    */
   function _writeNonce(uint256 _space, uint256 _nonce) private {
-    ModuleStorage.writeBytes32Map(NONCE_KEY, bytes32(_space), bytes32(_nonce));
+    ModuleStorage.writeBytes32Map(NonceKey.NONCE_KEY, bytes32(_space), bytes32(_nonce));
   }
 
   /**
