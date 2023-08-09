@@ -13,8 +13,9 @@ import "../../interfaces/receivers/IERC223Receiver.sol";
 
 
 contract ModuleHooks is IERC1155Receiver, IERC721Receiver, IModuleHooks, ModuleERC165, ModuleSelfAuth {
-  //                       HOOKS_KEY = keccak256("org.arcadeum.module.hooks.hooks");
-  bytes32 private constant HOOKS_KEY = bytes32(0xbe27a319efc8734e89e26ba4bc95f5c788584163b959f03fa04e2d7ab4b9a120);
+  // Randomly generated to avoid collisions, with:
+  // xxd -len 32 -plain -cols 32 /dev/urandom
+  bytes32 private constant HOOKS_KEY = bytes32(0x5f198cb61cfcc209f357b4ede4ad2218c53e3b4cb7e8fa1e8b0ec5e3951acbaa);
 
   /**
    * @notice Reads the implementation hook of a signature

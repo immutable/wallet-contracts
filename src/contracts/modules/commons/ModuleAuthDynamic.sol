@@ -3,6 +3,7 @@
 pragma solidity 0.8.17;
 
 import "./ModuleAuthUpgradable.sol";
+import "./ImageHashKey.sol";
 import "../../Wallet.sol";
 
 
@@ -27,7 +28,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
    * @return true if the signature image is valid, and true if the image hash needs to be updated
    */
   function _isValidImage(bytes32 _imageHash) internal view override returns (bool, bool) {
-    bytes32 storedImageHash = ModuleStorage.readBytes32(IMAGE_HASH_KEY);
+    bytes32 storedImageHash = ModuleStorage.readBytes32(ImageHashKey.IMAGE_HASH_KEY);
     if (storedImageHash == 0) {
       // No image hash stored. Check that the image hash was used as the salt when 
       // deploying the wallet proxy contract.

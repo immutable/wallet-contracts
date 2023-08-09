@@ -5,6 +5,7 @@ import "./interfaces/IModuleAuthUpgradable.sol";
 
 import "./ModuleSelfAuth.sol";
 import "./ModuleAuth.sol";
+import "./ImageHashKey.sol";
 import "./ModuleStorage.sol";
 
 
@@ -13,9 +14,6 @@ import "./ModuleStorage.sol";
     should only be used during gas estimation.
 */
 abstract contract ModuleIgnoreAuthUpgradable is IModuleAuthUpgradable, ModuleAuth, ModuleSelfAuth {
-  //                       IMAGE_HASH_KEY = keccak256("org.arcadeum.module.auth.upgradable.image.hash");
-  bytes32 private constant IMAGE_HASH_KEY = bytes32(0xea7157fa25e3aa17d0ae2d5280fa4e24d421c61842aa85e45194e1145aa72bf8);
-
   event ImageHashUpdated(bytes32 newImageHash);
 
   /**
@@ -27,7 +25,7 @@ abstract contract ModuleIgnoreAuthUpgradable is IModuleAuthUpgradable, ModuleAut
    */
   function updateImageHash(bytes32 _imageHash) external override virtual onlySelf {
     require(_imageHash != bytes32(0), "ModuleAuthUpgradable#updateImageHash INVALID_IMAGE_HASH");
-    ModuleStorage.writeBytes32(IMAGE_HASH_KEY, _imageHash);
+    ModuleStorage.writeBytes32(ImageHashKey.IMAGE_HASH_KEY, _imageHash);
     emit ImageHashUpdated(_imageHash);
   }
 
@@ -35,7 +33,7 @@ abstract contract ModuleIgnoreAuthUpgradable is IModuleAuthUpgradable, ModuleAut
    * @notice Returns the current image hash of the wallet
    */
   function imageHash() external override virtual view returns (bytes32) {
-    return ModuleStorage.readBytes32(IMAGE_HASH_KEY);
+    return ModuleStorage.readBytes32(ImageHashKey.IMAGE_HASH_KEY);
   }
 
   /**
