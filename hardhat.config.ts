@@ -9,6 +9,7 @@ import '@nomicfoundation/hardhat-chai-matchers'
 
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
+import { HardhatConfig } from 'hardhat/types'
 
 require('dotenv').config();
 
@@ -36,9 +37,12 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
-    zkevm: {
-      url: "https://zkevm-rpc.dev.x.immutable.com",
-      accounts: [process.env.DEPLOYER_PRIV_KEY!,process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+    zkevm: validateEnvironment() ? {
+      url: "https://rpc.testnet.immutable.com",
+      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+    } : {
+      url: "SET ENVIRONMENT VARIABLES",
+      accounts: [],
     },
     sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
@@ -77,3 +81,7 @@ const config: HardhatUserConfig = {
 }
 
 export default config
+
+function validateEnvironment(): boolean {
+  return !!process.env.DEPLOYER_PRIV_KEY && !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY
+}
