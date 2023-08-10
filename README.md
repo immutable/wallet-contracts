@@ -25,7 +25,7 @@ The following changes have been made:
 
 ## Security Review
 
-`immutable/wallet-contracts` has been audited by two independant parties
+`immutable/wallet-contracts` has been audited by two independent parties
 
 - [Consensys Diligence](https://github.com/immutable/wallet-contracts/blob/master/audits/Consensys_Diligence.md) - May 2020
 - [Quantstamp - initial audit](https://github.com/immutable/wallet-contracts/raw/master/audits/Quantstamp_Arcadeum_Report_Final.pdf) - July 2020
