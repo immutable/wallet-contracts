@@ -78,8 +78,13 @@ async function deploy() {
     console.log("Finished deploying contracts")
 
     // Fund the implementation changer
-    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "25000000000000" });
+    // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys
+    // the contracts.
+    // TODO: Code below can be improved by calculating the amount that is required to be transferred.
+    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "250000000000000" });
     await fundingTx.wait();
+
+    console.log("Transfered funds to the wallet locator implementer changer")
 
     // Set implementation address on impl locator to dyanmic module auth addr
     const tx = await walletImplLocator.connect(walletImplLocatorImplChanger).changeWalletImplementation(mainModule.address);
