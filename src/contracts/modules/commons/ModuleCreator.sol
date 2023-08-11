@@ -17,6 +17,7 @@ contract ModuleCreator is IModuleCreator, ModuleERC165, ModuleSelfAuth {
    */
   function createContract(bytes memory _code) public override payable onlySelf returns (address addr) {
     assembly { addr := create(callvalue(), add(_code, 32), mload(_code)) }
+    require(addr != address(0), 'ModuleCreator: creation failed');
     emit CreatedContract(addr);
   }
 

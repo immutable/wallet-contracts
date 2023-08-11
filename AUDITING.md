@@ -191,10 +191,10 @@ The [wallet factory contract][wallet-factory] has two public methods, both of th
 All our `salt` parameters will be generated using the standard [image hash generation algorithm][image-hash-generation] from 0xSequence, and will always have a `threshold` of 2, and two signers: Immutable with `weight` of 1 and the user EOA with a `weight` of 1. Addresses are sorted to keep deterministic behavior.
 
 ```js
-keccak256(abi.encode(1, address1, keccak256(abi.encode(1, address2, keccak256(abi.encode(2))))))
+keccak256(abi.encode(keccak256(abi.encode(bytes32(uint256(2)), uint256(1), address1)), uint256(1), address2))
 ```
 
-[image-hash-generation]: https://docs.sequence.xyz/wallet/wallet-contracts/wallet-configuration/#compute-image-hash
+[image-hash-generation]: https://github.com/immutable/wallet-contracts/blob/main/tests/utils/helpers.ts#L370
 
 ## External Interactions
 

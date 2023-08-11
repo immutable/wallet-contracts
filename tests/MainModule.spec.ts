@@ -880,7 +880,7 @@ contract('MainModule', (accounts: string[]) => {
           })
           it('Should use nonces storage keys', async () => {
             const subkey = ethers.utils.defaultAbiCoder.encode(['uint256'], [space])
-            const storageKey = moduleStorageKey('org.arcadeum.module.calls.nonce', subkey)
+            const storageKey = moduleStorageKey('0xc40e2218089ef03fc40794d84d38778f688da53b98c9236b084936bfafc9a601', subkey)
 
             const nonce = ethers.constants.Zero
 
@@ -1646,7 +1646,7 @@ contract('MainModule', (accounts: string[]) => {
       it('Should use hooks storage key', async () => {
         const selector = ethers.utils.id('onHookMockCall(uint256)').substring(0, 10)
         const subkey = ethers.utils.defaultAbiCoder.encode(['bytes4'], [selector])
-        const storageKey = moduleStorageKey('org.arcadeum.module.hooks.hooks', subkey)
+        const storageKey = moduleStorageKey('0x5f198cb61cfcc209f357b4ede4ad2218c53e3b4cb7e8fa1e8b0ec5e3951acbaa', subkey)
 
         const transaction = {
           delegateCall: false,
@@ -2659,7 +2659,7 @@ contract('MainModule', (accounts: string[]) => {
         await expect(tx).to.be.rejectedWith('ModuleSelfAuth#onlySelf: NOT_AUTHORIZED')
       })
       it('Should use image hash storage key', async () => {
-        const storageKey = moduleStorageKey('org.arcadeum.module.auth.upgradable.image.hash')
+        const storageKey = moduleStorageKey('0xad348b32c79cd46ad46d61aede26d38affaee58f9a122f91eb271e08720464bf')
         const storageValue = await web3.eth.getStorageAt(wallet.address, storageKey)
         expect(ethers.utils.defaultAbiCoder.encode(['bytes32'], [storageValue])).to.equal(newImageHash)
       })
@@ -2800,7 +2800,7 @@ contract('MainModule', (accounts: string[]) => {
           await expect(tx).to.be.rejectedWith('ModuleCalls#execute: INVALID_SIGNATURE')
         })
         it('Should use image hash storage key', async () => {
-          const storageKey = moduleStorageKey('org.arcadeum.module.auth.upgradable.image.hash')
+          const storageKey = moduleStorageKey('0xad348b32c79cd46ad46d61aede26d38affaee58f9a122f91eb271e08720464bf')
           const storageValue = await web3.eth.getStorageAt(wallet.address, storageKey)
           expect(ethers.utils.defaultAbiCoder.encode(['bytes32'], [storageValue])).to.equal(newImageHash)
         })
@@ -3719,6 +3719,24 @@ contract('MainModule', (accounts: string[]) => {
       const log = tx.events?.find(l => l.event === 'CreatedContract')!
 
       expect(await web3.eth.getBalance(log.args?._contract)).to.eq.BN(99)
+    })
+    it('Should revert if contract creation fails', async () => {
+      const deployCode = '0xfb' // Invalid opcode
+
+      const transactions = [
+        {
+          delegateCall: false,
+          revertOnError: true,
+          gasLimit: optimalGasLimit,
+          target: wallet.address,
+          value: ethers.constants.Zero,
+          data: wallet.interface.encodeFunctionData('createContract', [deployCode])
+        }
+      ]
+
+      await expect(
+        signAndExecuteMetaTx(wallet, owner, transactions, networkId)
+      ).to.be.revertedWith('ModuleCreator: creation failed')
     })
     it('Should fail to create a contract from non-self', async () => {
       const deployCode = CallReceiverMockArtifact.bytecode
