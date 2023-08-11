@@ -1,4 +1,4 @@
-# Immutable Smart Wallet Contracts
+# Immutable Smart Contracts Wallet
 
 This is a fork of of Sequence's [wallet-contracts repo](https://github.com/0xsequence/wallet-contracts).
 
@@ -51,6 +51,15 @@ distribution files are packaged in "src/package.json".
 To release a new version, make sure to bump the version, tag it, and run `yarn
 release`. The `release` command will publish the `@imtbl/wallet-contracts`
 package in the "src/" folder, separate from the root package.
+
+## Contribution
+
+We aim to build robust and feature-rich standards to help all developers onboard
+and build their projects on Immuable zkEVM, and we welcome any and all feedback
+and contributions to this repository! See our [contribution
+guideline](CONTRIBUTING.md) for more details on opening Github issues, pull
+requests requesting features, minor security vulnerabilities and providing
+general feedback.
 
 ## Disclaimers
 
