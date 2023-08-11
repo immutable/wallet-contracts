@@ -1,9 +1,9 @@
 {
-  "name": "@0xsequence/wallet-contracts",
-  "version": "1.10.0",
-  "description": "Sequence Smart Wallet contracts",
-  "repository": "https://github.com/0xsequence/wallet-contracts",
-  "homepage": "https://sequence.build",
+  "name": "@imtbl/wallet-contracts",
+  "version": "1.0.0",
+  "description": "Immutable Smart Wallet contracts",
+  "repository": "https://github.com/immutable/wallet-contracts",
+  "homepage": "https://www.immutable.com",
   "license": "Apache-2.0",
   "main": "gen/adapter/index.js",
   "types": "gen/adapter/index.d.ts",
@@ -20,6 +20,7 @@
   },
   "keywords": [
     "Ethereum",
+    "Immutable",
     "Sequence",
     "Wallet",
     "Smart Wallet",
