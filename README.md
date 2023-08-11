@@ -1,4 +1,4 @@
-# Immutable Smart Contracts Wallet
+# Immutable Wallet Contracts
 
 This is a fork of of Sequence's [wallet-contracts repo](https://github.com/0xsequence/wallet-contracts).
 
