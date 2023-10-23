@@ -51,25 +51,25 @@ async function deploy() {
     // EST gas cost: 0.001239658
     const factory = await deployFactory(factoryAdminPubKey, multiCallDeploy.address);
     await factory.deployTransaction.wait();
-    console.log("Factory deployed to: ", factory.address)
+    console.log(`Factory deployed to: ${factory.address} with hash ${factory.deployTransaction.hash}`);
 
     // 3. Deploy wallet impl locator
     // EST gas cost: 0.001021586
     const walletImplLocator = await deployWalletImplLocator(walletImplLocatorAdmin, walletImplLocatorImplChanger.address);
     await walletImplLocator.deployTransaction.wait();
-    console.log("Wallet Implentation Locator deployed to: ", walletImplLocator.address);
+    console.log(`Wallet Implementation Locator deployed to: ${walletImplLocator.address} with hash ${walletImplLocator.deployTransaction.hash}`);
 
     // 4. Deploy startup wallet impl
     // EST gas cost: 0.000175659
     const startupWalletImpl = await deployStartUp(walletImplLocator.address);
     await startupWalletImpl.deployTransaction.wait();
-    console.log("Startup Wallet Impl deployed to: ", startupWalletImpl.address);
+    console.log(`Startup Wallet Impl deployed to: ${startupWalletImpl.address} with hash ${startupWalletImpl.deployTransaction.hash}`);
 
     // 5. Deploy main module dynamic auth
     // EST gas cost: 0.003911813
     const mainModule = await deployMainModule(factory.address, startupWalletImpl.address);
     await mainModule.deployTransaction.wait();
-    console.log("Main Module Dynamic Auth deployed to: ", mainModule.address)
+    console.log(`Main Module Dynamic Auth deployed to: ${mainModule.address} with hash ${mainModule.deployTransaction.hash}`);
 
     // 6. Deploy immutable signer
     // EST gas cost: 0.001856101
@@ -81,7 +81,10 @@ async function deploy() {
     // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys
     // the contracts.
     // TODO: Code below can be improved by calculating the amount that is required to be transferred.
-    const fundingTx = await deployer.sendTransaction({ to: await walletImplLocatorImplChanger.getAddress(), value: "250000000000000" });
+    const fundingTx = await deployer.sendTransaction({
+        to: await walletImplLocatorImplChanger.getAddress(),
+        value: ethers.utils.parseEther("10")
+    });
     await fundingTx.wait();
 
     console.log("Transfered funds to the wallet locator implementer changer")

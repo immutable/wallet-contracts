@@ -29,6 +29,7 @@
     "stop:ganache": "ps aux | grep ganache | grep -v grep | awk '{print $2}' | xargs kill -9",
     "deploy:ganache": "hardhat run --network ganache utils/deploy-contracts.ts",
     "deploy": "hardhat run utils/deploy-contracts.ts --network",
+    "deployAlt": "npx hardhat run scripts/DeployWalletContracts.ts --network zkevm",
     "verify": "hardhat verify --network",
     "release": "yarn publish src"
   },
