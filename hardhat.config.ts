@@ -11,7 +11,7 @@ import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 import { HardhatConfig } from 'hardhat/types'
 
-require('dotenv').config();
+require('dotenv').config()
 
 const ganacheNetwork = {
   url: 'http://127.0.0.1:8545',
@@ -37,13 +37,24 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
-    zkevm: validateEnvironment() ? {
-      url: "https://rpc.testnet.immutable.com",
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
-    } : {
-      url: "SET ENVIRONMENT VARIABLES",
-      accounts: [],
-    },
+    devnet: validateEnvironment()
+      ? {
+          url: 'https://rpc.dev.immutable.com',
+          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+        }
+      : {
+          url: 'SET ENVIRONMENT VARIABLES',
+          accounts: []
+        },
+    testnet: validateEnvironment()
+      ? {
+          url: 'https://rpc.testnet.immutable.com',
+          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+        }
+      : {
+          url: 'SET ENVIRONMENT VARIABLES',
+          accounts: []
+        },
     sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
     ropsten: networkConfig('ropsten'),
@@ -77,7 +88,7 @@ const config: HardhatUserConfig = {
     currency: 'USD',
     gasPrice: 21,
     showTimeSpent: true
-  },
+  }
 }
 
 export default config
