@@ -356,7 +356,7 @@ contract('MainModule', (accounts: string[]) => {
     ]
 
     cases.map(c => {
-      it.only(`Should handle ${c.name}`, async () => {
+      it(`Should handle ${c.name}`, async () => {
         type Node = {
           owner: MainModule | ethers.Wallet
           childs?: Node[]
