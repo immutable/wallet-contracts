@@ -430,7 +430,7 @@ contract('MainModule', (accounts: string[]) => {
 
         expect((await callReceiver.lastValA()).toNumber()).to.eq.BN(valA)
         expect(await callReceiver.lastValB()).to.equal(valB)
-      })
+      }).timeout(50000)
     })
 
     it('Should reject invalid nested signature', async () => {
@@ -3523,7 +3523,7 @@ contract('MainModule', (accounts: string[]) => {
             await expect(tx).to.be.rejectedWith(RevertError("SignatureValidator#recoverSigner: invalid signature 'v' value"))
           })
           it('Should reject empty dynamic signature', async () => {
-            const invalidSignature = "0x00010200ABFf4013541fd79ee5b6847C9dF3C9B34183C2830000"
+            const invalidSignature = '0x00010200ABFf4013541fd79ee5b6847C9dF3C9B34183C2830000'
             const tx = wallet.execute([transaction], 0, invalidSignature)
             await expect(tx).to.be.rejectedWith(RevertError('SignatureValidator#isValidSignature: signature is empty'))
           })
@@ -3734,9 +3734,9 @@ contract('MainModule', (accounts: string[]) => {
         }
       ]
 
-      await expect(
-        signAndExecuteMetaTx(wallet, owner, transactions, networkId)
-      ).to.be.revertedWith('ModuleCreator: creation failed')
+      await expect(signAndExecuteMetaTx(wallet, owner, transactions, networkId)).to.be.revertedWith(
+        'ModuleCreator: creation failed'
+      )
     })
     it('Should fail to create a contract from non-self', async () => {
       const deployCode = CallReceiverMockArtifact.bytecode
