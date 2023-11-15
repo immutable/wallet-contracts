@@ -65,7 +65,7 @@ Respectively building contract artifacts and running the test suites.
 
 ## Architecture
 
-![High Level Diagram](docs/img/high-level-diagram.jpg 'Interactions between the different contracts in this repo')
+![High Level Diagram](../docs/img/high-level-diagram.jpg 'Interactions between the different contracts in this repo')
 
 The core functionality of the wallet is executing transactions. It also makes sure that:
 
@@ -130,7 +130,7 @@ Since we are building counterfactual infrastructure, it has several levels of ma
 - **(b)** Core infrastructure and wallet implementation is deployed.
 - **(c)** User SCW is deployed during the execution of its first transaction.
 
-![Incremental Deployment](docs/img/incremental-deployment.gif 'Contracts are materialized in sequential and incremental steps')
+![Incremental Deployment](../docs/img/incremental-deployment.gif 'Contracts are materialized in sequential and incremental steps')
 
 [^3]:
     One requirement is that we must be able to generate user SCW addresses in
@@ -153,7 +153,7 @@ The wallet factory contract interacts with other contracts and externally owned 
     Note that we support both cases where those are the same EOA or different
     EOAs.
 
-![Data Flow](docs/img/data-flow.jpg)
+![Data Flow](../docs/img/data-flow.jpg)
 
 The wallet factory contract is a modified version of the 0xSequence factory contract, and the StartupWalletImpl contract takes care of updating the proxy to point to the latest wallet implementation address and delegating to that address.
 
@@ -163,7 +163,7 @@ Upgradeability of signers is achieved by storing a hash of the signers in the wa
 
 Although not directly relevant to the scope of our changes, these are the planned interactions with the wallet contract itself:
 
-![Wallet Interactions](docs/img/wallet-interactions.jpg)
+![Wallet Interactions](../docs/img/wallet-interactions.jpg)
 
 The wallet will be a 2/2 multisign where Immutable Passport users hold one key and Immutable holds another (Immutable uses a SCW as its signer). The user signs a meta transaction and sends it to passport services, where the second signature will be added and the transaction will be sent to onchain nodes through the “Gas Funds EOA.” The execution runtime will then check the user signature using their address and the Immutable Signature by calling Immutable’s SCW.
 
@@ -212,7 +212,7 @@ Here we walk through the end to end user journeys to give some extra context.
 
 [^5]: Since `getAddress()` is a pure function, this flow can optionally be implemented offchain without calling the contract.
 
-![Address Retrieval](docs/img/address-retrieval.jpg)
+![Address Retrieval](../docs/img/address-retrieval.jpg)
 
 ### Execute Transaction with the undeployed SCW
 
@@ -224,7 +224,7 @@ Here we walk through the end to end user journeys to give some extra context.
 
 4. The Passport backend will listen for the event emitted to signal the wallet has been deployed
 
-![Wallet Deployment](docs/img/wallet-deployment.jpg)
+![Wallet Deployment](../docs/img/wallet-deployment.jpg)
 
 ### Deployment
 
@@ -235,7 +235,7 @@ Here we walk through the end to end user journeys to give some extra context.
   to the **Wallet Deployment EOA** that will be used subsequently to invoke the
   factory contract and deploy wallets.
 
-![Factory Deployment](docs/img/factory-deployment.jpg)
+![Factory Deployment](../docs/img/factory-deployment.jpg)
 
 ## Testing
 
@@ -327,7 +327,7 @@ The relayer service will use `deployAndExecute()` as the on-chain entry point. T
 
 The alternative is `deployExecute()`, which deploys the wallet and executes the transaction, and does not handle the alternate case (SCW already deployed); this is for gas saving purposes. For the initial release, the relayer service will not use this function.
 
-![Multicall Deploy](docs/img/multicall-deploy.png)
+![Multicall Deploy](../docs/img/multicall-deploy.png)
 
 # Immutable Signer
 
@@ -347,7 +347,7 @@ ImmutableSigner.sol may only store a single signer address at a time, and uses `
 Delegating the signature validation responsibility to the Immutable signer requires the use of the
 `IERC1271` interface. The wallet module will call the interface on the Immutable Signer, supplying a hash and signature, if the validation succeeds, the `IERC1271_MAGICVALUE` is returned, allowing the transaction flow to continue. This validation flow requires the use of `DYNAMIC_SIGNATURE` flag which is set off-chain in the signing process.
 
-![Immutable Signer](docs/img/immutable-signer.png)
+![Immutable Signer](../docs/img/immutable-signer.png)
 
 # Startup Wallet
 
@@ -365,7 +365,7 @@ The above means that the initial implementation contract for all wallet proxies 
 
 Wallet proxies will forward their first delegate calls to this contract, which will update the implementation address of the proxy to the latest module, and complete the transaction flow, forwarding the delegate call to the latest module. All subsequent calls, will then use the newly updated module as implementation, bypassing the start up wallet contract.
 
-![Startup Wallet](docs/img/startup-wallet.png)
+![Startup Wallet](../docs/img/startup-wallet.png)
 
 # Yul Proxy
 
