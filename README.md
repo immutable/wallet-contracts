@@ -35,11 +35,13 @@ The following changes have been made:
 
 ## Security Review
 
-`@imtbl/wallet-contracts` has been audited by two independant parties
+`@imtbl/wallet-contracts` has been audited by three independant parties
 
-- [Consensys Diligence](https://github.com/immutable/wallet-contracts/blob/master/audits/Consensys_Diligence.md) - May 2020
-- [Quantstamp - initial audit](https://github.com/immutable/wallet-contracts/raw/master/audits/Quantstamp_Arcadeum_Report_Final.pdf) - July 2020
-- [Quantstamp - audit of new capability, nested Sequence signers](https://github.com/immutable/wallet-contracts/raw/master/audits/sequence_quantstamp_audit_feb_2021.pdf) - Feb 2021
+- [Consensys Diligence](./audits/Consensys_Diligence.md) - May 2020
+- [Quantstamp - initial audit](./audits/Quantstamp_Arcadeum_Report_Final.pdf) - July 2020
+- [Quantstamp - audit of new capability, nested Sequence signers](./audits/sequence_quantstamp_audit_feb_2021.pdf) - Feb 2021
+- [Halborm - audit of security improvements and customisations for Immutable environment](./audits/202309_Halborn_Final.pdf) - Sept 2023. 
+See [background information for this audit](./audits/202309_audit_background.md). 
 
 ## Dev env & release
 
