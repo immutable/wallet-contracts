@@ -75,7 +75,7 @@ We will audit these contracts before our mainnet launch.
 
 ## Security
 
-Please see our (security)[security.md] page for information on how to report security issues.
+Please see our [security.md](security.md)  page for information on how to report security issues.
 
 ## License
 
