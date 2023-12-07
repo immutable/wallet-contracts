@@ -25,5 +25,6 @@ src/artifacts
 
 # Ignore any environmental files with sensitive data
 .env
-.env.dev
-.env.production
+.env.devnet
+.env.testnet
+.env.mainnet
