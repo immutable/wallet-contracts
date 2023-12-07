@@ -23,4 +23,7 @@ src/artifacts
 .idea
 *.iml
 
+# Ignore any environmental files with sensitive data
 .env
+.env.dev
+.env.production
