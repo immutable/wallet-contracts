@@ -1,13 +1,13 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { ethers, Contract, ContractFactory } from 'ethers';
+import { ethers, Contract, ContractFactory, Signer } from 'ethers';
 import { ethers as hardhat } from 'hardhat';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newContractFactory } from './helper-functions';
-import { newLedgerWalletOptions, WalletOptions } from './types';
+import { newWalletOptions, WalletOptions } from './types';
 
 /**
  * main function deploys all the SCW infrastructure.
@@ -23,7 +23,6 @@ async function main(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Output ${outputPath}`);
 
   // Administration accounts
-  // TODO: Check with James if these should be the same for Mainnet
   let multiCallAdminPubKey = '0x575be326c482a487add43974e0eaf232e3366e13';
   let factoryAdminPubKey = '0xddb70ddcd14dbd57ae18ec591f47454e4fc818bb';
   let walletImplLocatorAdmin = '0xb49c99a17776c10350c2be790e13d4d8dfb1c578';
@@ -33,10 +32,11 @@ async function main(): Promise<EnvironmentInfo> {
   // Required private keys:
   // 1. Deployer
   // 2. walletImplLocatorChanger
-  const [contractDeployer, walletImplLocatorImplChanger] = await hardhat.getSigners();
+  const [contractDeployer, walletImplLocatorImplChanger]: Signer[] = await hardhat.getSigners();
 
   // Setup wallet
-  const walletOptions: WalletOptions = newLedgerWalletOptions(0);
+  const walletOptions: WalletOptions = newWalletOptions(environment, 0, contractDeployer);
+  console.log(`[${network}] Wallet Impl Locator Changer Address: ${await walletImplLocatorImplChanger.getAddress()}`);
 
   // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
   // Deployments with esimated gas costs (GWEI)
@@ -44,12 +44,6 @@ async function main(): Promise<EnvironmentInfo> {
 
   // 1. Deploy multi call deploy
   // EST gas cost: 0.001561956
-  // const multiCallDeploy = await deployMultiCallDeploy(
-  //   contractDeployer,
-  //   multiCallAdminPubKey,
-  //   environment.submitterAddress
-  // );
-  // await multiCallDeploy.deployTransaction.wait();
   const multiCallDeployCF: ContractFactory = await newContractFactory(walletOptions, 'MultiCallDeploy');
   const multiCallDeploy: Contract = await multiCallDeployCF.deploy(multiCallAdminPubKey, submitterAddress, {});
   await multiCallDeploy.deployTransaction.wait();
@@ -57,15 +51,6 @@ async function main(): Promise<EnvironmentInfo> {
 
   // 2. Deploy factory with multi call deploy address as deployer role EST
   // EST gas cost: 0.001239658
-  // const factory = await deployFactory(
-  //   contractDeployer,
-  //   factoryAdminPubKey,
-  //   multiCallDeploy.address
-  // );
-  // await factory.deployTransaction.wait();
-  // console.log(
-  //   `Factory deployed to: ${ factory.address } with hash ${ factory.deployTransaction.hash } `
-  // );
   const factoryCF: ContractFactory = await newContractFactory(walletOptions, 'Factory');
   const factory: Contract = await factoryCF.deploy(factoryAdminPubKey, multiCallDeploy.address);
   await factory.deployTransaction.wait();
@@ -73,33 +58,16 @@ async function main(): Promise<EnvironmentInfo> {
 
   // 3. Deploy wallet impl locator
   // EST gas cost: 0.001021586
-  // const walletImplLocator = await deployWalletImplLocator(
-  //   contractDeployer,
-  //   walletImplLocatorAdmin,
-  //   walletImplLocatorImplChanger.address
-  // );
-  // await walletImplLocator.deployTransaction.wait();
-  // console.log(
-  //   `Wallet Implementation Locator deployed to: ${ walletImplLocator.address } with hash ${ walletImplLocator.deployTransaction.hash } `
-  // );
   const walletImplLocatorCF: ContractFactory = await newContractFactory(walletOptions, 'LatestWalletImplLocator');
   const walletImplLocator: Contract = await walletImplLocatorCF.deploy(
     walletImplLocatorAdmin,
-    walletImplLocatorImplChanger.address
+    await walletImplLocatorImplChanger.getAddress()
   );
   await walletImplLocator.deployTransaction.wait();
   console.log(`[${network}] Wallet Implementation Locator deployed to: ${walletImplLocator.address}`);
 
   // 4. Deploy startup wallet impl
   // EST gas cost: 0.000175659
-  // const startupWalletImpl = await deployStartUp(
-  //   contractDeployer,
-  //   walletImplLocator.address
-  // );
-  // await startupWalletImpl.deployTransaction.wait();
-  // console.log(
-  //   `Startup Wallet Impl deployed to: ${ startupWalletImpl.address } with hash ${ startupWalletImpl.deployTransaction.hash } `
-  // );
   const startupWalletImplCF: ContractFactory = await newContractFactory(walletOptions, 'StartupWalletImpl');
   const startupWalletImpl: Contract = await startupWalletImplCF.deploy(walletImplLocator.address);
   await startupWalletImpl.deployTransaction.wait();
@@ -107,15 +75,6 @@ async function main(): Promise<EnvironmentInfo> {
 
   // 5. Deploy main module dynamic auth
   // EST gas cost: 0.003911813
-  // const mainModule = await deployMainModule(
-  //   contractDeployer,
-  //   factory.address,
-  //   startupWalletImpl.address
-  // );
-  // await mainModule.deployTransaction.wait();
-  // console.log(
-  //   `Main Module Dynamic Auth deployed to: ${ mainModule.address } with hash ${ mainModule.deployTransaction.hash } `
-  // );
   const mainModuleCF: ContractFactory = await newContractFactory(walletOptions, 'MainModuleDynamicAuth');
   const mainModule: Contract = await mainModuleCF.deploy(factory.address, startupWalletImpl.address);
   await mainModule.deployTransaction.wait();
@@ -123,14 +82,6 @@ async function main(): Promise<EnvironmentInfo> {
 
   // 6. Deploy immutable signer
   // EST gas cost: 0.001856101
-  // const immutableSigner = await deployImmutableSigner(
-  //   contractDeployer,
-  //   signerRootAdminPubKey,
-  //   signerAdminPubKey,
-  //   environment.signerAddress
-  // );
-  // await immutableSigner.deployTransaction.wait();
-  // console.log('Finished deploying contracts');
   const immutableSignerCF: ContractFactory = await newContractFactory(walletOptions, 'ImmutableSigner');
   const immutableSigner: Contract = await immutableSignerCF.deploy(
     signerRootAdminPubKey,
@@ -141,14 +92,8 @@ async function main(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Immutable Signer deployed to: ${immutableSigner.address}`);
 
   // Fund the implementation changer
-  // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys
-  // the contracts.
+  // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys the contracts.
   // TODO: Code below can be improved by calculating the amount that is required to be transferred.
-  // const fundingTx = await contractDeployer.sendTransaction({
-  //   to: await walletImplLocatorImplChanger.getAddress(),
-  //   value: ethers.utils.parseEther('10')
-  // });
-  // await fundingTx.wait();
   if (walletOptions.useLedger) {
     const ledger = walletOptions.ledger!;
     const fundingTx = await ledger.sendTransaction({
@@ -171,7 +116,7 @@ async function main(): Promise<EnvironmentInfo> {
     .connect(walletImplLocatorImplChanger)
     .changeWalletImplementation(mainModule.address);
   await tx.wait();
-  console.log('[${network}] Wallet Impl Locator implementation changed to: ', mainModule.address);
+  console.log(`[${network}] Wallet Impl Locator implementation changed to: ${mainModule.address}`);
 
   // Output JSON file with addresses and role addresses
   const JSONOutput = {
