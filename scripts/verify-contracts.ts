@@ -21,8 +21,6 @@ export async function verifyContract(
       });
     }
   } catch (error) {
-    expect(
-      error.message.toLowerCase().includes('already verified')
-    ).to.be.equal(true);
+    expect(error.message.toLowerCase().includes('already verified')).to.be.equal(true);
   }
 }

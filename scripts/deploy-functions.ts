@@ -1,3 +1,6 @@
+/**
+ * Keeping original functions as a reference.
+ */
 import { ethers } from 'ethers';
 import { ethers as hardhat } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -16,25 +19,16 @@ export async function deployWalletImplLocator(
   adminAddr: string,
   implChangerAddr: string
 ): Promise<ethers.Contract> {
-  const LatestWalletImplLocator = await hardhat.getContractFactory(
-    'LatestWalletImplLocator'
-  );
-  return await LatestWalletImplLocator.connect(deployer).deploy(
-    adminAddr,
-    implChangerAddr
-  );
+  const LatestWalletImplLocator = await hardhat.getContractFactory('LatestWalletImplLocator');
+  return await LatestWalletImplLocator.connect(deployer).deploy(adminAddr, implChangerAddr);
 }
 
 export async function deployStartUp(
   deployer: SignerWithAddress,
   walletImplLocatorAddr: string
 ): Promise<ethers.Contract> {
-  const StartupWalletImplImpl = await hardhat.getContractFactory(
-    'StartupWalletImpl'
-  );
-  return await StartupWalletImplImpl.connect(deployer).deploy(
-    walletImplLocatorAddr
-  );
+  const StartupWalletImplImpl = await hardhat.getContractFactory('StartupWalletImpl');
+  return await StartupWalletImplImpl.connect(deployer).deploy(walletImplLocatorAddr);
 }
 
 export async function deployMainModule(
@@ -42,13 +36,8 @@ export async function deployMainModule(
   factoryAddr: string,
   startUpAddr: string
 ): Promise<ethers.Contract> {
-  const MainModuleDynamicAuth = await hardhat.getContractFactory(
-    'MainModuleDynamicAuth'
-  );
-  return await MainModuleDynamicAuth.connect(deployer).deploy(
-    factoryAddr,
-    startUpAddr
-  );
+  const MainModuleDynamicAuth = await hardhat.getContractFactory('MainModuleDynamicAuth');
+  return await MainModuleDynamicAuth.connect(deployer).deploy(factoryAddr, startUpAddr);
 }
 
 export async function deployImmutableSigner(
@@ -58,11 +47,7 @@ export async function deployImmutableSigner(
   signerAddr?: string
 ): Promise<ethers.Contract> {
   const ImmutableSigner = await hardhat.getContractFactory('ImmutableSigner');
-  return await ImmutableSigner.connect(deployer).deploy(
-    rootAdminAddr,
-    signerAdminAddr,
-    signerAddr
-  );
+  return await ImmutableSigner.connect(deployer).deploy(rootAdminAddr, signerAdminAddr, signerAddr);
 }
 
 export async function deployMultiCallDeploy(
@@ -71,9 +56,5 @@ export async function deployMultiCallDeploy(
   executorAddr?: string
 ): Promise<ethers.Contract> {
   const MultiCallDeploy = await hardhat.getContractFactory('MultiCallDeploy');
-  return await MultiCallDeploy.connect(deployer).deploy(
-    adminAddr,
-    executorAddr,
-    {}
-  );
+  return await MultiCallDeploy.connect(deployer).deploy(adminAddr, executorAddr, {});
 }

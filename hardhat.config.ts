@@ -1,22 +1,22 @@
-import { HardhatUserConfig } from 'hardhat/config'
-import { networkConfig } from './utils/config-loader'
+import { HardhatUserConfig } from 'hardhat/config';
+import { networkConfig } from './utils/config-loader';
 
-import '@nomiclabs/hardhat-truffle5'
-import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-web3'
-import '@nomiclabs/hardhat-etherscan'
-import '@nomicfoundation/hardhat-chai-matchers'
+import '@nomiclabs/hardhat-truffle5';
+import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-web3';
+import '@nomiclabs/hardhat-etherscan';
+import '@nomicfoundation/hardhat-chai-matchers';
 
-import 'hardhat-gas-reporter'
-import 'solidity-coverage'
-import { HardhatConfig } from 'hardhat/types'
+import 'hardhat-gas-reporter';
+import 'solidity-coverage';
+import { HardhatConfig } from 'hardhat/types';
 
-require('dotenv').config()
+require('dotenv').config();
 
 const ganacheNetwork = {
   url: 'http://127.0.0.1:8545',
   blockGasLimit: 6000000000
-}
+};
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -37,16 +37,25 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
-    devnet: validateEnvironment()
+    localhost: loadAndValidateEnvironment('localhost')
       ? {
-          url: 'https://rpc.dev.immutable.com',
+          url: 'http://127.0.0.1:8545',
           accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
         }
       : {
           url: 'SET ENVIRONMENT VARIABLES',
           accounts: []
         },
-    testnet: validateEnvironment()
+    devnet: loadAndValidateEnvironment('devnet')
+      ? {
+          url: 'https://rpcx.dev.immutable.com',
+          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+        }
+      : {
+          url: 'SET ENVIRONMENT VARIABLES',
+          accounts: []
+        },
+    testnet: loadAndValidateEnvironment('testnet')
       ? {
           url: 'https://rpc.testnet.immutable.com',
           accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
@@ -89,10 +98,11 @@ const config: HardhatUserConfig = {
     gasPrice: 21,
     showTimeSpent: true
   }
-}
+};
 
-export default config
+export default config;
 
-function validateEnvironment(): boolean {
-  return !!process.env.DEPLOYER_PRIV_KEY && !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY
+function loadAndValidateEnvironment(network: string): boolean {
+  require('dotenv').config({ path: `.env.${network}` });
+  return !!process.env.DEPLOYER_PRIV_KEY && !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY;
 }
