@@ -38,7 +38,6 @@ export class LedgerSigner extends ethers.Signer {
         try {
           const eth = new Eth(transport);
           await eth.getAppConfiguration();
-          console.log(`?: ${eth}`);
           return eth;
         } catch (error) {
           throw 'LedgerSigner: unable to initialize TransportNodeHid: ' + error;
@@ -58,20 +57,16 @@ export class LedgerSigner extends ethers.Signer {
   }
 
   public async getAddress(): Promise<string> {
-    console.log(`getAddress: on LedgerSigner for path: ${this.path}`);
     const eth = await this._eth;
 
     const MAX_RETRY_COUNT = 50;
     const WAIT_INTERVAL = 100;
 
     for (let i = 0; i < MAX_RETRY_COUNT; i++) {
-      console.log('In loop');
       try {
         const account = await eth!.getAddress(this.path);
-        console.log(`account: ${account.address}`);
         return ethers.utils.getAddress(account.address);
       } catch (error) {
-        console.log('getAddress: failed');
         if ((error as any).id !== 'TransportLocked') {
           throw error;
         }

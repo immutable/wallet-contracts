@@ -10,9 +10,8 @@ const mainnetEnv = 'mainnet';
  * which used the following type to configure the connect function.
  */
 export class WalletOptions {
-  useLedger: boolean;
-  private contractDeployerLedger: LedgerSigner;
-  private walletImplLocatorImplChangerLedger: LedgerSigner;
+  private useLedger: boolean;
+  private ledger: LedgerSigner;
   private contractDeployer: Signer;
   private walletImplLocatorImplChanger: Signer;
 
@@ -25,13 +24,9 @@ export class WalletOptions {
       this.useLedger = false;
     }
 
-    // Setup the 2 ledgers
     const accountIndex0 = 0;
     const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
-    this.contractDeployerLedger = new LedgerSigner(hardhat.provider, derivationPath0);
-    const accountIndex1 = 1;
-    const derivationPath1 = `m/44'/60'/${accountIndex1.toString()}'/0/0`;
-    this.walletImplLocatorImplChangerLedger = new LedgerSigner(hardhat.provider, derivationPath1);
+    this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
 
     // Setup the 2 programmatic wallets
     this.contractDeployer = contractDeployer;
@@ -39,11 +34,11 @@ export class WalletOptions {
   }
 
   public getContractDeployer(): Signer {
-    return this.useLedger ? this.contractDeployerLedger : this.contractDeployer;
+    return this.useLedger ? this.ledger : this.contractDeployer;
   }
 
   public getWalletImplLocatorChanger(): Signer {
-    return this.useLedger ? this.walletImplLocatorImplChangerLedger : this.walletImplLocatorImplChanger;
+    return this.walletImplLocatorImplChanger;
   }
 }
 

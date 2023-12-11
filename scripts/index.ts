@@ -33,11 +33,10 @@ async function main(): Promise<EnvironmentInfo> {
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(environment);
-  /*
-  console.log(`[${network}] Contract Deployer Address: ${await wallets.getContractDeployer().getAddress()}`);
+  //console.log(`[${network}] Contract Deployer Address: ${await wallets.getContractDeployer().getAddress()}`);
   console.log(
     `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWalletImplLocatorChanger().getAddress()}`
-  );*/
+  );
 
   // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
   // Deployments with esimated gas costs (GWEI)
@@ -49,8 +48,6 @@ async function main(): Promise<EnvironmentInfo> {
   const multiCallDeploy: Contract = await multiCallDeployCF.deploy(multiCallAdminPubKey, submitterAddress, {});
   await multiCallDeploy.deployTransaction.wait();
   console.log(`[${network}] Multi Call Deploy deployed to: ${multiCallDeploy.address}`);
-
-  return environment;
 
   // 2. Deploy factory with multi call deploy address as deployer role EST
   // EST gas cost: 0.001239658
