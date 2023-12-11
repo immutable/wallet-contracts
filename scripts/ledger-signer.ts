@@ -25,10 +25,7 @@ export class LedgerSigner extends ethers.Signer {
   readonly path: string;
   readonly _eth: Promise<Eth> | undefined;
 
-  constructor(
-    provider?: ethers.providers.Provider,
-    path: string = DEFAULT_LEDGER_PATH
-  ) {
+  constructor(provider?: ethers.providers.Provider, path: string = DEFAULT_LEDGER_PATH) {
     super();
     this.path = path || DEFAULT_LEDGER_PATH;
 
@@ -41,6 +38,7 @@ export class LedgerSigner extends ethers.Signer {
         try {
           const eth = new Eth(transport);
           await eth.getAppConfiguration();
+          console.log(`?: ${eth}`);
           return eth;
         } catch (error) {
           throw 'LedgerSigner: unable to initialize TransportNodeHid: ' + error;
@@ -49,9 +47,7 @@ export class LedgerSigner extends ethers.Signer {
     );
   }
 
-  private async _withConfirmation<T extends (...args: any) => any>(
-    func: T
-  ): Promise<ReturnType<T>> {
+  private async _withConfirmation<T extends (...args: any) => any>(func: T): Promise<ReturnType<T>> {
     try {
       const result = await func();
 
@@ -62,16 +58,20 @@ export class LedgerSigner extends ethers.Signer {
   }
 
   public async getAddress(): Promise<string> {
+    console.log(`getAddress: on LedgerSigner for path: ${this.path}`);
     const eth = await this._eth;
 
     const MAX_RETRY_COUNT = 50;
     const WAIT_INTERVAL = 100;
 
     for (let i = 0; i < MAX_RETRY_COUNT; i++) {
+      console.log('In loop');
       try {
         const account = await eth!.getAddress(this.path);
+        console.log(`account: ${account.address}`);
         return ethers.utils.getAddress(account.address);
       } catch (error) {
+        console.log('getAddress: failed');
         if ((error as any).id !== 'TransportLocked') {
           throw error;
         }
@@ -82,27 +82,16 @@ export class LedgerSigner extends ethers.Signer {
     throw new Error('LedgerSigner: getAddress timed out');
   }
 
-  public async signMessage(
-    message: ethers.utils.Bytes | string
-  ): Promise<string> {
-    const resolvedMessage =
-      typeof message === 'string' ? toUtf8Bytes(message) : message;
+  public async signMessage(message: ethers.utils.Bytes | string): Promise<string> {
+    const resolvedMessage = typeof message === 'string' ? toUtf8Bytes(message) : message;
 
     const eth = await this._eth;
-    const signature = await this._withConfirmation(() =>
-      eth!.signPersonalMessage(this.path, hexlify(resolvedMessage))
-    );
+    const signature = await this._withConfirmation(() => eth!.signPersonalMessage(this.path, hexlify(resolvedMessage)));
 
-    return toRpcSig(
-      BigInt(signature.v - 27),
-      toBuffer(toHex(signature.r)),
-      toBuffer(toHex(signature.s))
-    );
+    return toRpcSig(BigInt(signature.v - 27), toBuffer(toHex(signature.r)), toBuffer(toHex(signature.s)));
   }
 
-  async signTransaction(
-    transaction: ethers.providers.TransactionRequest
-  ): Promise<string> {
+  async signTransaction(transaction: ethers.providers.TransactionRequest): Promise<string> {
     const txRequest = await resolveProperties(transaction);
 
     const baseTx: UnsignedTransaction = {
@@ -127,9 +116,7 @@ export class LedgerSigner extends ethers.Signer {
     const resolution = await ledgerService.resolveTransaction(txToSign, {}, {});
 
     const eth = await this._eth;
-    const signature = await this._withConfirmation(() =>
-      eth!.signTransaction(this.path, txToSign, resolution)
-    );
+    const signature = await this._withConfirmation(() => eth!.signTransaction(this.path, txToSign, resolution));
 
     return serializeTransaction(baseTx, {
       v: Number(signature.v),

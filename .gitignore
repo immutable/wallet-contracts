@@ -15,7 +15,7 @@ config/*.env
 
 src/gen
 src/artifacts
-scripts/local_output.json
+scripts/local_output*.json
 
 # MAC OS custom directory attributes file.
 .DS_Store
