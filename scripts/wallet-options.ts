@@ -10,6 +10,7 @@ const mainnetEnv = 'mainnet';
  * which used the following type to configure the connect function.
  */
 export class WalletOptions {
+
   private useLedger: boolean;
   private ledger: LedgerSigner;
   private coldWallet: Signer;
@@ -31,6 +32,10 @@ export class WalletOptions {
     // Setup the 2 programmatic wallets
     this.coldWallet = coldWallet;
     this.walletImplLocatorImplChanger = walletImplLocatorImplChanger;
+  }
+
+  public getUseLedger(): boolean {
+    return this.useLedger;
   }
 
   public getWallet(): Signer {

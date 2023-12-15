@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { Contract, ContractFactory, Signer, utils } from 'ethers';
+import { BytesLike, Contract, ContractFactory, utils } from 'ethers';
 import { ethers as hardhat } from 'hardhat';
 
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
@@ -12,8 +12,8 @@ import ContractDeployerInterface from './abi/OwnableCreate2Deployer.json';
  * We use the key to generate a salt to generate a deterministic address for
  * the contract that isn't dependent on the nonce of the contract deployer account.
  */
-const getSaltFromKey = (key: number) => {
-  return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key.toString()]));
+const getSaltFromKey = (key: string): string => {
+  return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key]));
 };
 
 /**
@@ -29,27 +29,23 @@ const loadDeployerContract = async (env: EnvironmentInfo, walletOptions: WalletO
 async function deployContract(
   env: EnvironmentInfo,
   walletsOptions: WalletOptions,
-  deployerKey: number,
+  deployerKey: string,
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
 
-  let overrides = {
-    gasLimit: 30000000
-  };
-
-  const salt = getSaltFromKey(deployerKey);
-  const deployer = await loadDeployerContract(env, walletsOptions);
+  const salt: string = getSaltFromKey(deployerKey);
+  const deployer: Contract = await loadDeployerContract(env, walletsOptions);
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
-  const bytecode = contractFactory.getDeployTransaction(...constructorArgs).data;
+  const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
 
   // Deploy the contract
-  let tx = await deployer.deploy(bytecode, salt, overrides);
+  let tx = await deployer.deploy(bytecode, salt, { gasLimit: 30000000 });
   await tx.wait();
-  // console.log(`[${env.network}] TX hash: ${tx.hash}`);
 
-  // Calculate the address the contract is deployed to
-  const [owner] = await hardhat.getSigners();
-  const contractAddress = await deployer.deployedAddress(bytecode, owner.address, salt);
+  // Calculate the address the contract is deployed to, and attach to return it
+  const contractAddress = await deployer.deployedAddress(bytecode, await walletsOptions.getWallet().getAddress(), salt);
+  console.log(`[${env.network}] Deployed ${contractName} to ${contractAddress} with hash ${tx.hash}`);
+
   return contractFactory.attach(contractAddress);
 }
 
@@ -81,38 +77,30 @@ async function main(): Promise<EnvironmentInfo> {
     `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWalletImplLocatorChanger().getAddress()}`
   );
 
-  // TOTAL deployment cost = 0.009766773 GWEI = 0.000000000009766773 ETHER
-  // Deployments with esimated gas costs (GWEI)
   console.log(`[${network}] Deploying contracts...`);
 
   // Key for the salt, use this to change the address of the contract
-  let key = 2;
+  let key: string = 'relayer-key-2';
 
   // 1. Deploy multi call deploy
   const multiCallDeploy = await deployContract(env, wallets, key, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
-  console.log(`[${network}] MultiCallDeploy address is ${multiCallDeploy.address}`);
 
   // 2. Deploy factory with multi call deploy address as deployer role EST
   const factory = await deployContract(env, wallets, key, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
-  console.log(`[${network}] Factory address is ${factory.address}`);
 
   // 3. Deploy wallet impl locator
   const walletImplLocator = await deployContract(env, wallets, key, 'LatestWalletImplLocator', [
     walletImplLocatorAdmin, await wallets.getWalletImplLocatorChanger().getAddress()
   ]);
-  console.log(`[${network}] LatestWalletImplLocator address is ${walletImplLocator.address}`);
 
   // 4. Deploy startup wallet impl
   const startupWalletImpl = await deployContract(env, wallets, key, 'StartupWalletImpl', [walletImplLocator.address]);
-  console.log(`[${network}] StartupWalletImpl address is ${startupWalletImpl.address}`);
 
   // 5. Deploy main module dynamic auth
   const mainModuleDynamicAuth = await deployContract(env, wallets, key, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address]);
-  console.log(`[${network}] MainModuleDynamicAuth address is ${mainModuleDynamicAuth.address}`);
 
   // 6. Deploy immutable signer
   const immutableSigner = await deployContract(env, wallets, key, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
-  console.log(`[${network}] ImmutableSigner address is ${immutableSigner.address}`);
 
   // Fund the implementation changer
   // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys the contracts.
