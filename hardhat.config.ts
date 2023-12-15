@@ -39,31 +39,31 @@ const config: HardhatUserConfig = {
     // Define here to easily specify private keys
     localhost: loadAndValidateEnvironment('localhost')
       ? {
-          url: 'http://127.0.0.1:8545',
-          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
-        }
+        url: 'http://127.0.0.1:8545',
+        accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      }
       : {
-          url: 'SET ENVIRONMENT VARIABLES',
-          accounts: []
-        },
+        url: 'SET ENVIRONMENT VARIABLES',
+        accounts: []
+      },
     devnet: loadAndValidateEnvironment('devnet')
       ? {
-          url: 'https://rpcx.dev.immutable.com',
-          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
-        }
+        url: 'https://rpcx.dev.immutable.com',
+        accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      }
       : {
-          url: 'SET ENVIRONMENT VARIABLES',
-          accounts: []
-        },
+        url: 'SET ENVIRONMENT VARIABLES',
+        accounts: []
+      },
     testnet: loadAndValidateEnvironment('testnet')
       ? {
-          url: 'https://rpc.testnet.immutable.com',
-          accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
-        }
+        url: 'https://rpc.testnet.immutable.com',
+        accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      }
       : {
-          url: 'SET ENVIRONMENT VARIABLES',
-          accounts: []
-        },
+        url: 'SET ENVIRONMENT VARIABLES',
+        accounts: []
+      },
     sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),
     ropsten: networkConfig('ropsten'),
@@ -104,5 +104,7 @@ export default config;
 
 function loadAndValidateEnvironment(network: string): boolean {
   require('dotenv').config({ path: `.env.${network}` });
-  return !!process.env.DEPLOYER_PRIV_KEY && !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY;
+  return !!process.env.DEPLOYER_PRIV_KEY &&
+    !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY &&
+    !!process.env.DEPLOYER_CONTRACT_ADDRESS;
 }

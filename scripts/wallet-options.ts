@@ -12,10 +12,10 @@ const mainnetEnv = 'mainnet';
 export class WalletOptions {
   private useLedger: boolean;
   private ledger: LedgerSigner;
-  private contractDeployer: Signer;
+  private coldWallet: Signer;
   private walletImplLocatorImplChanger: Signer;
 
-  constructor(env: EnvironmentInfo, contractDeployer: Signer, walletImplLocatorImplChanger: Signer) {
+  constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
     if (env.network == mainnetEnv || env.network == 'localhost') {
       console.log(`[${env.network}] Using ledger for operations...`);
       this.useLedger = true;
@@ -29,12 +29,12 @@ export class WalletOptions {
     this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
 
     // Setup the 2 programmatic wallets
-    this.contractDeployer = contractDeployer;
+    this.coldWallet = coldWallet;
     this.walletImplLocatorImplChanger = walletImplLocatorImplChanger;
   }
 
-  public getContractDeployer(): Signer {
-    return this.useLedger ? this.ledger : this.contractDeployer;
+  public getWallet(): Signer {
+    return this.useLedger ? this.ledger : this.coldWallet;
   }
 
   public getWalletImplLocatorChanger(): Signer {
@@ -48,8 +48,8 @@ export class WalletOptions {
  */
 export async function newWalletOptions(env: EnvironmentInfo): Promise<WalletOptions> {
   // Required private keys:
-  // 1. Deployer
+  // 1. coldWallet
   // 2. walletImplLocatorChanger
-  const [contractDeployer, walletImplLocatorImplChanger]: Signer[] = await hardhat.getSigners();
-  return new WalletOptions(env, contractDeployer, walletImplLocatorImplChanger);
+  const [coldWallet, walletImplLocatorImplChanger]: Signer[] = await hardhat.getSigners();
+  return new WalletOptions(env, coldWallet, walletImplLocatorImplChanger);
 }

@@ -1,10 +1,8 @@
-import * as path from 'path';
 import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { ethers, Contract, ContractFactory, Signer } from 'ethers';
 import { ethers as hardhat } from 'hardhat';
 
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newContractFactory } from './helper-functions';
 import { newWalletOptions, WalletOptions } from './wallet-options';
