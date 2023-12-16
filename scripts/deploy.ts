@@ -39,7 +39,11 @@ async function deployContract(
   const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
 
   // Deploy the contract
-  let tx = await deployer.deploy(bytecode, salt, { gasLimit: 30000000 });
+  let tx = await deployer.deploy(bytecode, salt, {
+    gasLimit: 30000000,
+    maxFeePerGas: 10000000000,
+    maxPriorityFeePerGas: 10000000000,
+  });
   await tx.wait();
 
   // Calculate the address the contract is deployed to, and attach to return it
@@ -56,7 +60,6 @@ async function main(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, submitterAddress, signerAddress, outputPath } = env;
 
-  console.log('');
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] Submitter address ${submitterAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
@@ -80,7 +83,7 @@ async function main(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Deploying contracts...`);
 
   // Key for the salt, use this to change the address of the contract
-  let key: string = 'relayer-key-2';
+  let key: string = 'relayer-deployer-key-1';
 
   // 1. Deploy multi call deploy
   const multiCallDeploy = await deployContract(env, wallets, key, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
@@ -107,6 +110,9 @@ async function main(): Promise<EnvironmentInfo> {
   const fundingTx = await wallets.getWallet().sendTransaction({
     to: await wallets.getWalletImplLocatorChanger().getAddress(),
     value: hardhat.utils.parseEther('10'),
+    gasLimit: 30000000,
+    maxFeePerGas: 10000000000,
+    maxPriorityFeePerGas: 10000000000,
   });
   await fundingTx.wait();
   console.log(`[${network}] Transfered funds to the wallet locator implementer changer with hash ${fundingTx.hash}`);
@@ -147,9 +153,9 @@ async function main(): Promise<EnvironmentInfo> {
 main()
   .then((env: EnvironmentInfo) => {
     console.log(`[${env.network}] Contracts deployment successful...`);
-    process.exit();
+    process.exit(0);
   })
   .catch(err => {
     console.error(err.message);
-    process.exit();
+    process.exit(1);
   });

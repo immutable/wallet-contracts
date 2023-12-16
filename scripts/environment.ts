@@ -1,5 +1,4 @@
 import * as path from 'path';
-import dotenv from 'dotenv';
 
 /**
  * An environment should include the address details for the submitter,
@@ -22,7 +21,6 @@ export interface EnvironmentInfo {
  * 4. mainnet
  **/
 export function loadEnvironmentInfo(hreNetworkName: string): EnvironmentInfo {
-  dotenv.config({ path: `.env.${hreNetworkName}` });
   return {
     submitterAddress: process.env.RELAYER_SUBMITTER_EOA_PUB_KEY,
     signerAddress: process.env.IMMUTABLE_SIGNER_PUB_KEY,

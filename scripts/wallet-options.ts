@@ -17,14 +17,8 @@ export class WalletOptions {
   private walletImplLocatorImplChanger: Signer;
 
   constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
-    if (env.network == mainnetEnv || env.network == 'localhost') {
-      console.log(`[${env.network}] Using ledger for operations...`);
-      this.useLedger = true;
-    } else {
-      console.log(`[${env.network}] Using programmatic wallets for operations...`);
-      this.useLedger = false;
-    }
-
+    console.log(`[${env.network}] Using ledger for operations...`);
+    this.useLedger = true;
     const accountIndex0 = 0;
     const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
     this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
