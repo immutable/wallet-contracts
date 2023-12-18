@@ -1,57 +1,10 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { BytesLike, Contract, ContractFactory, utils } from 'ethers';
 import { ethers as hardhat } from 'hardhat';
 
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
-import { newContractFactory } from './helper-functions';
 import { newWalletOptions, WalletOptions } from './wallet-options';
-import ContractDeployerInterface from './abi/OwnableCreate2Deployer.json';
-
-/**
- * We use the key to generate a salt to generate a deterministic address for
- * the contract that isn't dependent on the nonce of the contract deployer account.
- */
-const getSaltFromKey = (key: string): string => {
-  return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key]));
-};
-
-/**
- * Load the OwnableCreate2Deployer 
- */
-const loadDeployerContract = async (env: EnvironmentInfo, walletOptions: WalletOptions): Promise<Contract> => {
-  return new Contract(env.deployerContractAddress, ContractDeployerInterface.abi, walletOptions.getWallet());
-}
-
-/**
- * Deploy the contract using the OwnableCreate2Deployer contract.
- */
-async function deployContract(
-  env: EnvironmentInfo,
-  walletsOptions: WalletOptions,
-  deployerKey: string,
-  contractName: string,
-  constructorArgs: Array<string | undefined>): Promise<Contract> {
-
-  const salt: string = getSaltFromKey(deployerKey);
-  const deployer: Contract = await loadDeployerContract(env, walletsOptions);
-  const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
-  const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
-
-  // Deploy the contract
-  let tx = await deployer.deploy(bytecode, salt, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
-  });
-  await tx.wait();
-
-  // Calculate the address the contract is deployed to, and attach to return it
-  const contractAddress = await deployer.deployedAddress(bytecode, await walletsOptions.getWallet().getAddress(), salt);
-  console.log(`[${env.network}] Deployed ${contractName} to ${contractAddress} with hash ${tx.hash}`);
-
-  return contractFactory.attach(contractAddress);
-}
+import { deployContractViaCREATE2 } from './contract';
 
 /**
  * main function deploys all the SCW infrastructure.
@@ -68,8 +21,6 @@ async function main(): Promise<EnvironmentInfo> {
   // Administration accounts
   let multiCallAdminPubKey = '0x575be326c482a487add43974e0eaf232e3366e13';
   let factoryAdminPubKey = '0xddb70ddcd14dbd57ae18ec591f47454e4fc818bb';
-
-  // CHANGEME: When deploying to mainnet, this address needs to match the second address from the wallet
   let walletImplLocatorAdmin = '0xb49c99a17776c10350c2be790e13d4d8dfb1c578';
   let signerRootAdminPubKey = '0x65af83f71a05d7f6d06ef9a57c9294b4128ccc2c';
   let signerAdminPubKey = '0x69d09644159e7327dbfd0af9a66f8e332c593e79';
@@ -82,28 +33,45 @@ async function main(): Promise<EnvironmentInfo> {
 
   console.log(`[${network}] Deploying contracts...`);
 
+  // Addresses that need to be pre-determined
+  // 1. Factory
+  // 2. StartupWalletImpl
+  // 3. SignerContract
+
   // Key for the salt, use this to change the address of the contract
   let key: string = 'relayer-deployer-key-1';
 
-  // 1. Deploy multi call deploy
-  const multiCallDeploy = await deployContract(env, wallets, key, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
+  // --- STEP 1: Deployed using Passport Nonce Reserver.
 
-  // 2. Deploy factory with multi call deploy address as deployer role EST
-  const factory = await deployContract(env, wallets, key, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
+  // 1. Deploy multi call deploy (PNR)
+  const multiCallDeploy = await deployContractViaCREATE2(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
 
-  // 3. Deploy wallet impl locator
-  const walletImplLocator = await deployContract(env, wallets, key, 'LatestWalletImplLocator', [
+  // 2. Deploy factory with multi call deploy address as deployer role EST (PNR)
+  const factory = await deployContractViaCREATE2(env, wallets, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
+
+  // --- Step 2: Deployed using CREATE2 Factory
+
+  // 3. Deploy wallet impl locator (CFC)
+  const walletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
     walletImplLocatorAdmin, await wallets.getWalletImplLocatorChanger().getAddress()
   ]);
 
-  // 4. Deploy startup wallet impl
-  const startupWalletImpl = await deployContract(env, wallets, key, 'StartupWalletImpl', [walletImplLocator.address]);
+  // --- Step 3: Deployed using Passport Nonce Reserver.
 
-  // 5. Deploy main module dynamic auth
-  const mainModuleDynamicAuth = await deployContract(env, wallets, key, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address]);
+  // 4. Deploy startup wallet impl (PNR)
+  const startupWalletImpl = await deployContractViaCREATE2(env, wallets, 'StartupWalletImpl', [walletImplLocator.address]);
 
-  // 6. Deploy immutable signer
-  const immutableSigner = await deployContract(env, wallets, key, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
+  // --- Step 4: Deployed using CREATE2 Factory.
+
+  // 5. Deploy main module dynamic auth (CFC)
+  const mainModuleDynamicAuth = await deployContractViaCREATE2(env, wallets, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address]);
+
+  // --- Step 5: Deployed using Passport Nonce Reserver.
+
+  // 6. Deploy immutable signer (PNR)
+  const immutableSigner = await deployContractViaCREATE2(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
+
+  // --- Step 6: Deployed using alternate wallet (?)
 
   // Fund the implementation changer
   // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys the contracts.

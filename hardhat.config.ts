@@ -15,7 +15,6 @@ dotenv.config();
 loadAndValidateEnvironment();
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "localhost",
   solidity: {
     compilers: [{ version: '0.8.17' }],
     settings: {
