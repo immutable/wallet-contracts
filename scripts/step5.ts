@@ -10,9 +10,11 @@ import { waitForInput } from './helper-functions';
  **/
 async function step5(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network, submitterAddress, signerAddress, } = env;
-  const signerRootAdminPubKey = '0x65af83f71a05d7f6d06ef9a57c9294b4128ccc2c';
-  const signerAdminPubKey = '0x69d09644159e7327dbfd0af9a66f8e332c593e79';
+  const { network, signerAddress, } = env;
+  // const signerRootAdminPubKey = '0x65af83f71a05d7f6d06ef9a57c9294b4128ccc2c';
+  // const signerAdminPubKey = '0x69d09644159e7327dbfd0af9a66f8e332c593e79';
+  const signerRootAdminPubKey = process.env.SIGNER_ROOT_ADMIN_PUB_KEY;
+  const signerAdminPubKey = process.env.SIGNER_ADMIN_PUB_KEY;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] SignerRootAdmin address ${signerRootAdminPubKey}`);
@@ -29,6 +31,9 @@ async function step5(): Promise<EnvironmentInfo> {
   const immutableSigner = await deployContract(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
 
   fs.writeFileSync('step5.json', JSON.stringify({
+    signerRootAdminPubKey: signerRootAdminPubKey,
+    signerAdminPubKey: signerAdminPubKey,
+    signerAddress: signerAddress,
     immutableSigner: immutableSigner.address,
   }, null, 1));
 

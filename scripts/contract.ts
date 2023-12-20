@@ -60,9 +60,12 @@ export async function deployContract(
   walletsOptions: WalletOptions,
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
-
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
-  const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs);
+  const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs, {
+    gasLimit: 30000000,
+    maxFeePerGas: 10000000000,
+    maxPriorityFeePerGas: 10000000000,
+  });
   console.log(`[${env.network}] Deployed ${contractName} to ${contract.address}`);
   return contract;
 }

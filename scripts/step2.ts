@@ -11,28 +11,30 @@ import { waitForInput } from './helper-functions';
 async function step2(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, deployerContractAddress } = env;
+  // Administration accounts
+  // Is this correct for Mainnet?
+  // const walletImplLocatorAdmin = '0xb49c99a17776c10350c2be790e13d4d8dfb1c578';
+  const walletImplLocatorAdmin = process.env.WALLET_IMPL_LOCATOR_ADMIN;
+  const walletImplChangerAdmin = process.env.WALLET_IMPL_CHANGER_ADMIN;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] CREATE2 Factory address ${deployerContractAddress}`);
+  console.log(`[${network}] Wallet ImplLocator Admin address ${walletImplLocatorAdmin}`);
+  console.log(`[${network}] Wallet ImplLocator Changer address ${walletImplChangerAdmin}`);
 
   await waitForInput();
 
-  // Administration accounts
-  // Is this correct for Mainnet?
-  let walletImplLocatorAdmin = '0xb49c99a17776c10350c2be790e13d4d8dfb1c578';
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
-  console.log(
-    `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWalletImplLocatorChanger().getAddress()}`
-  );
 
   // --- Step 2: Deployed using CREATE2 Factory
   const latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
-    walletImplLocatorAdmin, await wallets.getWalletImplLocatorChanger().getAddress()
+    walletImplLocatorAdmin, walletImplChangerAdmin
   ]);
 
   fs.writeFileSync('step2.json', JSON.stringify({
+    walletImplLocatorAdmin: walletImplLocatorAdmin,
+    walletImplChangerAdmin: walletImplChangerAdmin,
     latestWalletImplLocator: latestWalletImplLocator.address,
   }, null, 1));
 

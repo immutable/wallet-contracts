@@ -11,7 +11,7 @@ import { waitForInput } from './helper-functions';
 async function step3(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const walletImplLocatorAddress = '<CHANGE_ME>';
+  const walletImplLocatorAddress = '0xDF3d36188b561F621B0aA993eA89FB95d3761356';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
@@ -26,6 +26,7 @@ async function step3(): Promise<EnvironmentInfo> {
   const startupWalletImpl = await deployContract(env, wallets, 'StartupWalletImpl', [walletImplLocatorAddress]);
 
   fs.writeFileSync('step3.json', JSON.stringify({
+    walletImplLocatorAddress: walletImplLocatorAddress,
     startupWalletImpl: startupWalletImpl.address,
   }, null, 1));
 

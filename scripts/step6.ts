@@ -9,9 +9,9 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
  **/
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network, submitterAddress, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '<CHANGE_ME>';
-  const walletImplLocatorContractAddress = '<CHANGE_ME>';
+  const { network, signerAddress, } = env;
+  const mainModuleDynamicAuthAddress = '0x0649E0E24d498B0DF987c4AAa18E95D9879e9fcF';
+  const walletImplLocatorContractAddress = '0xDF3d36188b561F621B0aA993eA89FB95d3761356';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);
@@ -23,28 +23,20 @@ async function step6(): Promise<EnvironmentInfo> {
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
   console.log(
-    `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWalletImplLocatorChanger().getAddress()}`
+    `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWallet().getAddress()}`
   );
 
   // --- Step 6: Deployed using alternate wallet
-  // Fund the implementation changer
-  // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys the contracts.
-  const fundingTx = await wallets.getWallet().sendTransaction({
-    to: await wallets.getWalletImplLocatorChanger().getAddress(),
-    value: utils.parseEther('10'),
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
-  });
-  await fundingTx.wait();
-  console.log(`[${network}] Transfered funds to the wallet locator implementer changer with hash ${fundingTx.hash}`);
-
   // Set implementation address on impl locator to dynamic module auth addr
   const contractFactory: ContractFactory = await newContractFactory(wallets.getWallet(), 'LatestWalletImplLocator');
   const walletImplLocator: Contract = contractFactory.attach(walletImplLocatorContractAddress);
   const tx = await walletImplLocator
-    .connect(wallets.getWalletImplLocatorChanger())
-    .changeWalletImplementation(mainModuleDynamicAuthAddress);
+    .connect(wallets.getWallet())
+    .changeWalletImplementation(mainModuleDynamicAuthAddress, {
+      gasLimit: 30000000,
+      maxFeePerGas: 10000000000,
+      maxPriorityFeePerGas: 10000000000,
+    });
   await tx.wait();
   console.log(`[${network}] Wallet Impl Locator implementation changed to: ${mainModuleDynamicAuthAddress}`);
 
