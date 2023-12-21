@@ -11,9 +11,6 @@ import { waitForInput } from './helper-functions';
 async function step2(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, deployerContractAddress } = env;
-  // Administration accounts
-  // Is this correct for Mainnet?
-  // const walletImplLocatorAdmin = '0xb49c99a17776c10350c2be790e13d4d8dfb1c578';
   const walletImplLocatorAdmin = process.env.WALLET_IMPL_LOCATOR_ADMIN;
   const walletImplChangerAdmin = process.env.WALLET_IMPL_CHANGER_ADMIN;
 

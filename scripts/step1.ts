@@ -16,8 +16,6 @@ import { waitForInput } from './helper-functions';
 async function step1(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, submitterAddress, signerAddress, } = env;
-  // const multiCallAdminPubKey = '0x575be326c482a487add43974e0eaf232e3366e13';
-  // const factoryAdminPubKey = '0xddb70ddcd14dbd57ae18ec591f47454e4fc818bb';
   const multiCallAdminPubKey = process.env.MULTICALL_ADMIN_PUB_KEY;
   const factoryAdminPubKey = process.env.FACTORY_ADMIN_PUB_KEY;
 
