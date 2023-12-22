@@ -11,7 +11,7 @@ import { waitForInput } from './helper-functions';
 async function step3(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const walletImplLocatorAddress = '0xDF3d36188b561F621B0aA993eA89FB95d3761356';
+  const walletImplLocatorAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);

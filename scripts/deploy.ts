@@ -11,12 +11,11 @@ import { deployContractViaCREATE2 } from './contract';
  **/
 async function main(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network, submitterAddress, signerAddress, outputPath } = env;
+  const { network, submitterAddress, signerAddress } = env;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] Submitter address ${submitterAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
-  console.log(`[${network}] Output ${outputPath}`);
 
   // Administration accounts
   let multiCallAdminPubKey = '0x575be326c482a487add43974e0eaf232e3366e13';
@@ -33,16 +32,10 @@ async function main(): Promise<EnvironmentInfo> {
 
   console.log(`[${network}] Deploying contracts...`);
 
-  // Addresses that need to be pre-determined
-  // 1. Factory
-  // 2. StartupWalletImpl
-  // 3. SignerContract
-
   // Key for the salt, use this to change the address of the contract
   let key: string = 'relayer-deployer-key-1';
 
   // --- STEP 1: Deployed using Passport Nonce Reserver.
-
   // 1. Deploy multi call deploy (PNR)
   const multiCallDeploy = await deployContractViaCREATE2(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
 
@@ -50,29 +43,24 @@ async function main(): Promise<EnvironmentInfo> {
   const factory = await deployContractViaCREATE2(env, wallets, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
 
   // --- Step 2: Deployed using CREATE2 Factory
-
   // 3. Deploy wallet impl locator (CFC)
   const walletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
     walletImplLocatorAdmin, await wallets.getWalletImplLocatorChanger().getAddress()
   ]);
 
   // --- Step 3: Deployed using Passport Nonce Reserver.
-
   // 4. Deploy startup wallet impl (PNR)
   const startupWalletImpl = await deployContractViaCREATE2(env, wallets, 'StartupWalletImpl', [walletImplLocator.address]);
 
   // --- Step 4: Deployed using CREATE2 Factory.
-
   // 5. Deploy main module dynamic auth (CFC)
   const mainModuleDynamicAuth = await deployContractViaCREATE2(env, wallets, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address]);
 
   // --- Step 5: Deployed using Passport Nonce Reserver.
-
   // 6. Deploy immutable signer (PNR)
   const immutableSigner = await deployContractViaCREATE2(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
 
   // --- Step 6: Deployed using alternate wallet (?)
-
   // Fund the implementation changer
   // WARNING: If the deployment fails at this step, DO NOT RERUN without commenting out the code a prior which deploys the contracts.
   const fundingTx = await wallets.getWallet().sendTransaction({
@@ -112,7 +100,7 @@ async function main(): Promise<EnvironmentInfo> {
     MultiCallExecutorAddress: env.submitterAddress
   };
 
-  fs.writeFileSync(env.outputPath, JSON.stringify(jsonOutput, null, 1));
+  fs.writeFileSync("deploy_output.json", JSON.stringify(jsonOutput, null, 1));
 
   return env;
 }

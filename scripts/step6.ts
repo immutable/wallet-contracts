@@ -10,8 +10,8 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '0x0649E0E24d498B0DF987c4AAa18E95D9879e9fcF';
-  const walletImplLocatorContractAddress = '0xDF3d36188b561F621B0aA993eA89FB95d3761356';
+  const mainModuleDynamicAuthAddress = '0x38D64731246b62fd7A79731ff1cC4D579aA420D0';
+  const walletImplLocatorContractAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);

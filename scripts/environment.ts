@@ -8,7 +8,6 @@ export interface EnvironmentInfo {
   submitterAddress: string;
   signerAddress: string;
   deployerContractAddress: string;
-  outputPath: string;
   network: string;
 }
 
@@ -25,7 +24,6 @@ export function loadEnvironmentInfo(hreNetworkName: string): EnvironmentInfo {
     submitterAddress: process.env.RELAYER_SUBMITTER_EOA_PUB_KEY || '',
     signerAddress: process.env.IMMUTABLE_SIGNER_PUB_KEY || '',
     deployerContractAddress: process.env.DEPLOYER_CONTRACT_ADDRESS || '',
-    outputPath: path.join(__dirname, process.env.OUTPUT_FILE_NAME || ''),
     network: hreNetworkName
   };
 }
