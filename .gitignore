@@ -15,6 +15,7 @@ config/*.env
 
 src/gen
 src/artifacts
+scripts/*_output*.json
 
 # MAC OS custom directory attributes file.
 .DS_Store
@@ -23,4 +24,9 @@ src/artifacts
 .idea
 *.iml
 
+# Ignore any environmental files with sensitive data
 .env
+.env.localhost
+.env.devnet
+.env.testnet
+.env.mainnet
