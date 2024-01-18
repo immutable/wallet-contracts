@@ -9,9 +9,9 @@ import { ethers, network } from 'hardhat'
 // Do signature verification
 // inspect console.log lines
 
-//   "passport": {
-  // "zkevm_eth_address": "0x3878cadc6a521dceb1f46599913ce726c430a8e1",
-  // "zkevm_user_admin_address": "0xa110e9ccdc3714d1dabb2f25e8883061f75011bd"
+// "passport": {
+//     "zkevm_eth_address": "0x3878cadc6a521dceb1f46599913ce726c430a8e1",
+//     "zkevm_user_admin_address": "0xa110e9ccdc3714d1dabb2f25e8883061f75011bd"
 
 async function main() {
   // Get signature values
@@ -67,6 +67,7 @@ async function main() {
   console.log("STORAGE AT: ", await ethers.provider.getStorageAt(scwAddr, scwAddr));
   console.log('PROXY IMPLEMENTATION: ', await walletProxy.PROXY_getImplementation())
   const implementationValue = "0x000000000000000000000000" + moduleLog.address.substring(2);
+  console.log()
   await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, implementationValue])
 
 
