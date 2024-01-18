@@ -44,6 +44,18 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
       ));
     console.log("WANT %s", address(this));
     bytes32 storedImageHash = ModuleStorage.readBytes32(ImageHashKey.IMAGE_HASH_KEY);
+    console.log("WANT (calculate) %s",     address(
+        uint160(uint256(
+          keccak256(
+            abi.encodePacked(
+              bytes1(0xff),
+              FACTORY,
+              storedImageHash,
+              INIT_CODE_HASH
+            )
+          )
+        ))
+      ));
     console.log("STORED IMAGE HASH: ");
     console.logBytes32(storedImageHash);
     address(

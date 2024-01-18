@@ -67,8 +67,7 @@ async function main() {
   console.log("STORAGE AT: ", await ethers.provider.getStorageAt(scwAddr, scwAddr));
   console.log('PROXY IMPLEMENTATION: ', await walletProxy.PROXY_getImplementation())
   const implementationValue = "0x000000000000000000000000" + moduleLog.address.substring(2);
-  console.log()
-  await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, implementationValue])
+  await network.provider.send('hardhat_setStorageAt', [scwAddr, "0xaa0bbd0bde831fd2288bc397b6b76f73d960650", implementationValue])
 
 
   // Do signature verification

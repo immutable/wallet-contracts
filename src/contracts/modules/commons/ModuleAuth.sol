@@ -130,7 +130,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
       console.log("Calculating image hash for %s with weight %s", addr, addrWeight);
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
-
+    
     (bool verified, bool needsUpdate) = _isValidImage(imageHash);
     console.log("Verified");
     console.logBool(verified);
