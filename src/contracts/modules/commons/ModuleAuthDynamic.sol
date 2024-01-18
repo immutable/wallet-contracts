@@ -28,7 +28,36 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
    * @return true if the signature image is valid, and true if the image hash needs to be updated
    */
   function _isValidImage(bytes32 _imageHash) internal view override returns (bool, bool) {
+      console.log("IS VALID IMAGE 1:");
+      console.logBytes32(_imageHash);
+      console.log("GOT %s", address(
+        uint160(uint256(
+          keccak256(
+            abi.encodePacked(
+              bytes1(0xff),
+              FACTORY,
+              _imageHash,
+              INIT_CODE_HASH
+            )
+          )
+        ))
+      ));
+    console.log("WANT %s", address(this));
     bytes32 storedImageHash = ModuleStorage.readBytes32(ImageHashKey.IMAGE_HASH_KEY);
+    console.log("STORED IMAGE HASH: ");
+    console.logBytes32(storedImageHash);
+    address(
+        uint160(uint256(
+          keccak256(
+            abi.encodePacked(
+              bytes1(0xff),
+              FACTORY,
+              _imageHash,
+              INIT_CODE_HASH
+            )
+          )
+        ))
+      );
     if (storedImageHash == 0) {
       // No image hash stored. Check that the image hash was used as the salt when 
       // deploying the wallet proxy contract.
@@ -47,7 +76,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
       // Indicate need to update = true. This will trigger a call to store the image hash
       return (authenticated, true);
     }
-
+    
     // Image hash has been stored. 
     return ((_imageHash != bytes32(0) && _imageHash == storedImageHash), false);
   }

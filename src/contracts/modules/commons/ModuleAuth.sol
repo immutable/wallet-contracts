@@ -118,7 +118,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         (signature, rindex) = _signature.readBytes(rindex, size);
         console.log("ModuleAuth: isValidSignature");
         console.logBool(isValidSignature(_hash, addr, signature));
-        require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
+      require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
 
         // Acumulate total weight of the signature
         totalWeight += addrWeight;
@@ -127,6 +127,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
       }
 
       // Write weight and address to image
+      console.log("Calculating image hash for %s with weight %s", addr, addrWeight);
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
 
