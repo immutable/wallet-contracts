@@ -5,6 +5,8 @@ import "../interfaces/IERC1271Wallet.sol";
 
 import "./LibBytes.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @dev Contains logic for signature validation.
  * Signatures from wallet contracts assume ERC-1271 support (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1271.md)
@@ -129,6 +131,8 @@ contract SignatureValidator {
       // Remove signature type before calling ERC1271, restore after call
       uint256 prevSize; assembly { prevSize := mload(_signature) mstore(_signature, sub(prevSize, 1)) }
       valid = ERC1271_MAGICVALUE_BYTES32 == IERC1271Wallet(_signer).isValidSignature(_hash, _signature);
+      console.log("===== IMMUTABLE SIGNER VALID =====");
+      console.logBool(valid);
       assembly { mstore(_signature, prevSize) }
 
     } else {

@@ -36,13 +36,26 @@ const config: HardhatUserConfig = {
     tests: '../tests'
   },
   networks: {
+    hardhat: {
+      chainId: 13473,
+      forking: {
+        url: "https://rpc.testnet.immutable.com/", 
+      },
+    },
+    fork: {
+      url: "http://127.0.0.1:8545/"
+    },
     // Define here to easily specify private keys
     zkevm: validateEnvironment() ? {
-      url: "https://rpc.testnet.immutable.com",
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      url: "https://rpc.testnet.immutable.com/",
+      accounts: ["1f6f17db77bf966ae1bb2fa0fc32868a3d5913f1b931f085ffe6522d5966f8d3"]
     } : {
       url: "SET ENVIRONMENT VARIABLES",
       accounts: [],
+    },
+    zkevmdevnet: {
+      url: "0xEB7FFb9fb0c80437120f6F97EdE60aB59055EAE0",
+      accounts: []
     },
     sepolia: networkConfig('sepolia'),
     mainnet: networkConfig('mainnet'),

@@ -9,6 +9,8 @@ import "./interfaces/IModuleAuth.sol";
 
 import "./ModuleERC165.sol";
 
+import "hardhat/console.sol";
+
 
 abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, IERC1271Wallet {
   using LibBytes for bytes;
@@ -76,6 +78,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   )
     internal view returns (bool, bool, bytes32)
   {
+    console.log("=========== Beginning signature validation ===========");
     (
       uint16 threshold,  // required threshold signature
       uint256 rindex     // read index
@@ -204,6 +207,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes calldata _signatures
   ) external override view returns (bytes4) {
     // Validate signatures
+    console.log("BEGINNING IS VALID SIGNATURE");
     if (_signatureValidationInternal(_subDigest(_hash), _signatures)) {
       return SELECTOR_ERC1271_BYTES32_BYTES;
     }

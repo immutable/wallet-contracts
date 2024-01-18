@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 
 import {SignatureValidator} from '../utils/SignatureValidator.sol';
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
+import "hardhat/console.sol";
+
 
 /**
  * @title ImmutableSigner
@@ -99,6 +101,8 @@ contract ImmutableSigner is SignatureValidator, AccessControl {
    * @return magicValue Magic value 0x1626ba7e if the signature is valid and 0x0 otherwise
    */
   function isValidSignature(bytes32 _hash, bytes memory _signature) external view returns (bytes4) {
+    console.log("=============== Signature ===============");
+    console.logBytes(_signature);
     if (recoverSigner(_hash, _signature) == primarySigner) {
       return ERC1271_MAGICVALUE_BYTES32;
     }

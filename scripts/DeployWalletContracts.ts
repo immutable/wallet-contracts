@@ -5,13 +5,40 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'ethers';
 import { ethers as hardhat } from 'hardhat'
 import { expect } from 'chai';
+import { arrayify } from 'ethers/lib/utils';
 
 require('dotenv').config();
 
 const outputPath = path.join(__dirname, './deploy_output.json');
+const deployPath = path.join(__dirname, './721_deploy_data_mints.json'); 
 let deployer: SignerWithAddress;
 
 async function deploy() {
+
+    const [deployer] = await hardhat.getSigners();
+    const erc721Mock = await hardhat.getContractFactory("ERC721Mock");
+    const deployTx = erc721Mock.getDeployTransaction();
+    const transaction = {
+        data: deployTx.data
+    }
+    const txReq = await deployer.sendTransaction(transaction);
+    console.log();
+    console.log(txReq);
+
+
+    // const deployTx = await erc721Mock.deploy();
+
+    // await deployTx.deployed();
+    // console.log();
+
+    // const deployTx = erc20Mock.getDeployTransaction();
+      // Output JSON file with addresses and role addresses
+
+    fs.writeFileSync(deployPath, JSON.stringify(deployTx, null, 1));
+  
+    // console.log(await hardhat.provider.estimateGas(deployTx));
+    return
+    
     // TODO: We should obtain an API key for blockscout and uncomment
     // the following lines before a mainnet deployment
     // if (typeof process.env.ETHERSCAN_API_KEY === 'undefined') {
