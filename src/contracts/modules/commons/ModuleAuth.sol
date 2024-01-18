@@ -9,6 +9,8 @@ import "./interfaces/IModuleAuth.sol";
 
 import "./ModuleERC165.sol";
 
+import "hardhat/console.sol";
+
 
 abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, IERC1271Wallet {
   using LibBytes for bytes;
@@ -101,7 +103,6 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         bytes memory signature;
         (signature, rindex) = _signature.readBytes66(rindex);
         addr = recoverSigner(_hash, signature);
-
         // Acumulate total weight of the signature
         totalWeight += addrWeight;
       } else if (flag == FLAG_DYNAMIC_SIGNATURE) {
@@ -115,7 +116,9 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         // Read dynamic size signature
         bytes memory signature;
         (signature, rindex) = _signature.readBytes(rindex, size);
-        require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
+        console.log("ModuleAuth: isValidSignature");
+        console.logBool(isValidSignature(_hash, addr, signature));
+      require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
 
         // Acumulate total weight of the signature
         totalWeight += addrWeight;
@@ -124,10 +127,15 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
       }
 
       // Write weight and address to image
+      console.log("Calculating image hash for %s with weight %s", addr, addrWeight);
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
-
+    
     (bool verified, bool needsUpdate) = _isValidImage(imageHash);
+    console.log("Verified");
+    console.logBool(verified);
+    console.log("Needs update");
+    console.logBool(needsUpdate);
     return ((totalWeight >= threshold && verified), needsUpdate, imageHash);
   }
 
@@ -166,7 +174,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   // solhint-disable-next-line no-empty-blocks
   function updateImageHashInternal(bytes32 _imageHash) internal virtual {
     // Default implementation does nothing
-  }
+}
   
 
 
@@ -183,6 +191,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes calldata _data,
     bytes calldata _signatures
   ) external override view returns (bytes4) {
+    console.log("====== IS VALID SIGNATURE ======");
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(keccak256(_data)), _signatures)) {
       return SELECTOR_ERC1271_BYTES_BYTES;
@@ -203,6 +212,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes32 _hash,
     bytes calldata _signatures
   ) external override view returns (bytes4) {
+    console.log("====== IS VALID SIGNATURE bytes32 HASH ======");
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(_hash), _signatures)) {
       return SELECTOR_ERC1271_BYTES32_BYTES;
