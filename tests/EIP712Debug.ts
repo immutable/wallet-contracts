@@ -11,7 +11,7 @@ import { ethers, network } from 'hardhat'
 
 async function main() {
   // Get signature values
-  const typedHash = "0x0b8f209be8d541a4ded6b82c0414aac2cee9cb89f19518b6ee1502ba555cb16c"
+  const typedHash = '0x0b8f209be8d541a4ded6b82c0414aac2cee9cb89f19518b6ee1502ba555cb16c'
   const messageSubDigest = '0xede3e129db20579573bccededc094e9a0f3cb8c8df59bbf3526eb7072bffa6f3'
   const packedAggregateSignature =
     '0x000202011b1d383526a2815d26550eb314b5d7e0551327330043c9d1d1d25201bd592da3eb99a5c4568105a79c168b93eebe2444ddf1f7a61174394b2b8616ba8ce9aae7741e2131caf66b80773f3557e18ec0d93a68a17090cb1b010300014f84dcc8d9fe6c2d8ed83d2edc01cc1fc81e29a6a75bce6301072b3e30f972b744f259055466795f372eb5d82c5314a781209c827c634fd3435d617ce58639481c02'
@@ -54,21 +54,18 @@ async function main() {
   const modLogCode = await ethers.provider.getCode(moduleLog.address)
 
   // Get address for main module
-  const walletProxy = await ethers.getContractAt('IWalletProxy', scwAddr);
-
+  const walletProxy = await ethers.getContractAt('IWalletProxy', scwAddr)
 
   // Set code
-//   await network.provider.send('hardhat_setCode', [mainModuleAddr, modLogCode])
-  await network.provider.send("hardhat_setStorageAt", [
-    scwAddr,
-    scwAddr,
-    moduleLog.address,
-  ]);
-    //   await network.provider.send('hardhat_mine', ["0x100"])
-    console.log("PROXY IMPLEMENTATION", await walletProxy.PROXY_getImplementation());
-    console.log("MAIN MODULE ADDDR: ", moduleLog.address);
-
-  console.log("Equal ", modLogCode == await ethers.provider.getCode(mainModuleAddr));
+  //   await network.provider.send('hardhat_setCode', [mainModuleAddr, modLogCode])
+//   await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, moduleLog.address])
+  //   await network.provider.send('hardhat_mine', ["0x100"])
+//   console.log('MAIN MODULE ADDDR: ', moduleLog.address)
+  console.log("STORAGE AT: ", await ethers.provider.getStorageAt(scwAddr, scwAddr));
+  console.log('PROXY IMPLEMENTATION: ', await walletProxy.PROXY_getImplementation())
+  const implementationValue = "0x0000000000000000000000000" + moduleLog.address.substring(2);
+  console.log("MOD CODE ADDR: ", "0x0000000000000000000000000" + moduleLog.address.substring(2))
+  console.log('Equal ', modLogCode == (await ethers.provider.getCode(mainModuleAddr)))
 
   // Verify code update
   const newCode = await ethers.provider.getCode(mainModuleAddr)
@@ -80,10 +77,10 @@ async function main() {
   // Do signature verification
   // Attatch to SCW
   const moduleAuth = await ethers.getContractAt('ModuleAuth', scwAddr)
-//   Verify 2-of-2 signature
-const magicValue = await moduleAuth['isValidSignature(bytes32,bytes)'](typedHash, packedAggregateSignature)
+  //   Verify 2-of-2 signature
+  const magicValue = await moduleAuth['isValidSignature(bytes32,bytes)'](typedHash, packedAggregateSignature)
 
-    console.log('MAGIC VALUE', magicValue)
+  console.log('MAGIC VALUE', magicValue)
 }
 
 main().catch(error => {
