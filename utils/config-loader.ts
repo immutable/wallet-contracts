@@ -10,7 +10,7 @@ export const getEnvConfig = (env: string) => {
   const envLoad = dotenv.config({ path: envFile })
 
   if (envLoad.error) {
-    console.warn('No config found, using default')
+    // console.warn('No config found, using default')
     return { ETH_MNEMONIC: ethers.Wallet.createRandom().mnemonic.phrase }
   }
 

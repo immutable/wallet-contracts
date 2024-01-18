@@ -9,6 +9,8 @@ import "./interfaces/IModuleAuth.sol";
 
 import "./ModuleERC165.sol";
 
+import "hardhat/console.sol";
+
 
 abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, IERC1271Wallet {
   using LibBytes for bytes;
@@ -115,6 +117,8 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         // Read dynamic size signature
         bytes memory signature;
         (signature, rindex) = _signature.readBytes(rindex, size);
+        console.log("ModuleAuth: isValidSignature");
+        console.logBytes4(isValidSignature(_hash, addr, signature));
         require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
 
         // Acumulate total weight of the signature
@@ -166,7 +170,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   // solhint-disable-next-line no-empty-blocks
   function updateImageHashInternal(bytes32 _imageHash) internal virtual {
     // Default implementation does nothing
-  }
+}
   
 
 
@@ -183,6 +187,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes calldata _data,
     bytes calldata _signatures
   ) external override view returns (bytes4) {
+    console.log("====== IS VALID SIGNATURE ======");
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(keccak256(_data)), _signatures)) {
       return SELECTOR_ERC1271_BYTES_BYTES;
@@ -203,6 +208,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes32 _hash,
     bytes calldata _signatures
   ) external override view returns (bytes4) {
+    console.log("====== IS VALID SIGNATURE bytes32 HASH ======");
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(_hash), _signatures)) {
       return SELECTOR_ERC1271_BYTES32_BYTES;
