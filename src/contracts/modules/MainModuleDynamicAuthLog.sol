@@ -16,7 +16,7 @@ import "./commons/ModuleUpdate.sol";
  *      contracts by the mainmodule don't conflict and are accounted for to be
  *      supported by the supportsInterface method.
  */
-contract MainModuleDynamicAuth is
+contract MainModuleDynamicAuthLog is
   ModuleAuthDynamic,
   ModuleCalls,
   ModuleReceivers,

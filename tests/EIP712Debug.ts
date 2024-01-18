@@ -62,16 +62,9 @@ async function main() {
 //   console.log('MAIN MODULE ADDDR: ', moduleLog.address)
   console.log("STORAGE AT: ", await ethers.provider.getStorageAt(scwAddr, scwAddr));
   console.log('PROXY IMPLEMENTATION: ', await walletProxy.PROXY_getImplementation())
-  const implementationValue = "0x0000000000000000000000000" + moduleLog.address.substring(2);
+  const implementationValue = "0x000000000000000000000000" + moduleLog.address.substring(2);
   await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, implementationValue])
 
-
-  // Verify code update
-  const newCode = await ethers.provider.getCode(mainModuleAddr)
-  if (newCode !== modLogCode) {
-    console.log('Code not updated')
-    process.exit(0)
-  }
 
   // Do signature verification
   // Attatch to SCW
