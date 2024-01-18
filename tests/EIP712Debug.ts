@@ -58,14 +58,13 @@ async function main() {
 
   // Set code
   //   await network.provider.send('hardhat_setCode', [mainModuleAddr, modLogCode])
-//   await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, moduleLog.address])
   //   await network.provider.send('hardhat_mine', ["0x100"])
 //   console.log('MAIN MODULE ADDDR: ', moduleLog.address)
   console.log("STORAGE AT: ", await ethers.provider.getStorageAt(scwAddr, scwAddr));
   console.log('PROXY IMPLEMENTATION: ', await walletProxy.PROXY_getImplementation())
   const implementationValue = "0x0000000000000000000000000" + moduleLog.address.substring(2);
-  console.log("MOD CODE ADDR: ", "0x0000000000000000000000000" + moduleLog.address.substring(2))
-  console.log('Equal ', modLogCode == (await ethers.provider.getCode(mainModuleAddr)))
+  await network.provider.send('hardhat_setStorageAt', [scwAddr, scwAddr, implementationValue])
+
 
   // Verify code update
   const newCode = await ethers.provider.getCode(mainModuleAddr)
