@@ -103,7 +103,6 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         bytes memory signature;
         (signature, rindex) = _signature.readBytes66(rindex);
         addr = recoverSigner(_hash, signature);
-
         // Acumulate total weight of the signature
         totalWeight += addrWeight;
       } else if (flag == FLAG_DYNAMIC_SIGNATURE) {
@@ -118,7 +117,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
         bytes memory signature;
         (signature, rindex) = _signature.readBytes(rindex, size);
         console.log("ModuleAuth: isValidSignature");
-        console.logBytes4(isValidSignature(_hash, addr, signature));
+        console.logBool(isValidSignature(_hash, addr, signature));
         require(isValidSignature(_hash, addr, signature), "ModuleAuth#_signatureValidation: INVALID_SIGNATURE");
 
         // Acumulate total weight of the signature
@@ -132,6 +131,10 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     }
 
     (bool verified, bool needsUpdate) = _isValidImage(imageHash);
+    console.log("Verified");
+    console.logBool(verified);
+    console.log("Needs update");
+    console.logBool(needsUpdate);
     return ((totalWeight >= threshold && verified), needsUpdate, imageHash);
   }
 
