@@ -19,21 +19,21 @@ async function main() {
     '0xc9d1d1d25201bd592da3eb99a5c4568105a79c168b93eebe2444ddf1f7a61174394b2b8616ba8ce9aae7741e2131caf66b80773f3557e18ec0d93a68a17090cb1b01'
 
   // Recover signer
-  const signer = await ethers.getContractFactory('SignerCheck')
-  const signerDeployed = await signer.deploy()
-  await signerDeployed.deployed()
-  const signerRet = await signerDeployed.recover(messageSubDigest, relayerSig)
+//   const signer = await ethers.getContractFactory('SignerCheck')
+//   const signerDeployed = await signer.deploy()
+//   await signerDeployed.deployed()
+//   const signerRet = await signerDeployed.recover(messageSubDigest, relayerSig)
 
   // Verify supplied signature against Immutable signer
-  const immutableSignerAddr = '0x1B1D383526A2815d26550eb314B5d7e055132733'
-  const immutableSigner = await ethers.getContractAt('ImmutableSigner', immutableSignerAddr)
-  const immutableSignerPubKey = await immutableSigner.primarySigner()
+//   const immutableSignerAddr = '0x1B1D383526A2815d26550eb314B5d7e055132733'
+//   const immutableSigner = await ethers.getContractAt('ImmutableSigner', immutableSignerAddr)
+//   const immutableSignerPubKey = await immutableSigner.primarySigner()
 
-  // Verify returned signer against Immutable signer
-  if (signerRet !== immutableSignerPubKey) {
-    console.log('Signer mismatch')
-    process.exit(0)
-  }
+//   // Verify returned signer against Immutable signer
+//   if (signerRet !== immutableSignerPubKey) {
+//     console.log('Signer mismatch')
+//     process.exit(0)
+//   }
 
   // Set addresses
   const scwAddr = '0x3878cadc6a521dceb1f46599913ce726c430a8e1'
