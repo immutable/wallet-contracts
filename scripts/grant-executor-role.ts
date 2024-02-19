@@ -1,5 +1,5 @@
 import * as hre from 'hardhat';
-import { Contract, ContractFactory } from 'ethers';
+import { Contract, ContractFactory, ContractFunction, Transaction } from 'ethers';
 import promptSync from 'prompt-sync';
 
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
@@ -37,7 +37,8 @@ async function grantExecutorRole(): Promise<EnvironmentInfo> {
   // Only grant the role if the wallet does not already have access to this to this role.
   const isExecutor = await multiCallDeploy.hasRole(executorRole, newAddress.trim());
   if (!isExecutor) {
-    await multiCallDeploy.grantExecutorRole(newAddress.trim());
+    const tx = await multiCallDeploy.grantExecutorRole(newAddress.trim());
+    await tx.wait();
     console.log(`[${network}] Executor role granted to ${newAddress}`);
   } else {
     console.log(`[${network}] ${newAddress} already has the executor role`);
