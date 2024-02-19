@@ -12,7 +12,7 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
  **/
 async function grantExecutorRole(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network } = env;
+  const { network, multiCallDeployContractAddress } = env;
   const prompt = promptSync();
 
   // Setup wallet with default admin role
@@ -22,9 +22,8 @@ async function grantExecutorRole(): Promise<EnvironmentInfo> {
   const contractName = "MultiCallDeploy";
   const contractFactory: ContractFactory = await newContractFactory(wallets.getWallet(), contractName);
 
-  const contractAddress = prompt(`[${network}] Address of MultiCallDeployContract: `);
-  console.log(`[${network}] Confirm contract address ${contractAddress} ...`);
-  const multiCallDeploy: Contract = await contractFactory.attach(contractAddress);
+  console.log(`[${network}] Confirm contract address ${multiCallDeployContractAddress} ...`);
+  const multiCallDeploy: Contract = await contractFactory.attach(multiCallDeployContractAddress);
 
   // Obtain the executor role reference
   const executorRole = await multiCallDeploy.EXECUTOR_ROLE();
