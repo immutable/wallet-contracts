@@ -35,19 +35,19 @@ const config: HardhatUserConfig = {
     // Define here to easily specify private keys
     localhost: {
       url: 'http://127.0.0.1:8545',
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      accounts: []
     },
     devnet: {
       url: 'https://rpc.dev.immutable.com',
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      accounts: []
     },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      accounts: []
     },
     mainnet: {
       url: 'https://rpc.immutable.com',
-      accounts: [process.env.DEPLOYER_PRIV_KEY!, process.env.WALLET_IMPL_CHANGER_PRIV_KEY!]
+      accounts: []
     },
   },
   mocha: {

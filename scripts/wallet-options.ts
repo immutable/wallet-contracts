@@ -19,7 +19,7 @@ export class WalletOptions {
   constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
     console.log(`[${env.network}] Using ledger for operations...`);
     this.useLedger = true;
-    const accountIndex0 = 10;
+    const accountIndex0 = 0;
     const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
     this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
 

@@ -9,6 +9,7 @@ export interface EnvironmentInfo {
   signerAddress: string;
   deployerContractAddress: string;
   network: string;
+  multiCallDeployContractAddress: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export function loadEnvironmentInfo(hreNetworkName: string): EnvironmentInfo {
     submitterAddress: process.env.RELAYER_SUBMITTER_EOA_PUB_KEY || '',
     signerAddress: process.env.IMMUTABLE_SIGNER_PUB_KEY || '',
     deployerContractAddress: process.env.DEPLOYER_CONTRACT_ADDRESS || '',
-    network: hreNetworkName
+    network: hreNetworkName,
+    multiCallDeployContractAddress: process.env.MULTICALLDEPLOY_CONTRACT_ADDRESS || '',
   };
 }
