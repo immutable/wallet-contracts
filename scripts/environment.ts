@@ -10,6 +10,7 @@ export interface EnvironmentInfo {
   deployerContractAddress: string;
   network: string;
   multiCallDeployContractAddress: string;
+  multiCallAdminPK: string;
 }
 
 /**
@@ -27,5 +28,6 @@ export function loadEnvironmentInfo(hreNetworkName: string): EnvironmentInfo {
     deployerContractAddress: process.env.DEPLOYER_CONTRACT_ADDRESS || '',
     network: hreNetworkName,
     multiCallDeployContractAddress: process.env.MULTICALLDEPLOY_CONTRACT_ADDRESS || '',
+    multiCallAdminPK: process.env.MULTICALL_ADMIN_PK || '',
   };
 }
