@@ -1,4 +1,5 @@
 import * as hre from 'hardhat';
+import { readFileSync } from 'fs';
 import { ethers as hardhat } from 'hardhat';
 import { Contract, ContractFactory, Signer, Wallet } from 'ethers';
 import promptSync from 'prompt-sync';
@@ -37,22 +38,25 @@ async function grantExecutorRole(): Promise<EnvironmentInfo> {
   const executorRole = await multiCallDeploy.EXECUTOR_ROLE();
   console.log(`[${network}] Executor role ${executorRole}`);
 
-  const newAddress = prompt(`[${network}] New address to be added to the executor role: `);
-  console.log(`[${network}] Confirm new address ${newAddress} ...`);
+  const newAddresses = readFileSync('./new_addresses.txt', { flag: 'r' }).toString().split('\n');
 
-  await waitForInput();
+  let index = 1;
+  for (const newAddress of newAddresses) {
+    console.log(`[${network}] ${index} Granting to new address ${newAddress} ...`);
 
-  // Only grant the role if the wallet does not already have access to this to this role.
-  const isExecutor = await multiCallDeploy.hasRole(executorRole, newAddress.trim());
-  if (!isExecutor) {
-    const tx = await multiCallDeploy.grantExecutorRole(newAddress.trim(), {
-      maxFeePerGas: hardhat.utils.parseUnits('15', 'gwei'),
-      maxPriorityFeePerGas: hardhat.utils.parseUnits('10', 'gwei'),
-    });
-    await tx.wait();
-    console.log(`[${network}] Executor role granted to ${newAddress}`);
-  } else {
-    console.log(`[${network}] ${newAddress} already has the executor role`);
+    // Only grant the role if the wallet does not already have access to this to this role.
+    const isExecutor = await multiCallDeploy.hasRole(executorRole, newAddress.trim());
+    if (!isExecutor) {
+      const tx = await multiCallDeploy.grantExecutorRole(newAddress.trim(), {
+        maxFeePerGas: hardhat.utils.parseUnits('15', 'gwei'),
+        maxPriorityFeePerGas: hardhat.utils.parseUnits('10', 'gwei'),
+      });
+      await tx.wait();
+      console.log(`[${network}] Executor role granted to ${newAddress}`);
+    } else {
+      console.log(`[${network}] ${newAddress} already has the executor role`);
+    }
+    index++;
   }
 
   return env;
