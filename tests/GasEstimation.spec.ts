@@ -113,21 +113,6 @@ contract('Estimate gas usage', (accounts: string[]) => {
         expect(estimated + txBaseCost(factoryData)).to.approximately(realTxReceipt.gasUsed.toNumber(), 100_000)
       })
 
-      it.only('Should estimate without signature', async () => {
-        const gasEstimator = await new MainModuleGasEstimation__factory().connect(signer).deploy();
-        let exec = await gasEstimator.simulateExecute(bundle("0x19010000000000000000000000000000000000000000000000000000000000003a9ba31f43f37a45a455caae63222f75e12f5f17cb88b61ff669f0f9977b86b0dcf72a6967fe6b9d824d0d77e94476fe88d7e435bc08"));
-        let result = await exec.wait(1);
-        // console.log(result);
-        exec = await gasEstimator.simulateExecute(bundle("0x19010000000000000000000000000000000000000000000000000000000000003a9ba31f43f37a45a455caae63222f75e12f5f17cb88c0aa4b7f966b95d96de07a22f2b821f5c88d3ed1154db7d0c7c65c5b1a66dda6"));
-        result = await exec.wait(1);
-        // console.log(result);
-
-        exec = await gasEstimator.simulateExecute(bundle("0x19010000000000000000000000000000000000000000000000000000000000003a9ba31f43f37a45a455caae63222f75e12f5f17cb88c0aa4b7f966b95d96de07a22f2b821f5c88d3ed1154db7d0c7c65c5b1a66dda6"));
-        console.log(exec);
-        result = await exec.wait(1);
-        console.log(result);
-      })
-
       it('Should estimate wallet deployment + upgrade', async () => {
         // const newImplementation = (await ModuleMockArtifact.new()) as ModuleMock
         const newImplementation = await new ModuleMock__factory().connect(signer).deploy()
