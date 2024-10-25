@@ -16,7 +16,7 @@ loadAndValidateEnvironment();
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: '0.8.17' }],
+    compilers: [{ version: '0.8.17' }, { version: '0.8.18' }],
     settings: {
       optimizer: {
         enabled: true,
@@ -43,22 +43,24 @@ const config: HardhatUserConfig = {
     },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
-      accounts: []
+      accounts: ["<YOUR PRIVATE KEY"]
     },
     mainnet: {
       url: 'https://rpc.immutable.com',
       accounts: []
-    },
+    }
   },
   mocha: {
     timeout: process.env.COVERAGE ? 15 * 60 * 1000 : 30 * 1000
-  },
+  }
 };
 
 export default config;
 
 function loadAndValidateEnvironment(): boolean {
-  return !!process.env.DEPLOYER_PRIV_KEY &&
+  return (
+    !!process.env.DEPLOYER_PRIV_KEY &&
     !!process.env.WALLET_IMPL_CHANGER_PRIV_KEY &&
-    !!process.env.DEPLOYER_CONTRACT_ADDRESS;
+    !!process.env.DEPLOYER_CONTRACT_ADDRESS
+  );
 }
