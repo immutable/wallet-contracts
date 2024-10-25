@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
     },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
-      accounts: ["<YOUR PRIVATE KEY"]
+      accounts: []
     },
     mainnet: {
       url: 'https://rpc.immutable.com',
