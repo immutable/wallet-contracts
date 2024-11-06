@@ -17,7 +17,7 @@ const getSaltFromKey = (): string => {
 };
 
 /**
- * Load the OwnableCreate2Deployer 
+ * Load the OwnableCreate2Deployer
  */
 const loadDeployerContract = async (env: EnvironmentInfo, walletOptions: WalletOptions): Promise<Contract> => {
   return new Contract(env.deployerContractAddress, ContractDeployerInterface.abi, walletOptions.getWallet());
@@ -39,8 +39,8 @@ export async function deployContractViaCREATE2(
 
   // Deploy the contract
   let tx = await deployer.deploy(bytecode, salt, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
+    gasLimit: 10_000_000,
+    maxFeePerGas: 40000000000,
     maxPriorityFeePerGas: 10000000000,
   });
   await tx.wait();
@@ -62,9 +62,9 @@ export async function deployContract(
   constructorArgs: Array<string | undefined>): Promise<Contract> {
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
   const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: 100000,
+    maxFeePerGas: 30000000000,
+    maxPriorityFeePerGas: 1000000000,
   });
   console.log(`[${env.network}] Deployed ${contractName} to ${contract.address}`);
   return contract;
