@@ -78,9 +78,56 @@ graph TD;
     class C,D logic;
 ```
 
-1.  **Deploy New Logic**: A new, improved version of the `MainModuleUpgradable` contract is deployed (e.g., `MainModuleUpgradableV2`).
+1.  **Deploy New Logic**: A new, improved version of the `MainModuleUpgradable` contract is deployed (e.g., `MainModuleUpgradableV2`). This is typically done via a script that uses a CREATE2 factory for a deterministic address.
 
-2.  **Initiate Upgrade**: The owner of a wallet sends a transaction to their `WalletProxy` address, calling the `updateImplementation(address newImplementation)` function with the address of the new logic contract.
+    _Example using hardhat scripts:_
+
+    ```typescript
+    // From scripts/step4.ts - deploys a new logic contract
+    import { deployContractViaCREATE2 } from './contract';
+
+    // ... inside an async function ...
+    const newLogicContract = await deployContractViaCREATE2(
+      env, // Environment details
+      wallets, // Wallet options
+      'MainModuleDynamicAuth', // Or your new contract name
+      [factory.address, startupWalletImpl.address] // Constructor arguments
+    );
+
+    console.log(`New logic contract deployed at: ${newLogicContract.address}`);
+    ```
+
+2.  **Initiate Upgrade**: The owner of a wallet sends a transaction to their `WalletProxy` address, calling the `updateImplementation(address newImplementation)` function with the address of the new logic contract. Because of the `onlySelf` modifier on the function, this must be sent as a meta-transaction from the wallet owner.
+
+    _Example of building and sending the upgrade transaction:_
+
+    ```typescript
+    import { ethers } from 'ethers';
+
+    // Assume 'wallet' is the ethers contract instance of the user's wallet proxy
+    // and 'owner' is the signer object for the wallet owner.
+    // 'newLogicContractAddress' is the address from step 1.
+
+    // Encode the function call to 'updateImplementation'
+    const updateData = wallet.interface.encodeFunctionData('updateImplementation', [newLogicContractAddress]);
+
+    // Construct the meta-transaction
+    const transaction = {
+      delegateCall: false,
+      revertOnError: true,
+      gasLimit: 1000000, // Set an appropriate gas limit
+      target: wallet.address, // The call is to the wallet itself
+      value: 0,
+      data: updateData
+    };
+
+    // Sign and execute the meta-transaction
+    // (This is a simplified example; see tests/utils/helpers.ts for a full implementation)
+    const receipt = await signAndExecuteMetaTx(wallet, owner, [transaction]);
+    await receipt.wait();
+
+    console.log('Wallet implementation updated successfully.');
+    ```
 
 3.  **Execute Upgrade**:
     - The proxy `delegatecall`s to the current implementation (`V1`).
