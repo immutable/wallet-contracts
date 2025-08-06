@@ -6,6 +6,7 @@ import "./commons/ModuleAuthDynamic.sol";
 import "./commons/ModuleReceivers.sol";
 import "./commons/ModuleCalls.sol";
 import "./commons/ModuleUpdate.sol";
+import "../interfaces/erc4337/IAccount.sol";
 
 
 /**
@@ -20,7 +21,8 @@ contract MainModuleDynamicAuth is
   ModuleAuthDynamic,
   ModuleCalls,
   ModuleReceivers,
-  ModuleUpdate
+  ModuleUpdate,
+  IAccount
 {
 
   // solhint-disable-next-line no-empty-blocks
@@ -43,7 +45,36 @@ contract MainModuleDynamicAuth is
     ModuleReceivers,
     ModuleUpdate
   ) pure returns (bool) {
+    if (_interfaceID == type(IAccount).interfaceId) {
+        return true;
+    }
     return super.supportsInterface(_interfaceID);
+  }
+
+  function validateUserOp(
+      UserOperation calldata userOp,
+      bytes32 userOpHash,
+      uint256 missingAccountFunds
+  ) external override returns (uint256 validationData) {
+      // Check if there are missing funds. 
+      // This is a basic check, a full implementation would require more logic.
+      if (missingAccountFunds > 0) {
+          revert("Not enough funds to cover transaction costs");
+      }
+
+      // Use the existing internal signature validation function.
+      // The nonce from the userOp is part of the userOpHash.
+      // Per ERC-4337, return 1 on signature failure. This is interpreted by the
+      // EntryPoint as a packed value where the `authorizer` field is 1, and the
+      // timestamp fields are 0.
+      if (!_signatureValidation(userOpHash, userOp.signature)) {
+          return 1;
+      }
+
+      // Return 0 for a standard signature validation. This is interpreted by the
+      // EntryPoint as a packed value where the `authorizer`, `validUntil`, and
+      // `validAfter` fields are all 0.
+      return 0;
   }
 
   function version() external pure virtual returns (uint256) {
