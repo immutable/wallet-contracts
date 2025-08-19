@@ -25,8 +25,6 @@ async function step1(): Promise<EnvironmentInfo> {
   console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
   console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 

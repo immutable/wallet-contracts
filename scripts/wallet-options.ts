@@ -1,5 +1,5 @@
 import { ethers as hardhat } from 'hardhat';
-import { Signer } from 'ethers';
+import { Signer, Wallet } from 'ethers';
 import { LedgerSigner } from './ledger-signer';
 import { EnvironmentInfo } from './environment';
 
@@ -17,11 +17,8 @@ export class WalletOptions {
   private walletImplLocatorImplChanger: Signer;
 
   constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
-    console.log(`[${env.network}] Using ledger for operations...`);
-    this.useLedger = true;
-    const accountIndex0 = 0;
-    const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
-    this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
+    // console.log(`[${env.network}] Using ledger for operations...`);
+    this.useLedger = false;
 
     // Setup the 2 programmatic wallets
     this.coldWallet = coldWallet;
@@ -47,8 +44,19 @@ export class WalletOptions {
  */
 export async function newWalletOptions(env: EnvironmentInfo): Promise<WalletOptions> {
   // Required private keys:
-  // 1. coldWallet
-  // 2. walletImplLocatorChanger
-  const [coldWallet, walletImplLocatorImplChanger]: Signer[] = await hardhat.getSigners();
+  // 1. coldWallet (DEPLOYER_PRIV_KEY)
+  // 2. walletImplLocatorChanger (WALLET_IMPL_CHANGER_PRIV_KEY)
+  
+  if (!process.env.COLD_WALLET_PRIVATE_KEY) {
+    throw new Error('DEPLOYER_PRIV_KEY environment variable is required');
+  }
+  
+  if (!process.env.WALLET_IMPL_LOCATOR_IMPL_CHANGER_PRIVATE_KEY) {
+    throw new Error('WALLET_IMPL_CHANGER_PRIV_KEY environment variable is required');
+  }
+
+  const coldWallet = new Wallet(process.env.COLD_WALLET_PRIVATE_KEY, hardhat.provider);
+  const walletImplLocatorImplChanger = new Wallet(process.env.WALLET_IMPL_LOCATOR_IMPL_CHANGER_PRIVATE_KEY, hardhat.provider);
+
   return new WalletOptions(env, coldWallet, walletImplLocatorImplChanger);
 }

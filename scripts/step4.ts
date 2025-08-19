@@ -11,8 +11,8 @@ import { deployContractViaCREATE2 } from './contract';
 async function step4(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const factoryAddress = '0x8Fa5088dF65855E0DaF87FA6591659893b24871d';
-  const startupWalletImplAddress = '0x8FD900677aabcbB368e0a27566cCd0C7435F1926';
+  const factoryAddress = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+  const startupWalletImplAddress = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] Factory address ${factoryAddress}`);
