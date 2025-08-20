@@ -16,8 +16,6 @@ async function step3(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 

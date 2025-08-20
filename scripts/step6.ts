@@ -10,15 +10,13 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '0x398c07fE31259e7673A2Be537aC614e9711D5D26';
+  const mainModuleDynamicAuthAddress = '0xA38A33ff54B07145754c510780Ae38186A7eB041';
   const walletImplLocatorContractAddress = '0x96C2C2E4cF8662657b368D2cf05B58C6B8D4010f';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);
   console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

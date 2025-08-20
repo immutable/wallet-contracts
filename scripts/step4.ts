@@ -18,8 +18,6 @@ async function step4(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Factory address ${factoryAddress}`);
   console.log(`[${network}] StartupWalletImpl address ${startupWalletImplAddress}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 

@@ -19,8 +19,6 @@ async function step5(): Promise<EnvironmentInfo> {
   console.log(`[${network}] SignerAdmin address ${signerAdminPubKey}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 

@@ -19,8 +19,6 @@ async function step2(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Wallet ImplLocator Admin address ${walletImplLocatorAdmin}`);
   console.log(`[${network}] Wallet ImplLocator Changer address ${walletImplChangerAdmin}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
