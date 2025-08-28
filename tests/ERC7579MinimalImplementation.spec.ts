@@ -111,6 +111,47 @@ describe('ERC7579 Minimal Implementation', function () {
       // For now, we'll just verify the logic exists by checking the revert message
       console.log('Note: Last validator protection requires self-call testing setup');
     });
+
+    it('should demonstrate proper modular installation flow', async function () {
+      // Deploy actual modules
+      const ImmutableValidator = await ethers.getContractFactory('ImmutableValidator');
+      const ImmutableExecutor = await ethers.getContractFactory('ImmutableExecutor');
+      const ImmutableHook = await ethers.getContractFactory('ImmutableHook');
+      const ImmutableFallbackHandler = await ethers.getContractFactory('ImmutableFallbackHandler');
+      
+      const validator = await ImmutableValidator.deploy(await owner.getAddress());
+      const executor = await ImmutableExecutor.deploy(await owner.getAddress()); // Factory address parameter
+      const hook = await ImmutableHook.deploy(); // No constructor parameters needed
+      const fallbackHandler = await ImmutableFallbackHandler.deploy(await owner.getAddress());
+      
+      await validator.deployed();
+      await executor.deployed();
+      await hook.deployed();
+      await fallbackHandler.deployed();
+      
+      console.log(`✅ Deployed modules:`);
+      console.log(`  Validator: ${validator.address}`);
+      console.log(`  Executor: ${executor.address}`);
+      console.log(`  Hook: ${hook.address}`);
+      console.log(`  FallbackHandler: ${fallbackHandler.address}`);
+      
+      // Verify modules are not installed initially
+      expect(await minimalImplementation.isModuleInstalled(1, validator.address, '0x')).to.be.false;
+      expect(await minimalImplementation.isModuleInstalled(2, executor.address, '0x')).to.be.false;
+      expect(await minimalImplementation.isModuleInstalled(3, fallbackHandler.address, '0x')).to.be.false;
+      expect(await minimalImplementation.isModuleInstalled(4, hook.address, '0x')).to.be.false;
+      
+      // Verify modules are not initialized on the account
+      expect(await validator.isInitialized(minimalImplementation.address)).to.be.false;
+      expect(await executor.isInitialized(minimalImplementation.address)).to.be.false;
+      expect(await hook.isInitialized(minimalImplementation.address)).to.be.false;
+      expect(await fallbackHandler.isInitialized(minimalImplementation.address)).to.be.false;
+      
+      console.log('✅ Confirmed: No modules installed initially (pure modular approach)');
+      
+      // Note: In a real deployment, modules would be installed via self-calls
+      // This demonstrates the proper separation of concerns
+    });
   });
 
   describe('Execution Functions', function () {
@@ -217,7 +258,7 @@ describe('ERC7579 Minimal Implementation', function () {
 
   describe('Production Readiness', function () {
     it('should document production deployment steps', function () {
-      console.log('\n🚀 Production Deployment Checklist:');
+      console.log('\nProduction Deployment Checklist:');
       console.log('1. ✅ Deploy ERC7579MainModuleMinimal (under 24KB)');
       console.log('2. ⏳ Deploy external modules (Validator, Executor, etc.)');
       console.log('3. ⏳ Update minimal contract with real module addresses');
@@ -228,7 +269,7 @@ describe('ERC7579 Minimal Implementation', function () {
     });
 
     it('should validate ERC-7579 compliance', async function () {
-      console.log('\n📋 ERC-7579 Compliance Check:');
+      console.log('\nERC-7579 Compliance Check:');
       
       // Check required functions exist
       const artifact = await artifacts.readArtifact('ERC7579MainModuleMinimal');

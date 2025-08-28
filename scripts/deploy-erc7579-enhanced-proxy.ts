@@ -102,7 +102,7 @@ async function deployERC7579EnhancedProxy(): Promise<DeploymentResult> {
     env,
     wallets,
     'ImmutableExecutor', 
-    [env.factoryAddress || signerAddress]
+    [env.factoryAddress || signerAddress] // Factory address parameter for executor
   );
   console.log(`✅ Executor deployed at: ${executor.address}`);
   
@@ -118,7 +118,7 @@ async function deployERC7579EnhancedProxy(): Promise<DeploymentResult> {
     env,
     wallets,
     'ImmutableHook',
-    []
+    [] // No constructor parameters for hook
   );
   console.log(`✅ Hook deployed at: ${hook.address}`);
   

@@ -15,6 +15,16 @@ import {ModuleAuthFixed, ModuleAuth} from "../commons/ModuleAuthFixed.sol";
 contract ImmutableValidator is IERC7579Validator, ModuleAuthFixed {
     
     /*//////////////////////////////////////////////////////////////////////////
+                                STATE MANAGEMENT
+    //////////////////////////////////////////////////////////////////////////*/
+    
+    /// @notice Mapping to track which accounts have this validator installed
+    mapping(address => bool) private _installedAccounts;
+    
+    /// @notice Mapping to store validator configuration per account
+    mapping(address => bytes) private _validatorConfig;
+
+    /*//////////////////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
     
@@ -39,6 +49,9 @@ contract ImmutableValidator is IERC7579Validator, ModuleAuthFixed {
         override 
         returns (uint256 validationData) 
     {
+        // Ensure this validator is installed on the calling account
+        require(_installedAccounts[msg.sender], "ImmutableValidator: NOT_INSTALLED");
+        
         // Extract signature from userOp
         bytes calldata signature = userOp.signature;
         
@@ -59,11 +72,16 @@ contract ImmutableValidator is IERC7579Validator, ModuleAuthFixed {
      * @param data Initialization data (encoded signer configuration)
      */
     function onInstall(bytes calldata data) external override {
-        // Initialize the module with signer configuration
+        // Mark this account as having the validator installed
+        _installedAccounts[msg.sender] = true;
+        
+        // Store validator configuration if provided
         if (data.length > 0) {
-            // Decode initialization data (e.g., initial signers)
-            // This would depend on your specific signer management needs
-            // For now, we'll keep it simple and use existing logic
+            _validatorConfig[msg.sender] = data;
+            // In a full implementation, you might decode and process:
+            // - Initial signer addresses
+            // - Threshold requirements
+            // - Signature schemes
         }
         
         // Module is now installed and ready to validate signatures
@@ -74,11 +92,14 @@ contract ImmutableValidator is IERC7579Validator, ModuleAuthFixed {
      * @param data Deinitialization data
      */
     function onUninstall(bytes calldata data) external override {
-        // Clean up any module-specific storage if needed
-        // For this validator, we might want to clear signer data
+        // Mark this account as no longer having the validator installed
+        _installedAccounts[msg.sender] = false;
         
-        // Note: Be careful about completely clearing data as it might break
-        // backward compatibility with existing wallets
+        // Clear validator configuration
+        delete _validatorConfig[msg.sender];
+        
+        // Note: In production, you might want to preserve some data for audit trails
+        // or implement a grace period before full deletion
     }
 
     /**
@@ -95,9 +116,17 @@ contract ImmutableValidator is IERC7579Validator, ModuleAuthFixed {
      * @return True if the module is initialized
      */
     function isInitialized(address smartAccount) external view returns (bool) {
-        // Check if the module has been properly initialized for this account
-        // This could check if signers are configured, etc.
-        return true; // For now, assume always initialized
+        return _installedAccounts[smartAccount];
+    }
+
+    /**
+     * @notice Gets validator configuration for an account
+     * @param account The account address
+     * @return config The validator configuration data
+     */
+    function getValidatorConfig(address account) external view returns (bytes memory config) {
+        require(_installedAccounts[account], "ImmutableValidator: NOT_INSTALLED");
+        return _validatorConfig[account];
     }
 
     /*//////////////////////////////////////////////////////////////////////////

@@ -28,7 +28,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
 
   describe('Full Stack Deployment', function () {
     it('should deploy all components successfully', async function () {
-      console.log('\n🚀 Deploying ERC-7579 Enhanced Proxy Pattern Stack...');
+      console.log('\nDeploying ERC-7579 Enhanced Proxy Pattern Stack...');
       
       // Deploy implementation
       const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
@@ -72,7 +72,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should validate contract sizes', async function () {
-      console.log('\n📏 Contract Size Analysis:');
+      console.log('\nContract Size Analysis:');
       
       const contracts = [
         { name: 'ERC7579MainModuleMinimal', contract: implementation },
@@ -99,7 +99,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
 
   describe('Proxy Pattern Integration', function () {
     it('should create wallet through Factory', async function () {
-      console.log('\n🏭 Testing Factory Integration...');
+      console.log('\nTesting Factory Integration...');
       
       // Create a wallet through the factory
       const salt = ethers.utils.randomBytes(32);
@@ -129,7 +129,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should validate proxy delegation', async function () {
-      console.log('\n🔄 Testing Proxy Delegation...');
+      console.log('\nTesting Proxy Delegation...');
       
       // Test that calls are properly delegated
       const accountId = await walletProxy.accountId();
@@ -153,7 +153,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
 
   describe('ERC-7579 Compliance', function () {
     it('should support all required execution modes', async function () {
-      console.log('\n⚡ Testing Execution Mode Support...');
+      console.log('\nTesting Execution Mode Support...');
       
       const modes = [
         { name: 'Single', mode: '0x0000000000000000000000000000000000000000000000000000000000000000', expected: true },
@@ -170,7 +170,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should support all module types', async function () {
-      console.log('\n🔧 Testing Module Type Support...');
+      console.log('\nTesting Module Type Support...');
       
       const moduleTypes = [
         { name: 'Validator', type: 1, expected: true },
@@ -189,7 +189,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should have default modules installed', async function () {
-      console.log('\n📦 Testing Default Module Installation...');
+      console.log('\nTesting Default Module Installation...');
       
       // Check default modules are installed
       const defaultValidator = await walletProxy.VALIDATOR();
@@ -216,7 +216,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
 
   describe('Execution Testing', function () {
     it('should handle basic execution calls', async function () {
-      console.log('\n🔄 Testing Basic Execution...');
+      console.log('\nTesting Basic Execution...');
       
       const mode = '0x0000000000000000000000000000000000000000000000000000000000000000'; // Single mode
       const calldata = '0x'; // Empty calldata
@@ -235,7 +235,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should reject unauthorized execution', async function () {
-      console.log('\n🔒 Testing Execution Authorization...');
+      console.log('\nTesting Execution Authorization...');
       
       const mode = '0x0000000000000000000000000000000000000000000000000000000000000000';
       const calldata = '0x';
@@ -249,7 +249,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     });
 
     it('should reject unsupported execution modes', async function () {
-      console.log('\n⚠️  Testing Unsupported Mode Rejection...');
+      console.log('\nTesting Unsupported Mode Rejection...');
       
       const unsupportedMode = '0x0200000000000000000000000000000000000000000000000000000000000000';
       const calldata = '0x';
@@ -267,21 +267,21 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
 
   describe('Gas Efficiency Analysis', function () {
     it('should measure deployment costs', async function () {
-      console.log('\n⛽ Gas Efficiency Analysis:');
+      console.log('\nGas Efficiency Analysis:');
       
       // Estimate deployment costs
       const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
       const deployTx = ERC7579MainModuleMinimal.getDeployTransaction(ownerAddress);
       
-      console.log(`📦 Implementation deployment gas: ${deployTx.gasLimit?.toString() || 'N/A'}`);
+      console.log(`Implementation deployment gas: ${deployTx.gasLimit?.toString() || 'N/A'}`);
       
       // Note: Comparison with original modular implementation removed
       // as experimental contracts were cleaned up for production
-      console.log('💡 Minimal implementation optimized for production deployment');
+      console.log('Minimal implementation optimized for production deployment');
     });
 
     it('should measure execution costs', async function () {
-      console.log('\n⚡ Execution Gas Costs:');
+      console.log('\nExecution Gas Costs:');
       
       const mode = '0x0000000000000000000000000000000000000000000000000000000000000000';
       const calldata = '0x';
@@ -290,14 +290,14 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
         const tx = await walletProxy.connect(owner)['execute(bytes32,bytes)'](mode, calldata);
         const receipt = await tx.wait();
         
-        console.log(`🔄 Execute gas used: ${receipt.gasUsed.toString()}`);
+        console.log(`Execute gas used: ${receipt.gasUsed.toString()}`);
         
         // Test other functions
         const accountIdTx = await walletProxy.accountId();
-        console.log(`📋 AccountId call: minimal gas (view function)`);
+        console.log(`AccountId call: minimal gas (view function)`);
         
         const supportsModeTx = await walletProxy.supportsExecutionMode(mode);
-        console.log(`⚡ SupportsExecutionMode call: minimal gas (pure function)`);
+        console.log(`SupportsExecutionMode call: minimal gas (pure function)`);
         
       } catch (error) {
         console.log(`⚠️  Could not measure execution gas: ${error}`);
@@ -330,13 +330,13 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
       const totalItems = checklist.length;
       const completionPercent = (completedItems / totalItems) * 100;
       
-      console.log(`\n📊 Completion: ${completedItems}/${totalItems} (${completionPercent.toFixed(1)}%)`);
+      console.log(`\nCompletion: ${completedItems}/${totalItems} (${completionPercent.toFixed(1)}%)`);
       
       expect(completionPercent).to.be.greaterThan(70, 'Should be at least 70% ready for production');
     });
 
     it('should document deployment process', function () {
-      console.log('\n📋 Deployment Process Documentation:');
+      console.log('\nDeployment Process Documentation:');
       console.log('');
       console.log('1. Pre-deployment:');
       console.log('   - ✅ Compile all contracts');

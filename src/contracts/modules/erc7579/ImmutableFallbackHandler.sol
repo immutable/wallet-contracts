@@ -14,6 +14,13 @@ import {ModuleHooks} from "../commons/ModuleHooks.sol";
 contract ImmutableFallbackHandler is IERC7579Module, ModuleHooks {
     
     /*//////////////////////////////////////////////////////////////////////////
+                                STATE MANAGEMENT
+    //////////////////////////////////////////////////////////////////////////*/
+    
+    /// @notice Mapping to track which accounts have this fallback handler installed
+    mapping(address => bool) private _installedAccounts;
+
+    /*//////////////////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
     
@@ -35,6 +42,9 @@ contract ImmutableFallbackHandler is IERC7579Module, ModuleHooks {
      * @param data Initialization data (encoded hook configuration)
      */
     function onInstall(bytes calldata data) external override {
+        // Mark this account as having the fallback handler installed
+        _installedAccounts[msg.sender] = true;
+        
         // Initialize the module with hook configuration
         if (data.length > 0) {
             // Decode initialization data for hook setup
@@ -49,6 +59,9 @@ contract ImmutableFallbackHandler is IERC7579Module, ModuleHooks {
      * @param data Deinitialization data
      */
     function onUninstall(bytes calldata data) external override {
+        // Mark this account as no longer having the fallback handler installed
+        _installedAccounts[msg.sender] = false;
+        
         // Clean up any module-specific storage
         // Clear registered hooks if needed
     }
@@ -67,8 +80,7 @@ contract ImmutableFallbackHandler is IERC7579Module, ModuleHooks {
      * @return True if the module is initialized
      */
     function isInitialized(address smartAccount) external view returns (bool) {
-        // Check if the module has been properly initialized
-        return true; // For now, assume always initialized
+        return _installedAccounts[smartAccount];
     }
 
     /*//////////////////////////////////////////////////////////////////////////
