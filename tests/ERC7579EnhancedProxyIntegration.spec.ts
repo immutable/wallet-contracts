@@ -59,7 +59,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
       
       // Deploy Factory (mock for testing)
       const Factory = await ethers.getContractFactory('Factory');
-      factory = await Factory.deploy(implementation.address, ownerAddress);
+      factory = await Factory.deploy(ownerAddress, ownerAddress); // admin, deployer
       await factory.deployed();
       console.log(`✅ Factory: ${factory.address}`);
       
@@ -188,29 +188,26 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
       }
     });
 
-    it('should have default modules installed', async function () {
-      console.log('\nTesting Default Module Installation...');
+    it('should have no modules installed initially (pure modular approach)', async function () {
+      console.log('\nTesting Pure Modular Approach...');
       
-      // Check default modules are installed
-      const defaultValidator = await walletProxy.VALIDATOR();
-      const defaultExecutor = await walletProxy.EXECUTOR();
-      const defaultFallback = await walletProxy.FALLBACK();
-      const defaultHook = await walletProxy.HOOK();
+      // In the pure modular approach, no modules are pre-installed
+      // Check that no modules are installed by default using our deployed module addresses
+      const validatorInstalled = await walletProxy.isModuleInstalled(1, validator.address, '0x');
+      const executorInstalled = await walletProxy.isModuleInstalled(2, executor.address, '0x');
+      const fallbackInstalled = await walletProxy.isModuleInstalled(3, fallbackHandler.address, '0x');
+      const hookInstalled = await walletProxy.isModuleInstalled(4, hook.address, '0x');
       
-      const validatorInstalled = await walletProxy.isModuleInstalled(1, defaultValidator, '0x');
-      const executorInstalled = await walletProxy.isModuleInstalled(2, defaultExecutor, '0x');
-      const fallbackInstalled = await walletProxy.isModuleInstalled(3, defaultFallback, '0x');
-      const hookInstalled = await walletProxy.isModuleInstalled(4, defaultHook, '0x');
+      expect(validatorInstalled).to.be.false;
+      expect(executorInstalled).to.be.false;
+      expect(fallbackInstalled).to.be.false;
+      expect(hookInstalled).to.be.false;
       
-      expect(validatorInstalled).to.be.true;
-      expect(executorInstalled).to.be.true;
-      expect(fallbackInstalled).to.be.true;
-      expect(hookInstalled).to.be.true;
-      
-      console.log(`✅ Validator (${defaultValidator}): ${validatorInstalled}`);
-      console.log(`✅ Executor (${defaultExecutor}): ${executorInstalled}`);
-      console.log(`✅ Fallback (${defaultFallback}): ${fallbackInstalled}`);
-      console.log(`✅ Hook (${defaultHook}): ${hookInstalled}`);
+      console.log(`✅ Validator (${validator.address}): ${validatorInstalled} (correctly not pre-installed)`);
+      console.log(`✅ Executor (${executor.address}): ${executorInstalled} (correctly not pre-installed)`);
+      console.log(`✅ Fallback (${fallbackHandler.address}): ${fallbackInstalled} (correctly not pre-installed)`);
+      console.log(`✅ Hook (${hook.address}): ${hookInstalled} (correctly not pre-installed)`);
+      console.log('✅ Pure modular approach confirmed - modules must be installed dynamically');
     });
   });
 
