@@ -4,91 +4,98 @@ pragma solidity 0.8.17;
 import "./MainModule.sol";
 import "../interfaces/erc7579/IERC7579Account.sol";
 import "../utils/erc7579/ModeLib.sol";
-import "../utils/erc7579/ExecutionLib.sol";
 import "../utils/erc7579/ModuleTypeLib.sol";
 import "../utils/erc7579/InterfaceIds.sol";
 
+// Import libraries
+import "../libraries/ExecutionLib.sol";
+import "../libraries/ModuleManagementLib.sol";
+import "../libraries/HookLib.sol";
+
+// Import default modules
+import "./erc7579/ImmutableValidator.sol";
+import "./erc7579/ImmutableFallbackHandler.sol";
+import "./erc7579/ImmutableExecutor.sol";
+import "./erc7579/ImmutableHook.sol";
+
 /**
  * @title ERC7579MainModuleOptimized
- * @notice Optimized ERC-7579 compliant version of MainModule
- * @dev Maintains backward compatibility while adding ERC-7579 compliance
+ * @notice Size-optimized ERC-7579 compliant smart account using libraries
+ * @dev Uses libraries to reduce contract size while maintaining full functionality
  */
 contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
     using ModeLib for bytes32;
-    using ExecutionLib for bytes;
     using ModuleTypeLib for uint256;
 
     /*//////////////////////////////////////////////////////////////////////////
-                                MODULE REGISTRY
+                                EVENTS
+    //////////////////////////////////////////////////////////////////////////*/
+    
+    event DefaultModulesInstalled(address validator, address executor, address fallbackHandler, address hook);
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                STORAGE
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Mapping of module type => module address => installed status
     mapping(uint256 => mapping(address => bool)) private _installedModules;
 
+    /// @notice Mapping of module type => list of installed module addresses
+    mapping(uint256 => address[]) private _modulesByType;
+
+    /// @notice Default module addresses (deployed during construction)
+    address public immutable DEFAULT_VALIDATOR;
+    address public immutable DEFAULT_EXECUTOR;
+    address public immutable DEFAULT_FALLBACK_HANDLER;
+    address public immutable DEFAULT_HOOK;
+
     /*//////////////////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
 
-    constructor(address _factory) MainModule(_factory) {}
+    constructor(address _factory) MainModule(_factory) {
+        // Deploy default modules
+        DEFAULT_VALIDATOR = address(new ImmutableValidator(_factory));
+        DEFAULT_EXECUTOR = address(new ImmutableExecutor(_factory));
+        DEFAULT_FALLBACK_HANDLER = address(new ImmutableFallbackHandler(_factory));
+        DEFAULT_HOOK = address(new ImmutableHook());
+
+        // Install default modules
+        _installDefaults();
+        
+        emit DefaultModulesInstalled(DEFAULT_VALIDATOR, DEFAULT_EXECUTOR, DEFAULT_FALLBACK_HANDLER, DEFAULT_HOOK);
+    }
 
     /*//////////////////////////////////////////////////////////////////////////
                                 ERC-7579 EXECUTION
     //////////////////////////////////////////////////////////////////////////*/
 
-    /**
-     * @notice Executes a transaction on behalf of the account (ERC-7579)
-     */
-    function execute(bytes32 mode, bytes calldata executionCalldata) 
-        external 
-        override 
-    {
+    function execute(bytes32 mode, bytes calldata executionCalldata) external override {
         require(
             msg.sender == address(this) || 
             _installedModules[ModuleTypeLib.TYPE_EXECUTOR][msg.sender],
-            "ERC7579MainModuleOptimized: UNAUTHORIZED"
+            "ERR_UNAUTHORIZED"
         );
 
-        require(supportsExecutionMode(mode), "ERC7579MainModuleOptimized: UNSUPPORTED_MODE");
+        require(supportsExecutionMode(mode), "ERR_UNSUPPORTED_MODE");
 
-        // Convert ERC-7579 format to legacy Transaction[] format
-        IModuleCalls.Transaction[] memory transactions = ExecutionLib.toLegacyTransactions(mode, executionCalldata);
-
-        // Execute using existing selfExecute function
-        this.selfExecute(transactions);
+        // Call hooks and execute
+        bytes memory hookData = HookLib.callPreHooks(_modulesByType[ModuleTypeLib.TYPE_HOOK], msg.sender, 0, executionCalldata);
+        AccountExecutionLib.delegateExecution(mode, executionCalldata, _modulesByType[ModuleTypeLib.TYPE_EXECUTOR]);
+        HookLib.callPostHooks(_modulesByType[ModuleTypeLib.TYPE_HOOK], hookData);
     }
 
-    /**
-     * @notice Executes a transaction from an executor module
-     */
     function executeFromExecutor(bytes32 mode, bytes calldata executionCalldata)
         external
         override
         returns (bytes[] memory returnData)
     {
-        require(
-            _installedModules[ModuleTypeLib.TYPE_EXECUTOR][msg.sender],
-            "ERC7579MainModuleOptimized: NOT_EXECUTOR_MODULE"
-        );
+        require(_installedModules[ModuleTypeLib.TYPE_EXECUTOR][msg.sender], "ERR_NOT_EXECUTOR");
+        require(supportsExecutionMode(mode), "ERR_UNSUPPORTED_MODE");
 
-        require(supportsExecutionMode(mode), "ERC7579MainModuleOptimized: UNSUPPORTED_MODE");
-
-        // Convert and execute
-        IModuleCalls.Transaction[] memory transactions = ExecutionLib.toLegacyTransactions(mode, executionCalldata);
-        
-        // Execute and collect return data
-        returnData = new bytes[](transactions.length);
-        for (uint256 i = 0; i < transactions.length; i++) {
-            (bool success, bytes memory result) = _executeTransaction(transactions[i]);
-            returnData[i] = result;
-            
-            if (!success && transactions[i].revertOnError) {
-                if (result.length > 0) {
-                    assembly { revert(add(result, 0x20), mload(result)) }
-                } else {
-                    revert("ERC7579MainModuleOptimized: EXECUTION_FAILED");
-                }
-            }
-        }
+        bytes memory hookData = HookLib.callPreHooks(_modulesByType[ModuleTypeLib.TYPE_HOOK], msg.sender, 0, executionCalldata);
+        returnData = AccountExecutionLib.delegateExecutionWithReturn(mode, executionCalldata);
+        HookLib.callPostHooks(_modulesByType[ModuleTypeLib.TYPE_HOOK], hookData);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -96,7 +103,7 @@ contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
     //////////////////////////////////////////////////////////////////////////*/
 
     function accountId() external pure override returns (string memory) {
-        return "immutable.wallet.erc7579.v1";
+        return "immutable.wallet.erc7579.optimized.v1";
     }
 
     function supportsExecutionMode(bytes32 encodedMode) public pure override returns (bool) {
@@ -122,18 +129,7 @@ contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
         override 
         onlySelf 
     {
-        require(moduleTypeId.isValidModuleType(), "ERC7579MainModuleOptimized: INVALID_MODULE_TYPE");
-        require(!_installedModules[moduleTypeId][module], "ERC7579MainModuleOptimized: MODULE_ALREADY_INSTALLED");
-
-        _installedModules[moduleTypeId][module] = true;
-
-        // Call onInstall on the module if initData provided
-        if (initData.length > 0) {
-            (bool success,) = module.call(abi.encodeWithSignature("onInstall(bytes)", initData));
-            require(success, "ERC7579MainModuleOptimized: MODULE_INSTALL_FAILED");
-        }
-
-        emit ModuleInstalled(moduleTypeId, module);
+        ModuleManagementLib.installModuleWithValidation(_installedModules, _modulesByType, moduleTypeId, module, initData);
     }
 
     function uninstallModule(uint256 moduleTypeId, address module, bytes calldata deInitData) 
@@ -141,17 +137,7 @@ contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
         override 
         onlySelf 
     {
-        require(_installedModules[moduleTypeId][module], "ERC7579MainModuleOptimized: MODULE_NOT_INSTALLED");
-        require(!_isBuiltinModule(moduleTypeId, module), "ERC7579MainModuleOptimized: CANNOT_UNINSTALL_BUILTIN");
-
-        // Call onUninstall on the module if deInitData provided
-        if (deInitData.length > 0) {
-            (bool success,) = module.call(abi.encodeWithSignature("onUninstall(bytes)", deInitData));
-            require(success, "ERC7579MainModuleOptimized: MODULE_UNINSTALL_FAILED");
-        }
-
-        _installedModules[moduleTypeId][module] = false;
-        emit ModuleUninstalled(moduleTypeId, module);
+        ModuleManagementLib.uninstallModuleWithValidation(_installedModules, _modulesByType, moduleTypeId, module, deInitData);
     }
 
     function isModuleInstalled(uint256 moduleTypeId, address module, bytes calldata) 
@@ -160,12 +146,11 @@ contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
         override 
         returns (bool) 
     {
-        // Check built-in modules first
-        if (_isBuiltinModule(moduleTypeId, module)) {
-            return true;
-        }
-        
         return _installedModules[moduleTypeId][module];
+    }
+
+    function getInstalledModules(uint256 moduleTypeId) external view returns (address[] memory) {
+        return _modulesByType[moduleTypeId];
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -189,33 +174,17 @@ contract ERC7579MainModuleOptimized is MainModule, IERC7579Account {
                                 INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-    function _executeTransaction(IModuleCalls.Transaction memory transaction) 
-        internal 
-        returns (bool success, bytes memory returnData) 
-    {
-        if (transaction.delegateCall) {
-            (success, returnData) = transaction.target.delegatecall{
-                gas: transaction.gasLimit == 0 ? gasleft() : transaction.gasLimit
-            }(transaction.data);
-        } else {
-            (success, returnData) = transaction.target.call{
-                value: transaction.value,
-                gas: transaction.gasLimit == 0 ? gasleft() : transaction.gasLimit
-            }(transaction.data);
-        }
-    }
+    function _installDefaults() internal {
+        _installedModules[ModuleTypeLib.TYPE_VALIDATOR][DEFAULT_VALIDATOR] = true;
+        _modulesByType[ModuleTypeLib.TYPE_VALIDATOR].push(DEFAULT_VALIDATOR);
 
-    function _isBuiltinModule(uint256 moduleTypeId, address module) internal view returns (bool) {
-        // Built-in validator: this contract itself (ModuleAuth functionality)
-        if (moduleTypeId == ModuleTypeLib.TYPE_VALIDATOR && module == address(this)) {
-            return true;
-        }
-        
-        // Built-in fallback handler: this contract itself (ModuleHooks functionality)
-        if (moduleTypeId == ModuleTypeLib.TYPE_FALLBACK && module == address(this)) {
-            return true;
-        }
-        
-        return false;
+        _installedModules[ModuleTypeLib.TYPE_EXECUTOR][DEFAULT_EXECUTOR] = true;
+        _modulesByType[ModuleTypeLib.TYPE_EXECUTOR].push(DEFAULT_EXECUTOR);
+
+        _installedModules[ModuleTypeLib.TYPE_FALLBACK][DEFAULT_FALLBACK_HANDLER] = true;
+        _modulesByType[ModuleTypeLib.TYPE_FALLBACK].push(DEFAULT_FALLBACK_HANDLER);
+
+        _installedModules[ModuleTypeLib.TYPE_HOOK][DEFAULT_HOOK] = true;
+        _modulesByType[ModuleTypeLib.TYPE_HOOK].push(DEFAULT_HOOK);
     }
 }
