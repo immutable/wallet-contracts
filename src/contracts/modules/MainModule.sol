@@ -42,7 +42,7 @@ contract MainModule is
    */
   function supportsInterface(
     bytes4 _interfaceID
-  ) public override(
+  ) public virtual override(
     ModuleAuth,
     ModuleCalls,
     ModuleUpdate,
