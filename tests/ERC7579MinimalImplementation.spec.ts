@@ -11,8 +11,17 @@ describe('ERC7579 Minimal Implementation', function () {
   before(async function () {
     [owner, user, executor] = await ethers.getSigners();
     
+    // Deploy AccountExecutionLib library first
+    const AccountExecutionLib = await ethers.getContractFactory('AccountExecutionLib');
+    const accountExecutionLib = await AccountExecutionLib.deploy();
+    await accountExecutionLib.deployed();
+    
     // Deploy the contract with pure modular approach - no modules pre-installed
-    const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
+    const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal', {
+      libraries: {
+        AccountExecutionLib: accountExecutionLib.address,
+      },
+    });
     minimalImplementation = await ERC7579MainModuleMinimal.deploy(await owner.getAddress());
     await minimalImplementation.deployed();
     
@@ -199,13 +208,22 @@ describe('ERC7579 Minimal Implementation', function () {
       // Should fail from non-executor
       await expect(
         minimalImplementation.connect(user).executeFromExecutor(mode, calldata)
-      ).to.be.revertedWith('NOT_EXEC');
+      ).to.be.revertedWith('ERC7579: NOT_EXECUTOR_MODULE');
     });
   });
 
   describe('Gas Efficiency', function () {
     it('should have low deployment cost', async function () {
-      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
+      // Deploy library for gas estimation
+      const AccountExecutionLib = await ethers.getContractFactory('AccountExecutionLib');
+      const accountExecutionLib = await AccountExecutionLib.deploy();
+      await accountExecutionLib.deployed();
+      
+      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal', {
+        libraries: {
+          AccountExecutionLib: accountExecutionLib.address,
+        },
+      });
       const deployTx = ERC7579MainModuleMinimal.getDeployTransaction(await owner.getAddress());
       
       console.log(`Deployment gas estimate: ${deployTx.gasLimit?.toString() || 'N/A'}`);

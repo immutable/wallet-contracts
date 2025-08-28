@@ -6,6 +6,8 @@ import {IERC7579Account} from "../interfaces/erc7579/IERC7579Account.sol";
 import {ModeLib} from "../utils/erc7579/ModeLib.sol";
 import {ModuleTypeLib} from "../utils/erc7579/ModuleTypeLib.sol";
 import {InterfaceIds} from "../utils/erc7579/InterfaceIds.sol";
+import {AccountExecutionLib} from "../libraries/ExecutionLib.sol";
+import {ExecutionLib} from "../utils/erc7579/ExecutionLib.sol";
 
 /**
  * @title ERC7579MainModuleMinimal
@@ -19,8 +21,8 @@ contract ERC7579MainModuleMinimal is MainModule, IERC7579Account {
                                 STORAGE
     //////////////////////////////////////////////////////////////////////////*/
 
-    mapping(uint256 => mapping(address => bool)) private _modules;
-    mapping(uint256 => address[]) private _moduleList;
+    mapping(uint256 => mapping(address => bool)) internal _modules;
+    mapping(uint256 => address[]) internal _moduleList;
 
     /*//////////////////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
@@ -40,20 +42,23 @@ contract ERC7579MainModuleMinimal is MainModule, IERC7579Account {
         require(msg.sender == address(this) || _modules[2][msg.sender], "AUTH");
         require(_supportsMode(mode), "MODE");
         
-        // Minimal execution - just succeed for now
-        // In production, this would delegate to executor modules
+        // Delegate to AccountExecutionLib for actual execution
+        AccountExecutionLib.delegateExecutionWithReturn(mode, executionCalldata);
     }
 
     function executeFromExecutor(bytes32 mode, bytes calldata executionCalldata)
         external
         override
-        returns (bytes[] memory)
+        returns (bytes[] memory returnData)
     {
-        require(_modules[2][msg.sender], "NOT_EXEC");
-        require(_supportsMode(mode), "MODE");
+        // ERC-7579 compliance: Only installed executor modules can call this function
+        require(_modules[ModuleTypeLib.TYPE_EXECUTOR][msg.sender], "ERC7579: NOT_EXECUTOR_MODULE");
         
-        // Simple execution
-        return new bytes[](0);
+        // Validate execution mode is supported
+        require(_supportsMode(mode), "ERC7579: UNSUPPORTED_MODE");
+        
+        // Delegate to AccountExecutionLib for actual execution
+        return AccountExecutionLib.delegateExecutionWithReturn(mode, executionCalldata);
     }
 
     function accountId() external pure override returns (string memory) {
@@ -132,7 +137,8 @@ contract ERC7579MainModuleMinimal is MainModule, IERC7579Account {
 
     function _supportsMode(bytes32 mode) internal pure returns (bool) {
         bytes1 callType = mode.getCallType();
-        return callType == bytes1(0x00) || callType == bytes1(0x01);
+        // Support: Single (0x00), Batch (0x01), and DelegateCall (0xff)
+        return callType == bytes1(0x00) || callType == bytes1(0x01) || callType == bytes1(0xff);
     }
 
     function _removeModule(uint256 moduleTypeId, address module) internal {

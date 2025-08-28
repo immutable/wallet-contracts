@@ -30,8 +30,17 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
     it('should deploy all components successfully', async function () {
       console.log('\nDeploying ERC-7579 Enhanced Proxy Pattern Stack...');
       
-      // Deploy implementation
-      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
+      // Deploy AccountExecutionLib library first
+      const AccountExecutionLib = await ethers.getContractFactory('AccountExecutionLib');
+      const accountExecutionLib = await AccountExecutionLib.deploy();
+      await accountExecutionLib.deployed();
+      
+      // Deploy implementation with library linking
+      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal', {
+        libraries: {
+          AccountExecutionLib: accountExecutionLib.address,
+        },
+      });
       implementation = await ERC7579MainModuleMinimal.deploy(ownerAddress);
       await implementation.deployed();
       console.log(`✅ Implementation: ${implementation.address}`);
@@ -159,7 +168,7 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
         { name: 'Single', mode: '0x0000000000000000000000000000000000000000000000000000000000000000', expected: true },
         { name: 'Batch', mode: '0x0100000000000000000000000000000000000000000000000000000000000000', expected: true },
         { name: 'Static', mode: '0xfe00000000000000000000000000000000000000000000000000000000000000', expected: false },
-        { name: 'DelegateCall', mode: '0xff00000000000000000000000000000000000000000000000000000000000000', expected: false }
+        { name: 'DelegateCall', mode: '0xff00000000000000000000000000000000000000000000000000000000000000', expected: true }
       ];
       
       for (const { name, mode, expected } of modes) {
@@ -267,7 +276,15 @@ describe('ERC7579 Enhanced Proxy Pattern Integration', function () {
       console.log('\nGas Efficiency Analysis:');
       
       // Estimate deployment costs
-      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
+      const AccountExecutionLib = await ethers.getContractFactory('AccountExecutionLib');
+      const accountExecutionLib = await AccountExecutionLib.deploy();
+      await accountExecutionLib.deployed();
+      
+      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal', {
+        libraries: {
+          AccountExecutionLib: accountExecutionLib.address,
+        },
+      });
       const deployTx = ERC7579MainModuleMinimal.getDeployTransaction(ownerAddress);
       
       console.log(`Implementation deployment gas: ${deployTx.gasLimit?.toString() || 'N/A'}`);
