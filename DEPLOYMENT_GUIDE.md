@@ -11,15 +11,181 @@ The enhanced proxy pattern solves the contract size limitation while maintaining
 - **Test Coverage**: 1,109 tests passing, 0 failing
 - **Modular Design**: External modules for validator, executor, fallback, and hook functionality
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Dependencies
 
+### Contract Dependency Diagram
+
+The following diagram shows how all contracts work together to create a functional ERC-7579 wallet:
+
+```mermaid
+graph TB
+    %% Core Infrastructure
+    Factory["🏭 Factory<br/>CREATE2 Deployment"]
+    WalletProxy["🔗 WalletProxy<br/>(Yul Implementation)"]
+
+    %% Main Implementation
+    MainImpl["🧠 ERC7579MainModuleMinimal<br/>(24,119 bytes)<br/>• ERC-7579 Account Interface<br/>• Module Management<br/>• Proxy Delegation"]
+
+    %% External Libraries
+    ModuleMgmt["📚 ModuleManagementLib<br/>• Install/Uninstall Modules<br/>• Validation Logic"]
+    AccountExec["📚 AccountExecutionLib<br/>• Execution Logic<br/>• Call Handling"]
+    HookLib["📚 HookLib<br/>• Pre/Post Hooks<br/>• Event Handling"]
+
+    %% ERC-7579 Modules
+    Validator["🔐 ImmutableValidator<br/>• Signature Validation<br/>• UserOp Validation<br/>• ERC-1271 Support"]
+    Executor["⚡ ImmutableExecutor<br/>• Transaction Execution<br/>• Batch Operations<br/>• Delegatecall Support"]
+    Fallback["🛡️ ImmutableFallbackHandler<br/>• Unknown Function Calls<br/>• Emergency Recovery"]
+    Hook["🪝 ImmutableHook<br/>• Pre/Post Checks<br/>• Gas Monitoring<br/>• Event Logging"]
+
+    %% Utility Libraries
+    ModeLib["🔧 ModeLib<br/>• Execution Mode Parsing<br/>• Call Type Detection"]
+    ModuleTypeLib["🏷️ ModuleTypeLib<br/>• Module Type Constants<br/>• Type Validation"]
+    InterfaceIds["🆔 InterfaceIds<br/>• ERC-165 Interface IDs<br/>• Compliance Checking"]
+    ExecutionLib["📦 ExecutionLib<br/>• Calldata Encoding<br/>• Batch Processing"]
+
+    %% Deployment Flow
+    Factory -->|"1. Deploy"| MainImpl
+    Factory -->|"2. Create Proxy"| WalletProxy
+    WalletProxy -->|"3. Delegate to"| MainImpl
+
+    %% Library Dependencies
+    MainImpl -.->|"Uses"| ModuleMgmt
+    MainImpl -.->|"Uses"| AccountExec
+    MainImpl -.->|"Uses"| HookLib
+
+    %% Module Dependencies
+    MainImpl -->|"4. Install"| Validator
+    MainImpl -->|"5. Install"| Executor
+    MainImpl -->|"6. Install"| Fallback
+    MainImpl -->|"7. Install"| Hook
+
+    %% Utility Dependencies
+    MainImpl -.->|"Imports"| ModeLib
+    MainImpl -.->|"Imports"| ModuleTypeLib
+    MainImpl -.->|"Imports"| InterfaceIds
+
+    Validator -.->|"Uses"| InterfaceIds
+    Executor -.->|"Uses"| ModeLib
+    Executor -.->|"Uses"| ExecutionLib
+    Fallback -.->|"Uses"| InterfaceIds
+    Hook -.->|"Uses"| InterfaceIds
+
+    %% Styling
+    classDef coreInfra fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef mainContract fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    classDef libraries fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef modules fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef utilities fill:#fce4ec,stroke:#880e4f,stroke-width:1px
+
+    class Factory,WalletProxy coreInfra
+    class MainImpl mainContract
+    class ModuleMgmt,AccountExec,HookLib libraries
+    class Validator,Executor,Fallback,Hook modules
+    class ModeLib,ModuleTypeLib,InterfaceIds,ExecutionLib utilities
 ```
-Factory.sol → WalletProxy.yul → ERC7579MainModuleMinimal.sol (24KB)
-                                        ↓
-                              [Delegates to external modules]
-                                        ↓
-                    ImmutableValidator + ImmutableExecutor + etc.
+
+### Component Descriptions
+
+#### 🏗️ **Core Infrastructure (Blue)**
+
+- **Factory**: Handles CREATE2 deployment of wallet proxies and manages implementation addresses
+- **WalletProxy**: Ultra-lightweight Yul-based proxy that delegates all calls to the main implementation
+
+#### 🧠 **Main Implementation (Purple)**
+
+- **ERC7579MainModuleMinimal**: The core contract (24,119 bytes) that implements the ERC-7579 Account interface
+  - Manages module installation/uninstallation
+  - Handles execution delegation to appropriate modules
+  - Provides ERC-165 interface detection
+  - Maintains backward compatibility with existing wallet functionality
+
+#### 📚 **External Libraries (Orange)**
+
+- **ModuleManagementLib**: Handles complex module management logic to keep main contract small
+- **AccountExecutionLib**: Processes execution calls and manages call routing
+- **HookLib**: Manages pre/post execution hooks and event handling
+
+#### 🔧 **ERC-7579 Modules (Green)**
+
+- **ImmutableValidator**: Validates signatures and UserOperations, provides ERC-1271 support
+- **ImmutableExecutor**: Executes transactions, handles batch operations and delegatecalls
+- **ImmutableFallbackHandler**: Manages unknown function calls and emergency recovery
+- **ImmutableHook**: Provides pre/post execution checks, gas tracking, and event logging
+
+#### 🛠️ **Utility Libraries (Pink)**
+
+- **ModeLib**: Parses execution modes and determines call types
+- **ModuleTypeLib**: Defines module type constants and validation
+- **InterfaceIds**: Centralizes ERC-165 interface IDs for compliance checking
+- **ExecutionLib**: Handles calldata encoding/decoding and batch processing
+
+### Deployment Flow Explanation
+
+The deployment follows a specific sequence to ensure all dependencies are satisfied:
+
+1. **Deploy Main Implementation**: `ERC7579MainModuleMinimal` is deployed first as the core logic
+2. **Create Proxy**: `Factory` creates a `WalletProxy` that delegates to the main implementation
+3. **Delegate Setup**: Proxy is configured to delegate all calls to the main implementation
+4. **Install Modules**: The four ERC-7579 modules are deployed and installed:
+   - Validator (for signature validation)
+   - Executor (for transaction execution)
+   - Fallback Handler (for unknown calls)
+   - Hook (for execution monitoring)
+
+### How It All Works Together
+
+1. **User Interaction**: Users interact with the `WalletProxy` address
+2. **Call Delegation**: Proxy delegates calls to `ERC7579MainModuleMinimal`
+3. **Module Routing**: Main implementation routes calls to appropriate modules based on function signatures
+4. **Library Usage**: Complex logic is handled by external libraries to keep contracts small
+5. **ERC-7579 Compliance**: All interactions follow the ERC-7579 modular smart account specification
+
+### Deployment Sequence
+
+The contracts must be deployed in the following order to satisfy dependencies:
+
+```mermaid
+sequenceDiagram
+    participant D as Deployer
+    participant F as Factory
+    participant M as MainImpl
+    participant P as WalletProxy
+    participant V as Validator
+    participant E as Executor
+    participant FH as FallbackHandler
+    participant H as Hook
+
+    Note over D: Phase 1: Core Infrastructure
+    D->>M: 1. Deploy ERC7579MainModuleMinimal
+    D->>F: 2. Deploy/Update Factory with MainImpl address
+
+    Note over D: Phase 2: Module Deployment
+    D->>V: 3. Deploy ImmutableValidator
+    D->>E: 4. Deploy ImmutableExecutor
+    D->>FH: 5. Deploy ImmutableFallbackHandler
+    D->>H: 6. Deploy ImmutableHook
+
+    Note over D: Phase 3: Wallet Creation
+    D->>F: 7. Call createWallet()
+    F->>P: 8. Deploy WalletProxy via CREATE2
+    P->>M: 9. Delegate setup calls to MainImpl
+
+    Note over D: Phase 4: Module Installation
+    M->>V: 10. Install Validator module
+    M->>E: 11. Install Executor module
+    M->>FH: 12. Install FallbackHandler module
+    M->>H: 13. Install Hook module (optional)
+
+    Note over D: ✅ Wallet Ready for Use
 ```
+
+This architecture achieves:
+
+- ✅ **Size Compliance**: Main contract under 24KB limit
+- ✅ **Modularity**: Clean separation of concerns
+- ✅ **Upgradeability**: Modules can be replaced without changing core logic
+- ✅ **Gas Efficiency**: Optimized for both deployment and runtime costs
+- ✅ **ERC-7579 Compliance**: Full specification compliance
 
 ## 📋 Prerequisites
 
@@ -70,6 +236,8 @@ networks: {
 ```
 
 ## 🚀 Deployment Process
+
+> **📋 Reference**: See the [Architecture & Dependencies](#-architecture--dependencies) section above for the complete dependency diagram and deployment sequence.
 
 ### Phase 1: Core Deployment
 
