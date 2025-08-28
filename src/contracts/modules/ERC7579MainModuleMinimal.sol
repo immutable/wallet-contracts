@@ -22,32 +22,14 @@ contract ERC7579MainModuleMinimal is MainModule, IERC7579Account {
     mapping(uint256 => mapping(address => bool)) private _modules;
     mapping(uint256 => address[]) private _moduleList;
 
-    address public immutable VALIDATOR;
-    address public immutable EXECUTOR;
-    address public immutable FALLBACK;
-    address public immutable HOOK;
-
     /*//////////////////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
 
     constructor(address _factory) MainModule(_factory) {
-        // Deploy minimal default modules (these would be pre-deployed in production)
-        VALIDATOR = address(0x1); // Placeholder - would be actual deployed address
-        EXECUTOR = address(0x2);  // Placeholder - would be actual deployed address
-        FALLBACK = address(0x3);  // Placeholder - would be actual deployed address
-        HOOK = address(0x4);      // Placeholder - would be actual deployed address
-
-        // Install defaults
-        _modules[1][VALIDATOR] = true;
-        _modules[2][EXECUTOR] = true;
-        _modules[3][FALLBACK] = true;
-        _modules[4][HOOK] = true;
-        
-        _moduleList[1].push(VALIDATOR);
-        _moduleList[2].push(EXECUTOR);
-        _moduleList[3].push(FALLBACK);
-        _moduleList[4].push(HOOK);
+        // Pure modular approach - no modules installed by default
+        // Modules will be installed dynamically after deployment
+        // This maintains the true spirit of ERC-7579 modularity
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -140,6 +122,7 @@ contract ERC7579MainModuleMinimal is MainModule, IERC7579Account {
         return
             interfaceId == InterfaceIds.IERC7579_ACCOUNT_INTERFACE_ID ||
             interfaceId == InterfaceIds.IERC165_INTERFACE_ID ||
+            interfaceId == InterfaceIds.IERC1271_INTERFACE_ID || // ERC-1271 signature validation support
             super.supportsInterface(interfaceId);
     }
 

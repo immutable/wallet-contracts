@@ -10,16 +10,20 @@ describe('ERC7579 Minimal Implementation', function () {
 
   before(async function () {
     [owner, user, executor] = await ethers.getSigners();
+    
+    // Deploy the contract with pure modular approach - no modules pre-installed
+    const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
+    minimalImplementation = await ERC7579MainModuleMinimal.deploy(await owner.getAddress());
+    await minimalImplementation.deployed();
+    
+    console.log(`Deployed ERC7579MainModuleMinimal at: ${minimalImplementation.address}`);
+    console.log('✅ Pure modular approach - modules will be installed dynamically');
   });
 
   describe('Deployment and Basic Functionality', function () {
-    it('should deploy ERC7579MainModuleMinimal successfully', async function () {
-      const ERC7579MainModuleMinimal = await ethers.getContractFactory('ERC7579MainModuleMinimal');
-      minimalImplementation = await ERC7579MainModuleMinimal.deploy(await owner.getAddress());
-      await minimalImplementation.deployed();
-      
+    it('should have deployed ERC7579MainModuleMinimal successfully', async function () {
       expect(minimalImplementation.address).to.not.be.empty;
-      console.log(`Deployed ERC7579MainModuleMinimal at: ${minimalImplementation.address}`);
+      console.log(`Contract deployed at: ${minimalImplementation.address}`);
     });
 
     it('should have correct account ID', async function () {
@@ -62,15 +66,26 @@ describe('ERC7579 Minimal Implementation', function () {
       const ERC7579_ACCOUNT_INTERFACE_ID = '0x6ac75bb4'; // From InterfaceIds.sol
       expect(await minimalImplementation.supportsInterface(ERC7579_ACCOUNT_INTERFACE_ID)).to.be.true;
     });
+
+    it('should support ERC-1271 interface', async function () {
+      // ERC-1271 signature validation interface ID
+      const ERC1271_INTERFACE_ID = '0x1626ba7e'; // From InterfaceIds.sol
+      expect(await minimalImplementation.supportsInterface(ERC1271_INTERFACE_ID)).to.be.true;
+    });
   });
 
   describe('Module Management', function () {
-    it('should have default modules installed', async function () {
-      // Check that default modules are installed
-      expect(await minimalImplementation.isModuleInstalled(1, minimalImplementation.VALIDATOR(), '0x')).to.be.true;
-      expect(await minimalImplementation.isModuleInstalled(2, minimalImplementation.EXECUTOR(), '0x')).to.be.true;
-      expect(await minimalImplementation.isModuleInstalled(3, minimalImplementation.FALLBACK(), '0x')).to.be.true;
-      expect(await minimalImplementation.isModuleInstalled(4, minimalImplementation.HOOK(), '0x')).to.be.true;
+    it('should start with no modules installed (pure modular approach)', async function () {
+      // In the pure modular approach, no modules are pre-installed
+      const mockModule = await user.getAddress();
+      
+      // Check that no modules are installed by default
+      expect(await minimalImplementation.isModuleInstalled(1, mockModule, '0x')).to.be.false; // Validator
+      expect(await minimalImplementation.isModuleInstalled(2, mockModule, '0x')).to.be.false; // Executor
+      expect(await minimalImplementation.isModuleInstalled(3, mockModule, '0x')).to.be.false; // Fallback
+      expect(await minimalImplementation.isModuleInstalled(4, mockModule, '0x')).to.be.false; // Hook
+      
+      console.log('✅ No modules pre-installed - maintaining pure ERC-7579 modularity');
     });
 
     it('should allow installing new modules (self-call only)', async function () {

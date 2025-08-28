@@ -38,10 +38,19 @@ contract ImmutableExecutor is IERC7579Executor, ModuleCalls {
      * @param data Initialization data (execution configuration)
      */
     function onInstall(bytes calldata data) external override {
-        // Initialize the module with execution configuration
+        // Mark this account as having the executor installed
+        _installedAccounts[msg.sender] = true;
+        
+        // Initialize authorized callers - by default, the account itself is authorized
+        _authorizedCallers[msg.sender][msg.sender] = true;
+        
+        // Process initialization data if provided
         if (data.length > 0) {
-            // Decode initialization data for execution setup
-            // This could include gas limits, execution policies, etc.
+            // Decode and set additional authorized callers
+            address[] memory additionalCallers = abi.decode(data, (address[]));
+            for (uint256 i = 0; i < additionalCallers.length; i++) {
+                _authorizedCallers[msg.sender][additionalCallers[i]] = true;
+            }
         }
         
         // Module is now installed and ready to execute transactions
@@ -52,8 +61,15 @@ contract ImmutableExecutor is IERC7579Executor, ModuleCalls {
      * @param data Deinitialization data
      */
     function onUninstall(bytes calldata data) external override {
-        // Clean up any module-specific storage
-        // Clear execution policies if needed
+        // Mark this account as no longer having the executor installed
+        _installedAccounts[msg.sender] = false;
+        
+        // Clear all authorized callers for this account
+        // Note: We can't easily iterate and delete all mappings, so we rely on the installed check
+        // In a production implementation, you might want to use an EnumerableSet for authorized callers
+        
+        // Clear the account's own authorization
+        _authorizedCallers[msg.sender][msg.sender] = false;
     }
 
     /**
@@ -64,14 +80,23 @@ contract ImmutableExecutor is IERC7579Executor, ModuleCalls {
         return ModuleTypeLib.TYPE_EXECUTOR;
     }
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                STATE MANAGEMENT
+    //////////////////////////////////////////////////////////////////////////*/
+    
+    /// @notice Mapping to track which accounts have this executor installed
+    mapping(address => bool) private _installedAccounts;
+    
+    /// @notice Mapping to track authorized callers per account
+    mapping(address => mapping(address => bool)) private _authorizedCallers;
+
     /**
      * @notice Checks if the module is initialized for a smart account
      * @param smartAccount The smart account address
      * @return True if the module is initialized
      */
     function isInitialized(address smartAccount) external view returns (bool) {
-        // Check if the module has been properly initialized
-        return true; // For now, assume always initialized
+        return _installedAccounts[smartAccount];
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -89,17 +114,19 @@ contract ImmutableExecutor is IERC7579Executor, ModuleCalls {
         override 
         returns (bytes[] memory returnData) 
     {
-        // Only allow authorized callers (this would be implemented based on your auth model)
-        // For now, we'll allow any caller but in production you'd want proper authorization
+        // Implement proper authorization - only allow authorized callers
+        require(_isAuthorizedCaller(msg.sender, account), "ImmutableExecutor: UNAUTHORIZED_CALLER");
+        
+        // Validate that this executor is installed on the account
+        require(_isInstalledOnAccount(account), "ImmutableExecutor: NOT_INSTALLED");
         
         // Delegate the execution to the account
         // The account should call back to this module's execution functions
         (bool success, bytes memory result) = account.call(executionData);
         require(success, "ImmutableExecutor: EXECUTION_FAILED");
         
-        // Return the result as an array (simplified)
-        returnData = new bytes[](1);
-        returnData[0] = result;
+        // Parse and return the result properly
+        returnData = _parseExecutionResult(result);
     }
 
     /**
@@ -276,6 +303,45 @@ contract ImmutableExecutor is IERC7579Executor, ModuleCalls {
                 _digest
             )
         );
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                AUTHORIZATION HELPERS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Checks if a caller is authorized to execute on behalf of an account
+     * @param caller The address attempting to execute
+     * @param account The account address
+     * @return True if the caller is authorized
+     */
+    function _isAuthorizedCaller(address caller, address account) internal view returns (bool) {
+        // The account itself is always authorized
+        if (caller == account) return true;
+        
+        // Check if caller is explicitly authorized for this account
+        return _authorizedCallers[account][caller];
+    }
+
+    /**
+     * @notice Checks if this executor is installed on the given account
+     * @param account The account address
+     * @return True if installed
+     */
+    function _isInstalledOnAccount(address account) internal view returns (bool) {
+        return _installedAccounts[account];
+    }
+
+    /**
+     * @notice Parses execution result into proper return format
+     * @param result The raw execution result
+     * @return returnData Properly formatted return data array
+     */
+    function _parseExecutionResult(bytes memory result) internal pure returns (bytes[] memory returnData) {
+        // For now, return the result as a single-element array
+        // In a more sophisticated implementation, this could parse multiple results
+        returnData = new bytes[](1);
+        returnData[0] = result;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
