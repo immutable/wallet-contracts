@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "../utils/erc7579/ModuleTypeLib.sol";
-import "../utils/erc7579/InterfaceIds.sol";
-import "../interfaces/erc7579/IERC7579Module.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ModuleTypeLib} from "../utils/erc7579/ModuleTypeLib.sol";
+import {InterfaceIds} from "../utils/erc7579/InterfaceIds.sol";
+import {IERC7579Module} from "../interfaces/erc7579/IERC7579Module.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title ModuleManagementLib

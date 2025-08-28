@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "./MainModule.sol";
-import "../interfaces/erc7579/IERC7579Account.sol";
-import "../utils/erc7579/ModeLib.sol";
-import "../utils/erc7579/ModuleTypeLib.sol";
-import "../utils/erc7579/InterfaceIds.sol";
+import {MainModule} from "./MainModule.sol";
+import {IERC7579Account} from "../interfaces/erc7579/IERC7579Account.sol";
+import {ModeLib} from "../utils/erc7579/ModeLib.sol";
+import {ModuleTypeLib} from "../utils/erc7579/ModuleTypeLib.sol";
+import {InterfaceIds} from "../utils/erc7579/InterfaceIds.sol";
 
 /**
  * @title ERC7579MainModuleMinimal

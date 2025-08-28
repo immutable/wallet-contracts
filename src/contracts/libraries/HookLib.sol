@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "../interfaces/erc7579/IERC7579Hook.sol";
-import "../utils/erc7579/ModuleTypeLib.sol";
+import {IERC7579Hook} from "../interfaces/erc7579/IERC7579Hook.sol";
+import {ModuleTypeLib} from "../utils/erc7579/ModuleTypeLib.sol";
 
 /**
  * @title HookLib

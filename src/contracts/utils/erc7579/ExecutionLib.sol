@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "./ModeLib.sol";
-import "../../modules/commons/interfaces/IModuleCalls.sol";
+import {ModeLib} from "./ModeLib.sol";
+import {IModuleCalls} from "../../modules/commons/interfaces/IModuleCalls.sol";
 
 /**
  * @title ExecutionLib  

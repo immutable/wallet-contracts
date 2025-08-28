@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "./IERC7579Module.sol";
+import {IERC7579Module} from "./IERC7579Module.sol";
 
 /**
  * @title IERC7579Hook

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.17;
 
-import "../../interfaces/erc7579/IERC7579Module.sol";
-import "../../utils/erc7579/InterfaceIds.sol";
-import "../../utils/erc7579/ModuleTypeLib.sol";
-import "../commons/ModuleHooks.sol";
+import {IERC7579Module} from "../../interfaces/erc7579/IERC7579Module.sol";
+import {InterfaceIds} from "../../utils/erc7579/InterfaceIds.sol";
+import {ModuleTypeLib} from "../../utils/erc7579/ModuleTypeLib.sol";
+import {ModuleHooks} from "../commons/ModuleHooks.sol";
 
 /**
  * @title ImmutableFallbackHandler
