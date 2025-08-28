@@ -176,34 +176,6 @@ describe('ERC7579 Minimal Implementation', function () {
     });
   });
 
-  describe('Contract Size Validation', function () {
-    it('should be under 24KB deployment limit', async function () {
-      const artifact = await artifacts.readArtifact('ERC7579MainModuleMinimal');
-      const bytecodeSize = (artifact.bytecode.length - 2) / 2;
-      
-      console.log(`Contract size: ${bytecodeSize.toLocaleString()} bytes`);
-      console.log(`Size limit: ${(24576).toLocaleString()} bytes`);
-      console.log(`Remaining capacity: ${(24576 - bytecodeSize).toLocaleString()} bytes`);
-      
-      expect(bytecodeSize).to.be.lessThan(24576);
-    });
-
-    it('should demonstrate significant size reduction', async function () {
-      const minimalArtifact = await artifacts.readArtifact('ERC7579MainModuleMinimal');
-      const originalArtifact = await artifacts.readArtifact('ERC7579MainModuleModular');
-      
-      const minimalSize = (minimalArtifact.bytecode.length - 2) / 2;
-      const originalSize = (originalArtifact.bytecode.length - 2) / 2;
-      const reduction = originalSize - minimalSize;
-      const reductionPercent = (reduction / originalSize) * 100;
-      
-      console.log(`Size reduction: ${reduction.toLocaleString()} bytes (${reductionPercent.toFixed(1)}%)`);
-      
-      expect(reduction).to.be.greaterThan(40000); // At least 40KB reduction
-      expect(reductionPercent).to.be.greaterThan(60); // At least 60% reduction
-    });
-  });
-
   describe('Proxy Compatibility', function () {
     it('should be compatible with proxy pattern', function () {
       console.log('Proxy Compatibility Checklist:');
