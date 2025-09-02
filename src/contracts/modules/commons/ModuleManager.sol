@@ -47,16 +47,17 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
 
     /// @dev The default validator address.
     /// @notice To explicitly initialize the default validator, Nexus.execute(_DEFAULT_VALIDATOR.onInstall(...)) should be called.
-    address internal immutable _DEFAULT_VALIDATOR;
+    address internal immutable _DEFAULT_VALIDATOR = address(0);
 
-    /// @dev initData should block the implementation from being used as a Smart Account
-    constructor(address defaultValidator, bytes memory initData) {
-        if (!IValidator(defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) {
-            revert MismatchModuleTypeId();
-        }
-        IValidator(defaultValidator).onInstall(initData);
-        _DEFAULT_VALIDATOR = defaultValidator;
-    }
+    // Default validator is address(0) to reuse existing validation logic in ModuleAuth
+    // /// @dev initData should block the implementation from being used as a Smart Account
+    // constructor(address defaultValidator, bytes memory initData) {
+    //     if (!IValidator(defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) {
+    //         revert MismatchModuleTypeId();
+    //     }
+    //     IValidator(defaultValidator).onInstall(initData);
+    //     _DEFAULT_VALIDATOR = defaultValidator;
+    // }
 
     /// @notice Ensures the message sender is a registered executor module.
     modifier onlyExecutorModule() virtual {
