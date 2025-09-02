@@ -147,7 +147,7 @@ contract MainModuleUpgradable is
     }
 
     /// @notice Initializes the smart account with the specified entry point.
-    constructor(address anEntryPoint, address defaultValidator, bytes memory initData) ModuleManager(defaultValidator, initData) {
+    constructor(address anEntryPoint, address defaultValidator, bytes memory initData) {
         require(address(anEntryPoint) != address(0), EntryPointCanNotBeZero());
         _ENTRYPOINT = anEntryPoint;
         _IMPLEMENTATION = address(this);
@@ -271,12 +271,21 @@ contract MainModuleUpgradable is
         // else proceed with normal signature verification
         // First 20 bytes of data will be validator address and rest of the bytes is complete signature.
         address validator = _handleValidator(address(bytes20(signature[0:20])));
-        bytes memory signature_;
-        (hash, signature_) = _withPreValidationHook(hash, signature[20:]);
-        try IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature_) returns (bytes4 res) {
-            return res;
-        } catch {
-            return bytes4(0xffffffff);
+
+        if (validator == address(0)) {
+            // Fall back to default signature validation
+            if (_signatureValidationInternal(_subDigest(hash), signature)) {
+                return 0x1626ba7e; // ERC1271_MAGICVALUE_BYTES32
+            }
+            return 0xffffffff;
+        } else {
+            bytes memory signature_;
+            (hash, signature_) = _withPreValidationHook(hash, signature[20:]);
+            try IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature_) returns (bytes4 res) {
+                return res;
+            } catch {
+                return bytes4(0xffffffff);
+            }
         }
     }
 
