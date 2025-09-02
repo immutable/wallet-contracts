@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { PackedUserOperation } from "account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
 
 import { IModule } from "./IModule.sol";
 

@@ -27,7 +27,7 @@ import {
 } from "../../types/Constants.sol";
 import { EIP712 } from "solady/utils/EIP712.sol";
 import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/ExcessivelySafeCall.sol";
-import { PackedUserOperation } from "account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
 import { RegistryAdapter } from "./RegistryAdapter.sol";
 import { EmergencyUninstall } from "../../types/DataTypes.sol";
 import { ECDSA } from "solady/utils/ECDSA.sol";
@@ -77,14 +77,16 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
         }
     }
 
+    // fallback function in Module Hooks is used instead of receive function
     // receive function
-    receive() external payable { }
+    // receive() external payable { }
 
+    // fallback function in Module Hooks is used
     /// @dev Fallback function to manage incoming calls using designated handlers based on the call type.
     /// Hooked manually in the _fallback function
-    fallback() external payable {
-        _fallback(msg.data);
-    }
+    // fallback() external payable {
+    //     _fallback(msg.data);
+    // }
 
     /// @dev Retrieves a paginated list of validator addresses from the linked list.
     /// This utility function is not defined by the ERC-7579 standard and is implemented to facilitate
@@ -603,62 +605,62 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
         }
     }
 
-    function _fallback(bytes calldata callData) private {
-        bool success;
-        bytes memory result;
-        FallbackHandler storage $fallbackHandler = _getAccountStorage().fallbacks[msg.sig];
-        address handler = $fallbackHandler.handler;
-        CallType calltype = $fallbackHandler.calltype;
+    // function _fallback(bytes calldata callData) private {
+    //     bool success;
+    //     bytes memory result;
+    //     FallbackHandler storage $fallbackHandler = _getAccountStorage().fallbacks[msg.sig];
+    //     address handler = $fallbackHandler.handler;
+    //     CallType calltype = $fallbackHandler.calltype;
 
-        if (handler != address(0)) {
-            // hook manually
-            address hook = _getHook();
-            bytes memory hookData;
-            if (hook != address(0)) {
-                hookData = IHook(hook).preCheck(msg.sender, msg.value, msg.data);
-            }
-            //if there's a fallback handler, call it
-            if (calltype == CALLTYPE_STATIC) {
-                (success, result) = handler.staticcall(ExecLib.get2771CallData(callData));
-            } else if (calltype == CALLTYPE_SINGLE) {
-                (success, result) = handler.call{ value: msg.value }(ExecLib.get2771CallData(callData));
-            } else {
-                revert UnsupportedCallType(calltype);
-            }
+    //     if (handler != address(0)) {
+    //         // hook manually
+    //         address hook = _getHook();
+    //         bytes memory hookData;
+    //         if (hook != address(0)) {
+    //             hookData = IHook(hook).preCheck(msg.sender, msg.value, msg.data);
+    //         }
+    //         //if there's a fallback handler, call it
+    //         if (calltype == CALLTYPE_STATIC) {
+    //             (success, result) = handler.staticcall(ExecLib.get2771CallData(callData));
+    //         } else if (calltype == CALLTYPE_SINGLE) {
+    //             (success, result) = handler.call{ value: msg.value }(ExecLib.get2771CallData(callData));
+    //         } else {
+    //             revert UnsupportedCallType(calltype);
+    //         }
 
-            // Use revert message from fallback handler if the call was not successful
-            assembly {
-                if iszero(success) { revert(add(result, 0x20), mload(result)) }
-            }
+    //         // Use revert message from fallback handler if the call was not successful
+    //         assembly {
+    //             if iszero(success) { revert(add(result, 0x20), mload(result)) }
+    //         }
 
-            // hook post check
-            if (hook != address(0)) {
-                IHook(hook).postCheck(hookData);
-            }
+    //         // hook post check
+    //         if (hook != address(0)) {
+    //             IHook(hook).postCheck(hookData);
+    //         }
 
-            // return the result
-            assembly {
-                return(add(result, 0x20), mload(result))
-            }
-        }
+    //         // return the result
+    //         assembly {
+    //             return(add(result, 0x20), mload(result))
+    //         }
+    //     }
 
-        // If there's no handler, the call can be one of onERCXXXReceived()
-        // No need to hook this as no execution is done here
-        bytes32 s;
-        /// @solidity memory-safe-assembly
-        assembly {
-            s := shr(224, calldataload(0))
-            // 0x150b7a02: `onERC721Received(address,address,uint256,bytes)`.
-            // 0xf23a6e61: `onERC1155Received(address,address,uint256,uint256,bytes)`.
-            // 0xbc197c81: `onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)`.
-            if or(eq(s, 0x150b7a02), or(eq(s, 0xf23a6e61), eq(s, 0xbc197c81))) {
-                mstore(0x20, s) // Store `msg.sig`.
-                return(0x3c, 0x20) // Return `msg.sig`.
-            }
-        }
-        // if there was no handler and it is not the onERCXXXReceived call, revert
-        revert MissingFallbackHandler(msg.sig);
-    }
+    //     // If there's no handler, the call can be one of onERCXXXReceived()
+    //     // No need to hook this as no execution is done here
+    //     bytes32 s;
+    //     /// @solidity memory-safe-assembly
+    //     assembly {
+    //         s := shr(224, calldataload(0))
+    //         // 0x150b7a02: `onERC721Received(address,address,uint256,bytes)`.
+    //         // 0xf23a6e61: `onERC1155Received(address,address,uint256,uint256,bytes)`.
+    //         // 0xbc197c81: `onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)`.
+    //         if or(eq(s, 0x150b7a02), or(eq(s, 0xf23a6e61), eq(s, 0xbc197c81))) {
+    //             mstore(0x20, s) // Store `msg.sig`.
+    //             return(0x3c, 0x20) // Return `msg.sig`.
+    //         }
+    //     }
+    //     // if there was no handler and it is not the onERCXXXReceived call, revert
+    //     revert MissingFallbackHandler(msg.sig);
+    // }
 
     /// @dev Helper function to paginate entries in a SentinelList.
     /// @param list The SentinelList to paginate.
