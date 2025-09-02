@@ -7,6 +7,7 @@ import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-web3';
 import '@nomiclabs/hardhat-etherscan';
 import '@nomicfoundation/hardhat-chai-matchers';
+import "@nomicfoundation/hardhat-foundry";
 
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
@@ -28,7 +29,7 @@ const config: HardhatUserConfig = {
     }
   },
   paths: {
-    root: 'src',
+    sources: 'src/contracts',
     tests: 'tests'
   },
   networks: {

@@ -30,3 +30,9 @@ scripts/*_output*.json
 .env.devnet
 .env.testnet
 .env.mainnet
+
+# forge directory
+cache
+cache_forge
+cache_hardhat
+artifacts

@@ -3,16 +3,16 @@ pragma solidity 0.8.27;
 
 import { SentinelListLib } from "sentinellist/SentinelList.sol";
 import { Storage } from "./Storage.sol";
-import { IHook } from "../interfaces/modules/IHook.sol";
-import { IModule } from "../interfaces/modules/IModule.sol";
-import { IPreValidationHookERC1271, IPreValidationHookERC4337 } from "../interfaces/modules/IPreValidationHook.sol";
-import { IExecutor } from "../interfaces/modules/IExecutor.sol";
-import { IFallback } from "../interfaces/modules/IFallback.sol";
-import { IValidator } from "../interfaces/modules/IValidator.sol";
+import { IHook } from "./interfaces/modules/IHook.sol";
+import { IModule } from "./interfaces/modules/IModule.sol";
+import { IPreValidationHookERC1271, IPreValidationHookERC4337 } from "./interfaces/modules/IPreValidationHook.sol";
+import { IExecutor } from "./interfaces/modules/IExecutor.sol";
+import { IFallback } from "./interfaces/modules/IFallback.sol";
+import { IValidator } from "./interfaces/modules/IValidator.sol";
 import { CallType, CALLTYPE_SINGLE, CALLTYPE_STATIC } from "../../lib/ModeLib.sol";
 import { ExecLib } from "../../lib/ExecLib.sol";
 import { LocalCallDataParserLib } from "../../lib/local/LocalCallDataParserLib.sol";
-import { IModuleManager } from "../interfaces/base/IModuleManager.sol";
+import { IModuleManager } from "./interfaces/base/IModuleManager.sol";
 import {
     MODULE_TYPE_VALIDATOR,
     MODULE_TYPE_EXECUTOR,
@@ -27,7 +27,7 @@ import {
 } from "../../types/Constants.sol";
 import { EIP712 } from "solady/utils/EIP712.sol";
 import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/ExcessivelySafeCall.sol";
-import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
+import { PackedUserOperation } from "account-abstraction/contracts/interfaces/PackedUserOperation.sol";
 import { RegistryAdapter } from "./RegistryAdapter.sol";
 import { EmergencyUninstall } from "../../types/DataTypes.sol";
 import { ECDSA } from "solady/utils/ECDSA.sol";
@@ -217,7 +217,7 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
         // Perform the removal first
         validators.pop(prev, validator);
 
-        validator.excessivelySafeCall(gasleft(), 0, 0, abi.encodeWithSelector(IModule.onUninstall.selector, disableModuleData));
+        validator.excessivelySafeCall(gasleft(), 0, abi.encodeWithSelector(IModule.onUninstall.selector, disableModuleData));
     }
 
     /// @dev Installs a new executor module after checking if it matches the required module type.
@@ -235,7 +235,7 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
     function _uninstallExecutor(address executor, bytes calldata data) internal virtual {
         (address prev, bytes memory disableModuleData) = abi.decode(data, (address, bytes));
         _getAccountStorage().executors.pop(prev, executor);
-        executor.excessivelySafeCall(gasleft(), 0, 0, abi.encodeWithSelector(IModule.onUninstall.selector, disableModuleData));
+        executor.excessivelySafeCall(gasleft(), 0, abi.encodeWithSelector(IModule.onUninstall.selector, disableModuleData));
     }
 
     /// @dev Installs a hook module, ensuring no other hooks are installed before proceeding.
@@ -259,7 +259,7 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
         } else if (hookType == MODULE_TYPE_PREVALIDATION_HOOK_ERC1271 || hookType == MODULE_TYPE_PREVALIDATION_HOOK_ERC4337) {
             _uninstallPreValidationHook(hook, hookType, data);
         }
-        hook.excessivelySafeCall(gasleft(), 0, 0, abi.encodeWithSelector(IModule.onUninstall.selector, data));
+        hook.excessivelySafeCall(gasleft(), 0, abi.encodeWithSelector(IModule.onUninstall.selector, data));
     }
 
     /// @dev Sets the current hook in the storage to the specified address.
@@ -310,7 +310,7 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
     /// @param data The de-initialization data containing the selector.
     function _uninstallFallbackHandler(address fallbackHandler, bytes calldata data) internal virtual {
         _getAccountStorage().fallbacks[bytes4(data[0:4])] = FallbackHandler(address(0), CallType.wrap(0x00));
-        fallbackHandler.excessivelySafeCall(gasleft(), 0, 0, abi.encodeWithSelector(IModule.onUninstall.selector, data[4:]));
+        fallbackHandler.excessivelySafeCall(gasleft(), 0, abi.encodeWithSelector(IModule.onUninstall.selector, data[4:]));
     }
 
     /// @dev Installs a pre-validation hook module, ensuring no other pre-validation hooks are installed before proceeding.

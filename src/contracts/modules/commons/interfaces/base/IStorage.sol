@@ -2,9 +2,9 @@
 pragma solidity 0.8.27;
 
 import { SentinelListLib } from "sentinellist/SentinelList.sol";
-import { IPreValidationHookERC1271, IPreValidationHookERC4337 } from "../../../modules/IPreValidationHook.sol";
-import { IHook } from "../../../modules/IHook.sol";
-import { CallType } from "../../../lib/ModeLib.sol";
+import { IPreValidationHookERC1271, IPreValidationHookERC4337 } from "../modules/IPreValidationHook.sol";
+import { IHook } from "../modules/IHook.sol";
+import { CallType } from "../../../../lib/ModeLib.sol";
 
 /// @title Passport Wallet V2 - IStorage Interface
 /// @notice Provides structured storage for Modular Smart Account under the Passport Wallet V2 suite, compliant with ERC-7579 and ERC-4337.
