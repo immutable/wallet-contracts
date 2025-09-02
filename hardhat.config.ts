@@ -17,16 +17,19 @@ loadAndValidateEnvironment();
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: '0.8.27' }],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 999999,
-        details: {
-          yul: true
+    compilers: [{ 
+      version: '0.8.27',
+      settings: {
+        evmVersion: 'cancun',
+        optimizer: {
+          enabled: true,
+          runs: 999999,
+          details: {
+            yul: true
+          }
         }
       }
-    }
+    }],
   },
   paths: {
     sources: 'src/contracts',
