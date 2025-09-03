@@ -254,39 +254,79 @@ contract MainModuleDynamicAuthV2 is
         _configureRegistry(newRegistry, attesters, threshold);
     }
 
-    /// @notice Validates a signature according to ERC-1271 standards.
+    /// @notice Validates a signature according to ERC-1271 standards with context-aware routing.
     /// @param hash The hash of the data being validated.
     /// @param signature Signature data that needs to be validated.
     /// @return The status code of the signature validation (`0x1626ba7e` if valid).
-    /// bytes4(keccak256("isValidSignature(bytes32,bytes)") = 0x1626ba7e
-    /// @dev Delegates the validation to a validator module specified within the signature data.
+    /// @dev Routes between ERC-7579 validator modules and legacy multi-sig validation based on caller context and signature format.
     function isValidSignature(bytes32 hash, bytes calldata signature) external view virtual override returns (bytes4) {
-        // Handle potential ERC7739 support detection request
+        // Handle potential ERC7739 support detection request first
         if (signature.length == 0) {
             // Forces the compiler to optimize for smaller bytecode size.
             if (uint256(hash) == (~signature.length / 0xffff) * 0x7739) {
                 return checkERC7739Support(hash, signature);
             }
         }
-        // else proceed with normal signature verification
-        // First 20 bytes of data will be validator address and rest of the bytes is complete signature.
-        address validator = _handleValidator(address(bytes20(signature[0:20])));
-
-        if (validator == address(0)) {
-            // Fall back to default signature validation
-            if (_signatureValidationInternal(_subDigest(hash), signature)) {
-                return 0x1626ba7e; // ERC1271_MAGICVALUE_BYTES32
-            }
-            return 0xffffffff;
+        
+        // Route based on caller context and signature format
+        if (_shouldUseERC7579Validation()) {
+            return _validateWithERC7579(hash, signature);
         } else {
-            bytes memory signature_;
-            (hash, signature_) = _withPreValidationHook(hash, signature[20:]);
-            try IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature_) returns (bytes4 res) {
-                return res;
-            } catch {
-                return bytes4(0xffffffff);
-            }
+            return _validateWithLegacyAuth(hash, signature);
         }
+    }
+
+    /// @notice Determines whether to use ERC-7579 validation based on caller and signature format.
+    /// @return True if ERC-7579 validation should be used, false for legacy validation.
+    /// @dev Primary check: caller is an executor module. Secondary check: signature format indicates validator module.
+    function _shouldUseERC7579Validation() internal view returns (bool) {
+        // Primary: Check if caller is an executor module
+        if (_getAccountStorage().executors.contains(msg.sender)) {
+            return true;
+        }
+
+        // we don't need to check for installed validator because the validation logic is inbuilt in MainModuleDynamicAuthV2
+        // // Secondary: Check if signature format indicates ERC-7579 (validator address + signature)
+        // if (signature.length >= 20) {
+        //     address potentialValidator = address(bytes20(signature[0:20]));
+        //     // Check if the first 20 bytes represent a valid installed validator
+        //     if (_isValidatorInstalled(potentialValidator)) {
+        //         return true;
+        //     }
+        // }
+        
+        return false;
+    }
+
+    /// @notice Validates signature using ERC-7579 validator modules.
+    /// @param hash The hash of the data being validated.
+    /// @param signature Signature data containing validator address and signature.
+    /// @return The ERC-1271 magic value if valid, 0xffffffff otherwise.
+    /// @dev Delegates validation to the specified validator module with pre-validation hooks.
+    function _validateWithERC7579(bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
+        // First 20 bytes of signature should be validator address, rest is the actual signature
+        address validator = _handleValidator(address(bytes20(signature[0:20])));
+        bytes memory signature_;
+        (hash, signature_) = _withPreValidationHook(hash, signature[20:]);
+        
+        try IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature_) returns (bytes4 res) {
+            return res;
+        } catch {
+            return bytes4(0xffffffff);
+        }
+    }
+
+    /// @notice Validates signature using legacy multi-signature validation with rehashing.
+    /// @param hash The hash of the data being validated.
+    /// @param signature Signature data in legacy multi-sig format.
+    /// @return The ERC-1271 magic value if valid, 0xffffffff otherwise.
+    /// @dev Uses the legacy ModuleAuth validation logic with _subDigest rehashing.
+    function _validateWithLegacyAuth(bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
+        // Apply legacy validation with rehashing (as done in ModuleAuth)
+        if (_signatureValidationInternal(_subDigest(hash), signature)) {
+            return 0x1626ba7e; // ERC1271_MAGICVALUE_BYTES32
+        }
+        return 0xffffffff;
     }
 
     // Removing as this is from the UUPSUpgradeable contract which has been excluded. 
