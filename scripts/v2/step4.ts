@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { waitForInput } from '../helper-functions';
+
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 import { deployContractViaCREATE2 } from '../contract';
@@ -29,8 +29,6 @@ async function step4(): Promise<EnvironmentInfo> {
   if (!entryPointAddress) {
     throw new Error('ENTRY_POINT_ADDRESS environment variable is required for V2 deployment');
   }
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

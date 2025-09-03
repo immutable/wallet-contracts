@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 import { deployContract } from '../contract';
-import { waitForInput } from '../helper-functions';
+
 
 /**
  * Step 3 - V2 Deployment
@@ -15,8 +15,6 @@ async function step3(): Promise<EnvironmentInfo> {
 
   console.log(`[${network}] Starting V2 deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

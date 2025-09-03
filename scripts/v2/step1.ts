@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 import { deployContract } from '../contract';
-import { waitForInput } from '../helper-functions';
+
 
 // Addresses that need to be pre-determined
 // 1. Factory
@@ -24,8 +24,6 @@ async function step1(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Signer address ${signerAddress}`);
   console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
   console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

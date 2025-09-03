@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 import { deployContractViaCREATE2 } from '../contract';
-import { waitForInput } from '../helper-functions';
+
 
 /**
  * Step 2 - V2 Deployment
@@ -18,8 +18,6 @@ async function step2(): Promise<EnvironmentInfo> {
   console.log(`[${network}] CREATE2 Factory address ${deployerContractAddress}`);
   console.log(`[${network}] Wallet ImplLocator Admin address ${walletImplLocatorAdmin}`);
   console.log(`[${network}] Wallet ImplLocator Changer address ${walletImplChangerAdmin}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

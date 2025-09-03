@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 import { deployContract } from '../contract';
-import { waitForInput } from '../helper-functions';
+
 
 /**
  * Step 5 - V2 Deployment
@@ -18,8 +18,6 @@ async function step5(): Promise<EnvironmentInfo> {
   console.log(`[${network}] SignerRootAdmin address ${signerRootAdminPubKey}`);
   console.log(`[${network}] SignerAdmin address ${signerAdminPubKey}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

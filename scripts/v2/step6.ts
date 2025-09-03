@@ -1,6 +1,6 @@
 import * as hre from 'hardhat';
 import { Contract, ContractFactory, utils } from 'ethers';
-import { newContractFactory, waitForInput } from '../helper-functions';
+import { newContractFactory } from '../helper-functions';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 
@@ -17,8 +17,6 @@ async function step6(): Promise<EnvironmentInfo> {
   console.log(`[${network}] mainModuleDynamicAuthV2 address ${mainModuleDynamicAuthV2Address}`);
   console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
-
-  await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
