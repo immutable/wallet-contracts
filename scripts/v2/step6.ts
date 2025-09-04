@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { Contract, ContractFactory, utils } from 'ethers';
 import { newContractFactory } from '../helper-functions';
@@ -10,8 +11,13 @@ import { newWalletOptions, WalletOptions } from '../wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthV2Address = '0x38D64731246b62fd7A79731ff1cC4D579aA420D0';
-  const walletImplLocatorContractAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+
+  // Read addresses from previous deployment steps
+  const step4Data = JSON.parse(fs.readFileSync('scripts/v2/step4.json', 'utf8'));
+  const step2Data = JSON.parse(fs.readFileSync('scripts/v2/step2.json', 'utf8'));
+  
+  const mainModuleDynamicAuthV2Address = step4Data.mainModuleDynamicAuthV2;
+  const walletImplLocatorContractAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting V2 deployment...`);
   console.log(`[${network}] mainModuleDynamicAuthV2 address ${mainModuleDynamicAuthV2Address}`);
