@@ -62,6 +62,7 @@ contract MainModuleDynamicAuthV2 is
   using ModeLib for ExecutionMode;
     using ExecLib for bytes;
     using NonceLib for uint256;
+    using ECDSA for bytes32;
     using SentinelListLib for SentinelListLib.SentinelList;
 
     /// @notice Identifier for this implementation on the network
@@ -267,47 +268,36 @@ contract MainModuleDynamicAuthV2 is
                 return checkERC7739Support(hash, signature);
             }
         }
-        
-        // Route based on caller context and signature format
-        if (_shouldUseERC7579Validation()) {
-            return _validateWithERC7579(hash, signature);
-        } else {
+
+        address validator = address(bytes20(signature[0:20]));
+        // use ERC7579's isValidSignature method directly as there is no default validator set
+        if (validator == address(0)) {
+            address signer = ECDSA.recover(hash.toEthSignedMessageHash(), signature[20:]);
+            if (signer == address(this)) {
+                return 0x1626ba7e; // EIP1271MagicValue
+            }
+        }
+        // use ERC7579 Validation mechanism
+        else if (!_isValidatorInstalled(validator)) {
+            return _validateWithERC7579(validator, hash, signature[20:]);
+        }
+        // use legacy validation mechanism
+        else {
             return _validateWithLegacyAuth(hash, signature);
         }
-    }
 
-    /// @notice Determines whether to use ERC-7579 validation based on caller and signature format.
-    /// @return True if ERC-7579 validation should be used, false for legacy validation.
-    /// @dev Primary check: caller is an executor module. Secondary check: signature format indicates validator module.
-    function _shouldUseERC7579Validation() internal view returns (bool) {
-        // Primary: Check if caller is an executor module
-        if (_getAccountStorage().executors.contains(msg.sender)) {
-            return true;
-        }
-
-        // we don't need to check for installed validator because the validation logic is inbuilt in MainModuleDynamicAuthV2
-        // // Secondary: Check if signature format indicates ERC-7579 (validator address + signature)
-        // if (signature.length >= 20) {
-        //     address potentialValidator = address(bytes20(signature[0:20]));
-        //     // Check if the first 20 bytes represent a valid installed validator
-        //     if (_isValidatorInstalled(potentialValidator)) {
-        //         return true;
-        //     }
-        // }
-        
-        return false;
+         return bytes4(0xffffffff); // catch all invalid signature
     }
 
     /// @notice Validates signature using ERC-7579 validator modules.
+    /// @param validator The validator address to use for validation.
     /// @param hash The hash of the data being validated.
     /// @param signature Signature data containing validator address and signature.
     /// @return The ERC-1271 magic value if valid, 0xffffffff otherwise.
     /// @dev Delegates validation to the specified validator module with pre-validation hooks.
-    function _validateWithERC7579(bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
-        // First 20 bytes of signature should be validator address, rest is the actual signature
-        address validator = _handleValidator(address(bytes20(signature[0:20])));
+    function _validateWithERC7579(address validator, bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
         bytes memory signature_;
-        (hash, signature_) = _withPreValidationHook(hash, signature[20:]);
+        (hash, signature_) = _withPreValidationHook(hash, signature);
         
         try IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature_) returns (bytes4 res) {
             return res;
