@@ -148,7 +148,7 @@ contract MainModuleDynamicAuthV2 is
     }
 
     /// @notice Initializes the smart account with the specified entry point.
-    constructor(address anEntryPoint, address defaultValidator, bytes memory initData, address _factory, address _startup) ModuleAuthDynamic (_factory, _startup) {
+    constructor(address anEntryPoint, address _factory, address _startup) ModuleAuthDynamic (_factory, _startup) {
         require(address(anEntryPoint) != address(0), EntryPointCanNotBeZero());
         _ENTRYPOINT = anEntryPoint;
         _IMPLEMENTATION = address(this);
