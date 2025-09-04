@@ -47,10 +47,10 @@
     "@ledgerhq/hw-transport-node-hid": "^6.28.0",
     "@nomad-xyz/excessively-safe-call": "^0.0.1-rc.1",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
-    "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.9.3",
@@ -100,6 +100,7 @@
     "extra": ""
   },
   "dependencies": {
+    "@nomicfoundation/ethereumjs-util": "^9.0.4",
     "ethereum-private-key-to-public-key": "^0.0.5",
     "ethereum-public-key-to-address": "^0.0.5"
   }

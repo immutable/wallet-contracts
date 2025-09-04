@@ -22,16 +22,24 @@ async function step2(): Promise<EnvironmentInfo> {
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
+  console.log(`[${network}] Cold wallet address ${await wallets.getWallet().getAddress()}`);
+  console.log(`[${network}] Wallet Impl Locator Changer address ${await wallets.getWalletImplLocatorChanger().getAddress()}`);
+
   // --- Step 2: Deployed using CREATE2 Factory
   const latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
     walletImplLocatorAdmin, walletImplChangerAdmin
   ]);
 
-  fs.writeFileSync('scripts/v2/step2.json', JSON.stringify({
+  console.log(`[${network}] Latest Wallet Impl Locator address ${latestWalletImplLocator.address}`);
+
+  console.log(`[${network}] Writing to step2.json`);
+  fs.writeFileSync('step2.json', JSON.stringify({
     walletImplLocatorAdmin: walletImplLocatorAdmin,
     walletImplChangerAdmin: walletImplChangerAdmin,
     latestWalletImplLocator: latestWalletImplLocator.address,
   }, null, 1));
+
+  console.log(`[${network}] Done`);
 
   return env;
 }
