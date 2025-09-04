@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import "./commons/ModuleAuthDynamic.sol";
-import "./commons/ModuleHooks.sol";
+import "./commons/ModuleReceivers.sol";
 import "./commons/ModuleCalls.sol";
 import "./commons/ModuleUpdate.sol";
 import "./commons/ModuleCreator.sol";
@@ -38,8 +38,6 @@ import {
 } from "../lib/ModeLib.sol";
 import { NonceLib } from "../lib/NonceLib.sol";
 import { SentinelListLib, SENTINEL, ZERO_ADDRESS } from "sentinellist/SentinelList.sol";
-import { EmergencyUninstall } from "../types/DataTypes.sol";
-import { LibPREP } from "../lib/LibPREP.sol";
 import { ECDSA } from "solady/utils/ECDSA.sol";
 
 
@@ -54,7 +52,7 @@ contract MainModuleDynamicAuthV2 is
   ModuleAuthDynamic,
   ModuleCalls,
   ModuleUpdate,
-  ModuleHooks,
+  ModuleReceivers,
   ModuleCreator,
   ExecutionHelper, 
   ModuleManager
@@ -71,17 +69,7 @@ contract MainModuleDynamicAuthV2 is
     /// @dev Cached implementation address;
     address immutable _IMPLEMENTATION;
 
-    /// @dev The event emitted when an emergency hook uninstallation is initiated.
-    event EmergencyHookUninstallRequest(address hook, uint256 timestamp);
-
-    /// @dev The event emitted when an emergency hook uninstallation request is reset.
-    event EmergencyHookUninstallRequestReset(address hook, uint256 timestamp);
-
     // EventsAndErrors
-
-    /// @notice Emitted when a PREP is initialized.
-    /// @param r The r value of the PREP signature.
-    event PREPInitialized(bytes32 r);
 
     /// @notice Error thrown when an unsupported ModuleType is requested.
     /// @param moduleTypeId The ID of the unsupported module type.
@@ -90,32 +78,14 @@ contract MainModuleDynamicAuthV2 is
     /// @notice Error thrown on failed execution.
     error ExecutionFailed();
 
-    /// @notice Error thrown when the Factory fails to initialize the account with posted bootstrap data.
-    error NexusInitializationFailed();
-
     /// @notice Error thrown when a zero address is provided as the Entry Point address.
     error EntryPointCanNotBeZero();
-
-    /// @notice Error thrown when the provided implementation address is invalid.
-    error InvalidImplementationAddress();
-
-    /// @notice Error thrown when the provided implementation address is not a contract.
-    error ImplementationIsNotAContract();
 
     /// @notice Error thrown when an inner call fails.
     error InnerCallFailed();
 
-    /// @notice Error thrown when attempted to emergency-uninstall a hook
-    error EmergencyTimeLockNotExpired();
-
-    /// @notice Error thrown when attempted to upgrade an ERC7702 account via UUPS proxy upgrade mechanism
-    error ERC7702AccountCannotBeUpgradedThisWay();
-
     /// @notice Error thrown when the provided initData is invalid.
     error InvalidInitData();
-
-    /// @notice Error thrown when the provided authHash and erc7702AuthSignature are invalid.
-    error InvalidPREP();
 
     /// @notice Error thrown when the account is already initialized.
     error AccountAlreadyInitialized();
@@ -453,7 +423,7 @@ contract MainModuleDynamicAuthV2 is
     ModuleAuthUpgradable,
     ModuleCalls,
     ModuleUpdate,
-    ModuleHooks,
+    ModuleReceivers,
     ModuleCreator
   ) pure returns (bool) {
     return super.supportsInterface(_interfaceID);
