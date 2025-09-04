@@ -33,7 +33,7 @@ async function step2(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Latest Wallet Impl Locator address ${latestWalletImplLocator.address}`);
 
   console.log(`[${network}] Writing to step2.json`);
-  fs.writeFileSync('step2.json', JSON.stringify({
+  fs.writeFileSync('scripts/v2/step2.json', JSON.stringify({
     walletImplLocatorAdmin: walletImplLocatorAdmin,
     walletImplChangerAdmin: walletImplChangerAdmin,
     latestWalletImplLocator: latestWalletImplLocator.address,
