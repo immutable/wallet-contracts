@@ -23,7 +23,7 @@ const config: HardhatUserConfig = {
         evmVersion: 'cancun',
         optimizer: {
           enabled: true,
-          runs: 999999,
+          runs: 150,
           details: {
             yul: true
           }
