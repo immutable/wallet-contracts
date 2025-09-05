@@ -4,8 +4,6 @@ pragma solidity 0.8.27;
 import "./commons/ModuleAuthDynamic.sol";
 import "./commons/ModuleReceivers.sol";
 import "./commons/ModuleCalls.sol";
-import "./commons/ModuleUpdate.sol";
-import "./commons/ModuleCreator.sol";
 
 import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
 import { ExecLib } from "../lib/ExecLib.sol";
@@ -38,7 +36,9 @@ import {
 } from "../lib/ModeLib.sol";
 import { NonceLib } from "../lib/NonceLib.sol";
 import { SentinelListLib, SENTINEL, ZERO_ADDRESS } from "sentinellist/SentinelList.sol";
+import { Initializable } from "../lib/Initializable.sol";
 import { ECDSA } from "solady/utils/ECDSA.sol";
+import { InitializeLib } from "../lib/InitializeLib.sol";
 
 
 /**
@@ -47,13 +47,15 @@ import { ECDSA } from "solady/utils/ECDSA.sol";
  * @dev If using a new main module, developpers must ensure that all inherited
  *      contracts by the mainmodule don't conflict and are accounted for to be
  *      supported by the supportsInterface method.
+ * 
+ * @dev Changes from the original MainModuleDynamicAuth contract:
+ * - Removed the ModuleCreator contract which is used for deploying contracts using the Smart Wallet. Removing due to size limitations.
+ * - Removed the ModuleUpdate contract which is used for updating the main module. Removing due to size limitations.
  */
 contract MainModuleDynamicAuthV2 is
   ModuleAuthDynamic,
   ModuleCalls,
-  ModuleUpdate,
   ModuleReceivers,
-  ModuleCreator,
   ExecutionHelper, 
   ModuleManager
 {
@@ -62,6 +64,7 @@ contract MainModuleDynamicAuthV2 is
     using NonceLib for uint256;
     using ECDSA for bytes32;
     using SentinelListLib for SentinelListLib.SentinelList;
+    using InitializeLib for bytes;
 
     /// @notice Identifier for this implementation on the network
     string internal constant _ACCOUNT_IMPLEMENTATION_ID = "immutable.wallet.PassportV2";
@@ -98,6 +101,9 @@ contract MainModuleDynamicAuthV2 is
 
     /// @notice Error thrown when a caller is not authorized to access an account.
     error AccountAccessUnauthorized();
+
+    /// @notice Error thrown when the Factory fails to initialize the account with posted bootstrap data.
+    error PassportWalletInitializationFailed();
 
         /// @notice The canonical address for the ERC4337 EntryPoint contract, version 0.7.
     /// This address is consistent across all supported networks.
@@ -213,6 +219,62 @@ contract MainModuleDynamicAuthV2 is
             _uninstallHook(module, moduleTypeId, deInitData);
         }
         emit ModuleUninstalled(moduleTypeId, module);
+    }
+
+       /// @notice Initializes the smart account with the specified initialization data.
+    /// @param initData The initialization data for the smart account.
+    /// @dev This function can only be called by the account itself or the proxy factory.
+    /// When a 7702 account is created, the first userOp should contain self-call to initialize the account.
+    function initializeAccount(bytes calldata initData) external payable virtual {
+        // Protect this function to only be callable when used with the proxy factory or when
+        // account calls itself
+        if (msg.sender != address(this)) {
+            if (_amIERC7702()) {
+                // If this is a 7702 account, we allow passing a user signature with the initData
+                // to initialize the account. This allows 7702 accounts to be initialized
+                // by a relayer.
+                bytes calldata signature = initData[0:65];
+                AccountStorage storage $accountStorage = _getAccountStorage();
+                // Remove the signature  from the initData
+                initData = initData[65:];
+                // Calculate the hash of the initData and trim the chainIdIndex and chainIds
+                bytes32 initDataHash;
+                (initDataHash, initData) = initData.hash(_IMPLEMENTATION);
+                // Calculate the digest (excluding chainId and verifying contract as it's implicitly checked)
+                initDataHash = _hashTypedDataSansChainIdAndVerifyingContract(initDataHash);
+                // Make sure the initHash is not already used
+                require(!$accountStorage.erc7702InitHashes[initDataHash], AccountAlreadyInitialized());
+                // Check if the signature is valid
+                require(ECDSA.recover(initDataHash, signature) == address(this), InvalidSignature());
+                // Mark the initDataHash as used
+                $accountStorage.erc7702InitHashes[initDataHash] = true;
+            } else {
+                Initializable.requireInitializable();
+            }
+        }
+        _initializeAccount(initData);
+    }
+
+    function _initializeAccount(bytes calldata initData) internal {
+        require(initData.length >= 24, InvalidInitData());
+
+        address bootstrap;
+        bytes calldata bootstrapCall;
+
+        assembly {
+            bootstrap := calldataload(initData.offset)
+            let s := calldataload(add(initData.offset, 0x20))
+            let u := add(initData.offset, s)
+            bootstrapCall.offset := add(u, 0x20)
+            bootstrapCall.length := calldataload(u)
+        }
+
+        (bool success,) = bootstrap.delegatecall(bootstrapCall);
+
+        require(success, PassportWalletInitializationFailed());
+        if (!_amIERC7702()) {
+            require(isInitialized(), AccountNotInitialized());
+        }
     }
 
     /// @notice Sets the registry for the smart account.
@@ -422,9 +484,7 @@ contract MainModuleDynamicAuthV2 is
   ) public override(
     ModuleAuthUpgradable,
     ModuleCalls,
-    ModuleUpdate,
-    ModuleReceivers,
-    ModuleCreator
+    ModuleReceivers
   ) pure returns (bool) {
     return super.supportsInterface(_interfaceID);
   }

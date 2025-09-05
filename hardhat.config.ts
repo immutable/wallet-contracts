@@ -11,6 +11,7 @@ import "@nomicfoundation/hardhat-foundry";
 
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
+import "hardhat-contract-sizer";
 
 dotenv.config();
 loadAndValidateEnvironment();
@@ -23,7 +24,7 @@ const config: HardhatUserConfig = {
         evmVersion: 'cancun',
         optimizer: {
           enabled: true,
-          runs: 150,
+          runs: 20,
           details: {
             yul: true
           }
