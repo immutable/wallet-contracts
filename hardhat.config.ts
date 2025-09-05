@@ -54,6 +54,14 @@ const config: HardhatUserConfig = {
       url: 'https://rpc.immutable.com',
       accounts: []
     },
+    base: {
+      url: process.env.BASE_MAINNET_ENDPOINT,
+      accounts: []
+    },
+    arbitrum: {
+      url: process.env.ARBITRUM_MAINNET_ENDPOINT,
+      accounts: []
+    }
   },
   mocha: {
     timeout: process.env.COVERAGE ? 15 * 60 * 1000 : 30 * 1000

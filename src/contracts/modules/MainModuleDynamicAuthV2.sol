@@ -222,7 +222,7 @@ contract MainModuleDynamicAuthV2 is
         emit ModuleUninstalled(moduleTypeId, module);
     }
 
-       /// @notice Initializes the smart account with the specified initialization data.
+    /// @notice Initializes the smart account with the specified initialization data.
     /// @param initData The initialization data for the smart account.
     /// @dev This function can only be called by the account itself or the proxy factory.
     /// When a 7702 account is created, the first userOp should contain self-call to initialize the account.
@@ -305,7 +305,7 @@ contract MainModuleDynamicAuthV2 is
         address validator = address(bytes20(signature[0:20]));
         // use ERC7579's isValidSignature method directly as there is no default validator set
         if (validator == address(0)) {
-            address signer = ECDSA.recover(hash.toEthSignedMessageHash(), signature[20:]);
+            address signer = ECDSA.recover(hash, signature[20:]);
             if (signer == address(this)) {
                 return 0x1626ba7e; // EIP1271MagicValue
             }
