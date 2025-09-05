@@ -51,6 +51,7 @@ import { InitializeLib } from "../lib/InitializeLib.sol";
  * @dev Changes from the original MainModuleDynamicAuth contract:
  * - Removed the ModuleCreator contract which is used for deploying contracts using the Smart Wallet. Removing due to size limitations.
  * - Removed the ModuleUpdate contract which is used for updating the main module. Removing due to size limitations.
+ * - Removed the ERC7739 support detection request. Removing due to size limitations.
  */
 contract MainModuleDynamicAuthV2 is
   ModuleAuthDynamic,
@@ -293,13 +294,13 @@ contract MainModuleDynamicAuthV2 is
     /// @return The status code of the signature validation (`0x1626ba7e` if valid).
     /// @dev Routes between ERC-7579 validator modules and legacy multi-sig validation based on caller context and signature format.
     function isValidSignature(bytes32 hash, bytes calldata signature) external view virtual override returns (bytes4) {
-        // Handle potential ERC7739 support detection request first
-        if (signature.length == 0) {
-            // Forces the compiler to optimize for smaller bytecode size.
-            if (uint256(hash) == (~signature.length / 0xffff) * 0x7739) {
-                return checkERC7739Support(hash, signature);
-            }
-        }
+        // // Handle potential ERC7739 support detection request first
+        // if (signature.length == 0) {
+        //     // Forces the compiler to optimize for smaller bytecode size.
+        //     if (uint256(hash) == (~signature.length / 0xffff) * 0x7739) {
+        //         return checkERC7739Support(hash, signature);
+        //     }
+        // }
 
         address validator = address(bytes20(signature[0:20]));
         // use ERC7579's isValidSignature method directly as there is no default validator set
@@ -414,37 +415,37 @@ contract MainModuleDynamicAuthV2 is
         return _ACCOUNT_IMPLEMENTATION_ID;
     }
 
-    /// @dev For automatic detection that the smart account supports the ERC7739 workflow
-    /// Iterates over all the validators but only if this is a detection request
-    /// ERC-7739 spec assumes that if the account doesn't support ERC-7739
-    /// it will try to handle the detection request as it was normal sig verification
-    /// request and will return 0xffffffff since it won't be able to verify the 0x signature
-    /// against 0x7739...7739 hash.
-    /// So this approach is consistent with the ERC-7739 spec.
-    /// If no validator supports ERC-7739, this function returns false
-    /// thus the account will proceed with normal signature verification
-    /// and return 0xffffffff as a result.
-    function checkERC7739Support(bytes32 hash, bytes calldata signature) public view virtual returns (bytes4) {
-        bytes4 result;
-        unchecked {
-            SentinelListLib.SentinelList storage validators = _getAccountStorage().validators;
-            address next = validators.entries[SENTINEL];
-            while (next != ZERO_ADDRESS && next != SENTINEL) {
-                result = _get7739Version(next, result, hash, signature);
-                next = validators.getNext(next);
-            }
-        }
-        result = _get7739Version(_DEFAULT_VALIDATOR, result, hash, signature); // check default validator
-        return result == bytes4(0) ? bytes4(0xffffffff) : result;
-    }
+    // /// @dev For automatic detection that the smart account supports the ERC7739 workflow
+    // /// Iterates over all the validators but only if this is a detection request
+    // /// ERC-7739 spec assumes that if the account doesn't support ERC-7739
+    // /// it will try to handle the detection request as it was normal sig verification
+    // /// request and will return 0xffffffff since it won't be able to verify the 0x signature
+    // /// against 0x7739...7739 hash.
+    // /// So this approach is consistent with the ERC-7739 spec.
+    // /// If no validator supports ERC-7739, this function returns false
+    // /// thus the account will proceed with normal signature verification
+    // /// and return 0xffffffff as a result.
+    // function checkERC7739Support(bytes32 hash, bytes calldata signature) public view virtual returns (bytes4) {
+    //     bytes4 result;
+    //     unchecked {
+    //         SentinelListLib.SentinelList storage validators = _getAccountStorage().validators;
+    //         address next = validators.entries[SENTINEL];
+    //         while (next != ZERO_ADDRESS && next != SENTINEL) {
+    //             result = _get7739Version(next, result, hash, signature);
+    //             next = validators.getNext(next);
+    //         }
+    //     }
+    //     result = _get7739Version(_DEFAULT_VALIDATOR, result, hash, signature); // check default validator
+    //     return result == bytes4(0) ? bytes4(0xffffffff) : result;
+    // }
 
-    function _get7739Version(address validator, bytes4 prevResult, bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
-        bytes4 support = IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature);
-        if (bytes2(support) == bytes2(SUPPORTS_ERC7739) && support > prevResult) {
-            return support;
-        }
-        return prevResult;
-    }
+    // function _get7739Version(address validator, bytes4 prevResult, bytes32 hash, bytes calldata signature) internal view returns (bytes4) {
+    //     bytes4 support = IValidator(validator).isValidSignatureWithSender(msg.sender, hash, signature);
+    //     if (bytes2(support) == bytes2(SUPPORTS_ERC7739) && support > prevResult) {
+    //         return support;
+    //     }
+    //     return prevResult;
+    // }
 
     function _checkInitializedValidators() internal view {
         if (!_amIERC7702() && !IValidator(_DEFAULT_VALIDATOR).isInitialized(address(this))) {
