@@ -39,3 +39,4 @@ artifacts
 
 # scripts v2
 scripts/v2/*.json
+scripts/v2/enhanced/*.json

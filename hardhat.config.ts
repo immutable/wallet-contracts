@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
     },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
+      
       accounts: []
     },
     mainnet: {
@@ -60,6 +61,10 @@ const config: HardhatUserConfig = {
     },
     arbitrum: {
       url: process.env.ARBITRUM_MAINNET_ENDPOINT,
+      accounts: []
+    },
+    base_sepolia: {
+      url: process.env.BASE_SEPOLIA_ENDPOINT,
       accounts: []
     }
   },
