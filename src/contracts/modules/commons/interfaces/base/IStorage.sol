@@ -11,7 +11,7 @@ import { CallType } from "../../../../lib/ModeLib.sol";
 /// @dev Manages structured storage using SentinelListLib for validators and executors, and a mapping for fallback handlers.
 /// This interface utilizes ERC-7201 storage location practices to ensure isolated and collision-resistant storage spaces within smart contracts.
 /// It is designed to support dynamic execution and modular management strategies essential for advanced smart account architectures.
-/// @custom:storage-location erc7201:immutable.wallet.PassportV2
+/// @custom:storage-location erc7201:biconomy.storage.Nexus
 
 /// This file has been adapted from the Nexus suite, which can be found at: https://github.com/rhinestonewtf/nexus/blob/main/contracts/interfaces/base/IStorage.sol
 

@@ -68,7 +68,7 @@ contract MainModuleDynamicAuthV2 is
     using InitializeLib for bytes;
 
     /// @notice Identifier for this implementation on the network
-    string internal constant _ACCOUNT_IMPLEMENTATION_ID = "immutable.wallet.PassportV2";
+    string internal constant _ACCOUNT_IMPLEMENTATION_ID = "biconomy.storage.Nexus";
 
     /// @dev Cached implementation address;
     address immutable _IMPLEMENTATION;
