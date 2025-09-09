@@ -66,9 +66,9 @@ async function main(): Promise<EnvironmentInfo> {
   const fundingTx = await wallets.getWallet().sendTransaction({
     to: await wallets.getWalletImplLocatorChanger().getAddress(),
     value: hardhat.utils.parseEther('10'),
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: process.env.GAS_LIMIT,
+    maxFeePerGas: process.env.MAX_FEE_PER_GAS,
+    maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
   });
   await fundingTx.wait();
   console.log(`[${network}] Transfered funds to the wallet locator implementer changer with hash ${fundingTx.hash}`);

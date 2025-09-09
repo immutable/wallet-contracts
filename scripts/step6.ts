@@ -33,9 +33,9 @@ async function step6(): Promise<EnvironmentInfo> {
   const tx = await walletImplLocator
     .connect(wallets.getWallet())
     .changeWalletImplementation(mainModuleDynamicAuthAddress, {
-      gasLimit: 30000000,
-      maxFeePerGas: 10000000000,
-      maxPriorityFeePerGas: 10000000000,
+      gasLimit: process.env.GAS_LIMIT,
+      maxFeePerGas: process.env.MAX_FEE_PER_GAS,
+      maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
     });
   await tx.wait();
   console.log(`[${network}] Wallet Impl Locator implementation changed to: ${mainModuleDynamicAuthAddress}`);
