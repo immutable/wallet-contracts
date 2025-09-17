@@ -11,7 +11,9 @@ import { deployContract } from '../contract';
 async function step3(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const walletImplLocatorAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+
+  const step2Data = JSON.parse(fs.readFileSync('scripts/v2/step2.json', 'utf8'));
+  const walletImplLocatorAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting V2 deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);

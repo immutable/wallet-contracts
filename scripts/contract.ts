@@ -37,6 +37,8 @@ export async function deployContractViaCREATE2(
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
   const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
 
+  console.log(`[${env.network}] Gas config: gasLimit=${process.env.GAS_LIMIT}, maxFeePerGas=${process.env.MAX_FEE_PER_GAS}, maxPriorityFeePerGas=${process.env.MAX_PRIORITY_FEE_PER_GAS}`);
+
   // Deploy the contract
   let tx = await deployer.deploy(bytecode, salt, {
     gasLimit: process.env.GAS_LIMIT,
@@ -61,6 +63,9 @@ export async function deployContract(
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
+
+  console.log(`[${env.network}] Gas config: gasLimit=${process.env.GAS_LIMIT}, maxFeePerGas=${process.env.MAX_FEE_PER_GAS}, maxPriorityFeePerGas=${process.env.MAX_PRIORITY_FEE_PER_GAS}`);
+
   const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs, {
     gasLimit: process.env.GAS_LIMIT,
     maxFeePerGas: process.env.MAX_FEE_PER_GAS,
