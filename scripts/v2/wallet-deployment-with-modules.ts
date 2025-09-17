@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { ethers as hardhat } from 'hardhat';
-import { Wallet, BigNumber, Contract, ContractFactory, ethers } from 'ethers';
+import { Wallet, BigNumber, Contract, ContractFactory } from 'ethers';
+import { ethers } from 'ethers';
 
 // Import specific helper functions from utils/helpers.ts
 import { 
@@ -31,20 +32,22 @@ export interface WalletDeploymentConfig {
 }
 
 /**
- * This script extends the MultiCallDeploy method to include validator module installation
- * as the initial transaction instead of ETH transfer.
+ * This script extends the MultiCallDeploy method to include both validator and executor 
+ * module installations as the initial transactions.
  * 
  * FLOW:
  * 1. Deploy MockValidator contract (pre-step)
- * 2. Deploy wallet via MultiCallDeploy.deployAndExecute()
- * 3. First transaction: wallet calls itself to install validator module
- * 4. Verify both wallet deployment and validator installation
+ * 2. Deploy MockExecutor contract (pre-step)
+ * 3. Deploy wallet via MultiCallDeploy.deployAndExecute()
+ * 4. First transaction: wallet calls itself to install validator module
+ * 5. Second transaction: wallet calls itself to install executor module
+ * 6. Verify wallet deployment and both module installations
  */
-async function deployWalletWithValidator(): Promise<void> {
+async function deployWalletWithValidatorAndExecutor(): Promise<void> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
   
-  console.log(`[${network}] Starting wallet deployment with validator installation...`);
+  console.log(`[${network}] Starting wallet deployment with validator and executor installation...`);
   
   // Setup wallet options
   const walletOptions: WalletOptions = await newWalletOptions(env);
@@ -56,10 +59,15 @@ async function deployWalletWithValidator(): Promise<void> {
   // Load deployed contract addresses (from previous deployment steps)
   const deploymentArtifacts = loadDeploymentArtifacts();
 
-  // PRESTEP: Deploy MockValidator contract
-  console.log(`\n[${network}] =================== PRESTEP: VALIDATOR DEPLOYMENT ===================`);
+  // PRESTEP: Deploy MockValidator and MockExecutor contracts
+  console.log(`\n[${network}] =================== PRESTEP: MODULE DEPLOYMENTS ===================`);
+  
   const mockValidator = await deployMockValidator(deployer, network);
   console.log(`[${network}] ✅ MockValidator deployed at: ${mockValidator.address}`);
+  
+  const mockExecutor = await deployMockExecutor(deployer, network);
+  console.log(`[${network}] ✅ MockExecutor deployed at: ${mockExecutor.address}`);
+  
   console.log(`[${network}] ====================================================================`);
 
   // Configuration for the new wallet - use random owner to ensure unique salt
@@ -93,25 +101,27 @@ async function deployWalletWithValidator(): Promise<void> {
   );
   console.log(`[${network}] Counterfactual address: ${cfa}`);
   
-  // Deploy the wallet with validator installation
-  console.log(`[${network}] Using MultiCallDeploy method with validator installation`);
+  // Deploy the wallet with validator and executor installations
+  console.log(`[${network}] Using MultiCallDeploy method with validator and executor installation`);
 
-  await deployWithMultiCallDeployAndValidator(
+  await deployWithMultiCallDeployAndModules(
     env,
     deploymentArtifacts,
     cfa,
     salt,
     walletConfig,
     networkId,
-    mockValidator.address
+    mockValidator.address,
+    mockExecutor.address
   );
   
-  // Verify deployment and validator installation
-  await verifyDeploymentAndValidator(cfa, mockValidator.address, network);
+  // Verify deployment and module installations
+  await verifyDeploymentAndModules(cfa, mockValidator.address, mockExecutor.address, network);
   
-  console.log(`[${network}] Wallet deployment with validator installation completed successfully!`);
+  console.log(`[${network}] Wallet deployment with validator and executor installation completed successfully!`);
   console.log(`[${network}] Wallet address: ${cfa}`);
   console.log(`[${network}] Validator address: ${mockValidator.address}`);
+  console.log(`[${network}] Executor address: ${mockExecutor.address}`);
 }
 
 /**
@@ -142,6 +152,33 @@ async function deployMockValidator(deployer: any, network: string): Promise<Cont
 }
 
 /**
+ * Deploy MockExecutor contract as a prestep
+ */
+async function deployMockExecutor(deployer: any, network: string): Promise<Contract> {
+  console.log(`[${network}] Deploying MockExecutor contract...`);
+  
+  const mockExecutorFactory: ContractFactory = await newContractFactory(deployer, "MockExecutor");
+  const mockExecutor: Contract = await mockExecutorFactory.deploy();
+  await mockExecutor.deployed();
+  
+  console.log(`[${network}] MockExecutor deployment transaction: ${mockExecutor.deployTransaction.hash}`);
+  
+  // Verify the contract implements the correct interface
+  try {
+    const isExecutorType = await mockExecutor.isModuleType(2); // MODULE_TYPE_EXECUTOR
+    console.log(`[${network}] MockExecutor type verification: ${isExecutorType}`);
+    
+    if (!isExecutorType) {
+      throw new Error('MockExecutor does not implement MODULE_TYPE_EXECUTOR');
+    }
+  } catch (error) {
+    console.warn(`[${network}] Could not verify MockExecutor interface: ${error.message}`);
+  }
+  
+  return mockExecutor;
+}
+
+/**
  * Load deployment artifacts from previous steps
  */
 function loadDeploymentArtifacts() {
@@ -164,28 +201,30 @@ function loadDeploymentArtifacts() {
 }
 
 /**
- * Deploy wallet using MultiCallDeploy.deployAndExecute with validator installation
+ * Deploy wallet using MultiCallDeploy.deployAndExecute with validator and executor installations
  * 
  * This method follows the same pattern as the original wallet deployment but replaces
- * the ETH transfer transaction with a validator module installation transaction.
+ * the ETH transfer transaction with two module installation transactions.
  */
-async function deployWithMultiCallDeployAndValidator(
+async function deployWithMultiCallDeployAndModules(
   env: EnvironmentInfo,
   artifacts: any,
   cfa: string,
   salt: string,
   config: WalletDeploymentConfig,
   networkId: number,
-  validatorAddress: string
+  validatorAddress: string,
+  executorAddress: string
 ) {
   console.log(`[${env.network}] =================== DEPLOYMENT START ===================`);
-  console.log(`[${env.network}] 🚀 Starting wallet deployment with validator installation`);
+  console.log(`[${env.network}] 🚀 Starting wallet deployment with validator and executor installation`);
   console.log(`[${env.network}] 📋 Initial parameters:`);
   console.log(`[${env.network}]   - Network: ${env.network}`);
   console.log(`[${env.network}]   - Network ID: ${networkId}`);
   console.log(`[${env.network}]   - Target CFA: ${cfa}`);
   console.log(`[${env.network}]   - Salt: ${salt}`);
   console.log(`[${env.network}]   - Validator: ${validatorAddress}`);
+  console.log(`[${env.network}]   - Executor: ${executorAddress}`);
   console.log(`[${env.network}] ========================================================`);
   
   // Get MultiCallDeploy contract
@@ -195,7 +234,7 @@ async function deployWithMultiCallDeployAndValidator(
   // Setup executor admin wallet
   const walletOptions: WalletOptions = await newWalletOptions(env);
   const executor = walletOptions.getWallet();
-  const executorAddress = await executor.getAddress();
+  const executorWalletAddress = await executor.getAddress();
   
   // Check if MultiCallDeploy contract exists and has the right interface
   console.log(`[${env.network}] 🔐 Checking MultiCallDeploy contract...`);
@@ -211,9 +250,9 @@ async function deployWithMultiCallDeployAndValidator(
   // Check if executor has EXECUTOR_ROLE
   try {
     const executorRole = await multiCallDeploy.EXECUTOR_ROLE();
-    const hasExecutorRole = await multiCallDeploy.hasRole(executorRole, executorAddress);
+    const hasExecutorRole = await multiCallDeploy.hasRole(executorRole, executorWalletAddress);
     
-    console.log(`[${env.network}] Executor address: ${executorAddress}`);
+    console.log(`[${env.network}] Executor address: ${executorWalletAddress}`);
     console.log(`[${env.network}] EXECUTOR_ROLE: ${executorRole}`);
     console.log(`[${env.network}] Has EXECUTOR_ROLE: ${hasExecutorRole}`);
     
@@ -221,7 +260,7 @@ async function deployWithMultiCallDeployAndValidator(
       console.log(`[${env.network}] ⚠️  Executor does not have EXECUTOR_ROLE!`);
       console.log(`[${env.network}] This will cause deployAndExecute to fail with access control error`);
       console.log(`[${env.network}] Please run: npx hardhat run scripts/grant-executor-role.ts --network ${env.network}`);
-      throw new Error(`Executor ${executorAddress} does not have EXECUTOR_ROLE on MultiCallDeploy contract`);
+      throw new Error(`Executor ${executorWalletAddress} does not have EXECUTOR_ROLE on MultiCallDeploy contract`);
     } else {
       console.log(`[${env.network}] ✅ Executor has required permissions`);
     }
@@ -275,16 +314,23 @@ async function deployWithMultiCallDeployAndValidator(
     walletNonce = 0;
   }
 
-  // STEP 2: Create validator installation meta-transaction
-  console.log(`[${env.network}] =================== VALIDATOR INSTALLATION SETUP ===================`);
+  // STEP 2: Create validator and executor installation meta-transactions
+  console.log(`[${env.network}] =================== MODULE INSTALLATION SETUP ===================`);
   
-  // Get the wallet interface to encode the installModule call
+  // Get the wallet interface to encode the installModule calls
   const MainModuleDynamicAuthV2 = await hardhat.getContractFactory('MainModuleDynamicAuthV2');
   
-  // Create the installModule call data
-  const installModuleCalldata = MainModuleDynamicAuthV2.interface.encodeFunctionData('installModule', [
+  // Create the validator installModule call data
+  const validatorInstallCalldata = MainModuleDynamicAuthV2.interface.encodeFunctionData('installModule', [
     1, // MODULE_TYPE_VALIDATOR
     validatorAddress,
+    "0x" // Empty initData as requested
+  ]);
+  
+  // Create the executor installModule call data
+  const executorInstallCalldata = MainModuleDynamicAuthV2.interface.encodeFunctionData('installModule', [
+    2, // MODULE_TYPE_EXECUTOR
+    executorAddress,
     "0x" // Empty initData as requested
   ]);
   
@@ -292,27 +338,48 @@ async function deployWithMultiCallDeployAndValidator(
   console.log(`[${env.network}]   - Module Type: 1 (VALIDATOR)`);
   console.log(`[${env.network}]   - Module Address: ${validatorAddress}`);
   console.log(`[${env.network}]   - Init Data: 0x (empty)`);
-  console.log(`[${env.network}]   - Encoded Call Data: ${installModuleCalldata}`);
-  console.log(`[${env.network}]   - Call Data Length: ${installModuleCalldata.length}`);
+  console.log(`[${env.network}]   - Encoded Call Data: ${validatorInstallCalldata}`);
+  
+  console.log(`[${env.network}] 📋 Executor installation details:`);
+  console.log(`[${env.network}]   - Module Type: 2 (EXECUTOR)`);
+  console.log(`[${env.network}]   - Module Address: ${executorAddress}`);
+  console.log(`[${env.network}]   - Init Data: 0x (empty)`);
+  console.log(`[${env.network}]   - Encoded Call Data: ${executorInstallCalldata}`);
 
-  // Prepare the meta-transaction where wallet calls itself
+  // Prepare the meta-transactions where wallet calls itself
   const transactions: any[] = [];
   
-  // KEY INSIGHT: The wallet calls itself to install the validator module
+  // Transaction 1: Install validator module
   transactions.push({
     delegateCall: false,
     revertOnError: true,
     gasLimit: BigNumber.from(500000), // Higher gas limit for module installation
     target: cfa, // 🎯 WALLET CALLS ITSELF!
     value: 0, // No ETH transfer needed
-    data: installModuleCalldata
+    data: validatorInstallCalldata
   });
   
-  console.log(`[${env.network}] 🎯 Meta-transaction created (VALIDATOR INSTALLATION):`);
-  console.log(`[${env.network}]   - Target: ${cfa} (wallet calls itself)`);
-  console.log(`[${env.network}]   - Function: installModule(1, ${validatorAddress}, 0x)`);
-  console.log(`[${env.network}]   - Gas Limit: ${transactions[0].gasLimit}`);
-  console.log(`[${env.network}]   - Value: 0 ETH`);
+  // Transaction 2: Install executor module
+  transactions.push({
+    delegateCall: false,
+    revertOnError: true,
+    gasLimit: BigNumber.from(500000), // Higher gas limit for module installation
+    target: cfa, // 🎯 WALLET CALLS ITSELF!
+    value: 0, // No ETH transfer needed
+    data: executorInstallCalldata
+  });
+  
+  console.log(`[${env.network}] 🎯 Meta-transactions created (MODULE INSTALLATIONS):`);
+  console.log(`[${env.network}]   Transaction 1 - Validator Installation:`);
+  console.log(`[${env.network}]     - Target: ${cfa} (wallet calls itself)`);
+  console.log(`[${env.network}]     - Function: installModule(1, ${validatorAddress}, 0x)`);
+  console.log(`[${env.network}]     - Gas Limit: ${transactions[0].gasLimit}`);
+  console.log(`[${env.network}]     - Value: 0 ETH`);
+  console.log(`[${env.network}]   Transaction 2 - Executor Installation:`);
+  console.log(`[${env.network}]     - Target: ${cfa} (wallet calls itself)`);
+  console.log(`[${env.network}]     - Function: installModule(2, ${executorAddress}, 0x)`);
+  console.log(`[${env.network}]     - Gas Limit: ${transactions[1].gasLimit}`);
+  console.log(`[${env.network}]     - Value: 0 ETH`);
   console.log(`[${env.network}] ====================================================================`);
   
   // STEP 3: Create signature using the correct nonce
@@ -372,7 +439,7 @@ async function deployWithMultiCallDeployAndValidator(
   console.log(`[${env.network}] Calling deployAndExecute...`);
 
   // Get executor wallet's current nonce
-  let currentNonce = await hardhat.provider.getTransactionCount(executorAddress);
+  let currentNonce = await hardhat.provider.getTransactionCount(executorWalletAddress);
   console.log(`[${env.network}] Executor wallet current nonce: ${currentNonce}`);
   
   // Verify nonce consistency before execution
@@ -383,12 +450,12 @@ async function deployWithMultiCallDeployAndValidator(
     console.log(`[${env.network}]   - ✅ Nonces match - proceeding with execution`);
   }
   
-  // No funding needed for validator installation (no ETH transfer)
-  console.log(`[${env.network}] ℹ️  No wallet funding needed - validator installation doesn't require ETH`);
+  // No funding needed for module installations (no ETH transfer)
+  console.log(`[${env.network}] ℹ️  No wallet funding needed - module installations don't require ETH`);
 
   // Create transaction options with the correct nonce
   const txnOpts = {
-    gasLimit: BigNumber.from(process.env.GAS_LIMIT || "3000000"), // Higher default for validator installation
+    gasLimit: BigNumber.from(process.env.GAS_LIMIT || "4000000"), // Higher default for module installations
     maxFeePerGas: process.env.MAX_FEE_PER_GAS,
     maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
     nonce: currentNonce, // Use the updated nonce
@@ -409,13 +476,13 @@ async function deployWithMultiCallDeployAndValidator(
   console.log(`[${env.network}]   - Gas Limit: ${txnOpts.gasLimit}`);
   console.log(`[${env.network}] ============================================================`);
 
-  // This call exactly matches the Go service but with debugging transaction:
+  // This call exactly matches the Go service but with module installation transactions:
   const tx = await multiCallDeploy.connect(executor).deployAndExecute(
     cfa,                    // counterfactual address (matches spec.Wallet.Address in Go)
     artifacts.mainModule,   // main module address (matches mcs.mainModule.Address in Go)
     salt,                   // salt for deployment (matches salt32 in Go)
     artifacts.factory,      // factory contract address (matches mcs.factory.Address in Go)
-    transactions,           // debug transaction (ETH transfer) instead of validator installation
+    transactions,           // module installation transactions instead of ETH transfer
     walletNonce,            // wallet nonce (must match the nonce used in signature generation)
     signature,              // signature for the transactions (matches spec.Signature in Go)
     txnOpts
@@ -434,7 +501,7 @@ async function deployWithMultiCallDeployAndValidator(
   
   if (receipt.status === 0) {
     console.log(`[${env.network}] ❌ Transaction failed! Status: ${receipt.status}`);
-    console.log(`[${env.network}] This likely means the deployment or validator installation failed`);
+    console.log(`[${env.network}] This likely means the deployment or module installations failed`);
   }
   
   const events = receipt.events || [];
@@ -447,14 +514,17 @@ async function deployWithMultiCallDeployAndValidator(
     });
   }
   
-  // Look for ModuleInstalled event
-  const moduleInstalledEvent = events.find(e => e.event === 'ModuleInstalled');
-  if (moduleInstalledEvent) {
-    console.log(`[${env.network}] 🎉 ModuleInstalled event found!`);
-    console.log(`[${env.network}]   - moduleTypeId: ${moduleInstalledEvent.args?.moduleTypeId}`);
-    console.log(`[${env.network}]   - module: ${moduleInstalledEvent.args?.module}`);
+  // Look for ModuleInstalled events
+  const moduleInstalledEvents = events.filter(e => e.event === 'ModuleInstalled');
+  if (moduleInstalledEvents.length > 0) {
+    console.log(`[${env.network}] 🎉 ModuleInstalled events found: ${moduleInstalledEvents.length}`);
+    moduleInstalledEvents.forEach((event, i) => {
+      console.log(`[${env.network}]   Event ${i + 1}:`);
+      console.log(`[${env.network}]     - moduleTypeId: ${event.args?.moduleTypeId}`);
+      console.log(`[${env.network}]     - module: ${event.args?.module}`);
+    });
   } else {
-    console.log(`[${env.network}] ⚠️  ModuleInstalled event not found in transaction receipt`);
+    console.log(`[${env.network}] ⚠️  ModuleInstalled events not found in transaction receipt`);
   }
   
   // Look for WalletDeployed event
@@ -489,11 +559,11 @@ async function deployWithMultiCallDeployAndValidator(
     console.log(`[${env.network}]   - Wallet proxy address: ${cfa}`);
     console.log(`[${env.network}]   - Initial nonce: ${walletNonce}`);
     console.log(`[${env.network}]   - Final nonce: ${finalNonce}`);
-    console.log(`[${env.network}]   - Expected nonce increment: ${transactions.length > 0 ? 1 : 0}`);
+    console.log(`[${env.network}]   - Expected nonce increment: ${transactions.length > 0 ? transactions.length : 0}`);
     console.log(`[${env.network}]   - Actual nonce increment: ${finalNonce - walletNonce}`);
     
-    if (transactions.length > 0 && finalNonce === walletNonce + 1) {
-      console.log(`[${env.network}] ✅ Nonce incremented correctly - validator installation executed successfully`);
+    if (transactions.length > 0 && finalNonce === walletNonce + transactions.length) {
+      console.log(`[${env.network}] ✅ Nonce incremented correctly - all module installations executed successfully`);
     } else if (transactions.length === 0 && finalNonce === walletNonce) {
       console.log(`[${env.network}] ✅ Nonce unchanged - deployment only (no transactions)`);
     } else {
@@ -505,19 +575,19 @@ async function deployWithMultiCallDeployAndValidator(
   console.log(`[${env.network}] ==============================================================`);
   
   if (transactions.length > 0) {
-    console.log(`[${env.network}] ✅ Wallet deployed and validator installation transaction executed!`);
-    console.log(`[${env.network}] 🎯 Validator installation should now be complete`);
+    console.log(`[${env.network}] ✅ Wallet deployed and ${transactions.length} module installation transactions executed!`);
+    console.log(`[${env.network}] 🎯 Validator and executor installations should now be complete`);
   } else {
     console.log(`[${env.network}] ✅ Wallet deployed successfully (no transactions)`);
   }
 }
 
 /**
- * Verify the wallet was deployed correctly and validator was installed
+ * Verify the wallet was deployed correctly and both modules were installed
  */
-async function verifyDeploymentAndValidator(walletAddress: string, validatorAddress: string, network: string) {
+async function verifyDeploymentAndModules(walletAddress: string, validatorAddress: string, executorAddress: string, network: string) {
   console.log(`[${network}] =================== FINAL VERIFICATION ===================`);
-  console.log(`[${network}] Verifying wallet deployment and validator installation...`);
+  console.log(`[${network}] Verifying wallet deployment and module installations...`);
   
   // Verify wallet deployment
   const code = await hardhat.provider.getCode(walletAddress);
@@ -527,7 +597,7 @@ async function verifyDeploymentAndValidator(walletAddress: string, validatorAddr
   
   console.log(`[${network}] ✅ Wallet deployment verified - wallet has code`);
   
-  // Try to connect to the wallet and verify validator installation
+  // Try to connect to the wallet and verify module installations
   try {
     const wallet = await hardhat.getContractAt('MainModuleDynamicAuthV2', walletAddress);
     
@@ -538,50 +608,71 @@ async function verifyDeploymentAndValidator(walletAddress: string, validatorAddr
       "0x" // No additional context needed
     );
     
-    console.log(`[${network}] 🔍 Validator installation status:`);
-    console.log(`[${network}]   - Validator address: ${validatorAddress}`);
-    console.log(`[${network}]   - Is installed: ${isValidatorInstalled}`);
+    // Check if executor module is installed
+    const isExecutorInstalled = await wallet.isModuleInstalled(
+      2, // MODULE_TYPE_EXECUTOR
+      executorAddress,
+      "0x" // No additional context needed
+    );
     
-    if (isValidatorInstalled) {
-      console.log(`[${network}] 🎉 Validator module successfully installed!`);
+    console.log(`[${network}] 🔍 Module installation status:`);
+    console.log(`[${network}]   - Validator address: ${validatorAddress}`);
+    console.log(`[${network}]   - Validator installed: ${isValidatorInstalled}`);
+    console.log(`[${network}]   - Executor address: ${executorAddress}`);
+    console.log(`[${network}]   - Executor installed: ${isExecutorInstalled}`);
+    
+    if (isValidatorInstalled && isExecutorInstalled) {
+      console.log(`[${network}] 🎉 Both validator and executor modules successfully installed!`);
       
-      // Check if validator is initialized
+      // Check if modules are initialized
       try {
         const validator = await hardhat.getContractAt('MockValidator', validatorAddress);
-        const isInitialized = await validator.isInitialized(walletAddress);
-        console.log(`[${network}]   - Is initialized: ${isInitialized}`);
+        const isValidatorInitialized = await validator.isInitialized(walletAddress);
+        console.log(`[${network}]   - Validator initialized: ${isValidatorInitialized}`);
         
-        if (isInitialized) {
-          console.log(`[${network}] ✅ Validator is properly initialized`);
+        const executor = await hardhat.getContractAt('MockExecutor', executorAddress);
+        const isExecutorInitialized = await executor.isInitialized(walletAddress);
+        console.log(`[${network}]   - Executor initialized: ${isExecutorInitialized}`);
+        
+        if (isValidatorInitialized && isExecutorInitialized) {
+          console.log(`[${network}] ✅ Both modules are properly initialized`);
         } else {
-          console.log(`[${network}] ⚠️  Validator is installed but not initialized`);
+          console.log(`[${network}] ⚠️  One or more modules are installed but not initialized`);
         }
       } catch (error) {
-        console.log(`[${network}]   - Could not check validator initialization: ${error.message}`);
+        console.log(`[${network}]   - Could not check module initialization: ${error.message}`);
       }
     } else {
-      console.log(`[${network}] ❌ Validator module installation failed`);
+      console.log(`[${network}] ❌ One or more module installations failed`);
+      if (!isValidatorInstalled) {
+        console.log(`[${network}]   - Validator module installation failed`);
+      }
+      if (!isExecutorInstalled) {
+        console.log(`[${network}]   - Executor module installation failed`);
+      }
     }
     
-    // Check if wallet supports validator modules
+    // Check if wallet supports the module types
     const supportsValidator = await wallet.supportsModule(1);
+    const supportsExecutor = await wallet.supportsModule(2);
     console.log(`[${network}]   - Wallet supports validators: ${supportsValidator}`);
+    console.log(`[${network}]   - Wallet supports executors: ${supportsExecutor}`);
     
   } catch (error) {
-    console.log(`[${network}] ⚠️  Could not verify validator installation: ${error.message}`);
+    console.log(`[${network}] ⚠️  Could not verify module installations: ${error.message}`);
   }
   
   console.log(`[${network}] =========================================================`);
 }
 
 // Execute the script
-deployWalletWithValidator()
+deployWalletWithValidatorAndExecutor()
   .then(() => {
-    console.log('✅ Wallet deployment with validator installation completed successfully');
+    console.log('✅ Wallet deployment with validator and executor installation completed successfully');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('❌ Wallet deployment with validator installation failed:', error.message);
+    console.error('❌ Wallet deployment with validator and executor installation failed:', error.message);
     console.error(error.stack);
     process.exit(1);
   });
