@@ -39,8 +39,7 @@ const config: HardhatUserConfig = {
   networks: {
     // Define here to easily specify private keys
     localhost: {
-      url: 'http://127.0.0.1:8545',
-      accounts: []
+      url: 'http://127.0.0.1:8545'
     },
     devnet: {
       url: 'https://rpc.dev.immutable.com',
