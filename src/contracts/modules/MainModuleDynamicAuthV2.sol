@@ -311,7 +311,7 @@ contract MainModuleDynamicAuthV2 is
             }
         }
         // use ERC7579 Validation mechanism
-        else if (!_isValidatorInstalled(validator)) {
+        else if (_isValidatorInstalled(validator)) {
             return _validateWithERC7579(validator, hash, signature[20:]);
         }
         // use legacy validation mechanism
