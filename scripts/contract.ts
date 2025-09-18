@@ -12,7 +12,7 @@ import ContractDeployerInterface from './abi/OwnableCreate2Deployer.json';
  * the contract that isn't dependent on the nonce of the contract deployer account.
 */
 const getSaltFromKey = (): string => {
-  let key: string = 'relayer-deployer-key-2';
+  let key: string = 'relayer-deployer-key-4';
   return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key]));
 };
 
