@@ -66,7 +66,7 @@ networks: {
 
 ### 3. Module Configuration
 
-Update the module addresses in `step7.json` with your deployed validator and executor contracts:
+Update the module addresses in `step8.json` with your deployed validator and executor contracts:
 
 **step8.json:**
 ```json
