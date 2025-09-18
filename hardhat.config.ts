@@ -39,7 +39,8 @@ const config: HardhatUserConfig = {
   networks: {
     // Define here to easily specify private keys
     localhost: {
-      url: 'http://127.0.0.1:8545'
+      url: 'http://127.0.0.1:8545',
+      chainId: 31337
     },
     devnet: {
       url: 'https://rpc.dev.immutable.com',
@@ -64,7 +65,8 @@ const config: HardhatUserConfig = {
     },
     base_sepolia: {
       url: process.env.BASE_SEPOLIA_ENDPOINT,
-      accounts: []
+      accounts: [],
+      chainId: 84532
     }
   },
   mocha: {
