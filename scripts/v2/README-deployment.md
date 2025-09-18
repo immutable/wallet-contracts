@@ -34,19 +34,22 @@ The script will automatically load the deployed contract addresses from the corr
 Copy the environment template and configure your deployment settings:
 
 ```bash
-cp .env.example .env
+cp .env.deployment .env
 ```
 
 Update the `.env` file with your configuration:
 
 ```env
-# Wallet configuration
-PRIVATE_KEY=your_private_key_here
-PUBLIC_KEY=your_public_key_here
+DEPLOYER_CONTRACT_ADDRESS=0x1dBEF46DF2AF1b3ab2C34186e2FFce209b26FBE5
 
-# Network configuration (example for Base Sepolia)
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+MULTICALL_ADMIN_PUB_KEY=<PUB_KEY>
+
+....
 ```
+
+For the purposes of testing, a single Ethereum key pair is sufficient. Replace <PUB_KEY> with the EOA address and <PRIV_KEY> with the private key of the EOA.
+
+For Base Sepolia, the DEPLOYER_CONTRACT_ADDRESS, MULTICALLDEPLOY_CONTRACT_ADDRESS, ENTRY_POINT_ADDRESS, FACTORY_CONTRACT_ADDRESS are latest as of 19/Sep/2025
 
 ### 2. Network Configuration
 
@@ -55,22 +58,15 @@ Update the `hardhat.config.ts` file to include your target network configuration
 ```typescript
 networks: {
   base_sepolia: {
-    url: process.env.BASE_SEPOLIA_RPC_URL,
-    accounts: [process.env.PRIVATE_KEY]
+    url: process.env.BASE_SEPOLIA_RPC_URL,  // <---- Update this URL
+    accounts: []
   }
 }
 ```
 
 ### 3. Module Configuration
 
-Update the module addresses in `step7.json` and `step8.json` with your deployed validator and executor contracts:
-
-**step7.json:**
-```json
-{
-  "nexusBootstrap": "0x_your_bootstrap_address"
-}
-```
+Update the module addresses in `step7.json` with your deployed validator and executor contracts:
 
 **step8.json:**
 ```json
