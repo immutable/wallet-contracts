@@ -406,8 +406,10 @@ contract MainModuleDynamicAuthV2 is
     /// @dev In case default validator is initialized, two other SLOADS from _areSentinelListsInitialized() are not checked,
     /// this method should not introduce huge gas overhead.
     function isInitialized() public view returns (bool) {
-        return (IValidator(_DEFAULT_VALIDATOR).isInitialized(address(this)) || _areSentinelListsInitialized());
-    }
+        // default validator is address(0) so removing that condition as it erorrs out silently
+        // return (IValidator(_DEFAULT_VALIDATOR).isInitialized(address(this)) || _areSentinelListsInitialized());
+        return _areSentinelListsInitialized();
+    }   
 
     /// Returns the account's implementation ID.
     /// @return The unique identifier for this account implementation.
