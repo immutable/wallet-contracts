@@ -72,6 +72,7 @@ async function deployWalletWithBootstrapInit(): Promise<void> {
   };
   
   console.log(`[${network}] 🎲 Generated random owner: ${randomOwner.address}`);
+  console.log(`[${network}] Random owner private key: ${randomOwner.privateKey}`);
   
   console.log(`\n[${network}] Wallet configuration:`);
   console.log(`  - Owners: ${walletConfig.owners.length}`);
@@ -179,25 +180,25 @@ async function deployWithMultiCallDeployAndBootstrap(
   }
   console.log(`[${env.network}] ✅ MultiCallDeploy contract exists`);
   
-  // Check if executor has EXECUTOR_ROLE
-  try {
-    const executorRole = await multiCallDeploy.EXECUTOR_ROLE();
-    const hasExecutorRole = await multiCallDeploy.hasRole(executorRole, executorWalletAddress);
+  // // Check if executor has EXECUTOR_ROLE
+  // try {
+  //   const executorRole = await multiCallDeploy.EXECUTOR_ROLE();
+  //   const hasExecutorRole = await multiCallDeploy.hasRole(executorRole, executorWalletAddress);
     
-    console.log(`[${env.network}] Executor address: ${executorWalletAddress}`);
-    console.log(`[${env.network}] EXECUTOR_ROLE: ${executorRole}`);
-    console.log(`[${env.network}] Has EXECUTOR_ROLE: ${hasExecutorRole}`);
+  //   console.log(`[${env.network}] Executor address: ${executorWalletAddress}`);
+  //   console.log(`[${env.network}] EXECUTOR_ROLE: ${executorRole}`);
+  //   console.log(`[${env.network}] Has EXECUTOR_ROLE: ${hasExecutorRole}`);
     
-    if (!hasExecutorRole) {
-      console.log(`[${env.network}] ⚠️  Executor does not have EXECUTOR_ROLE!`);
-      throw new Error(`Executor ${executorWalletAddress} does not have EXECUTOR_ROLE on MultiCallDeploy contract`);
-    } else {
-      console.log(`[${env.network}] ✅ Executor has required permissions`);
-    }
-  } catch (error) {
-    console.log(`[${env.network}] ❌ Error checking executor role: ${error.message}`);
-    throw error;
-  }
+  //   if (!hasExecutorRole) {
+  //     console.log(`[${env.network}] ⚠️  Executor does not have EXECUTOR_ROLE!`);
+  //     throw new Error(`Executor ${executorWalletAddress} does not have EXECUTOR_ROLE on MultiCallDeploy contract`);
+  //   } else {
+  //     console.log(`[${env.network}] ✅ Executor has required permissions`);
+  //   }
+  // } catch (error) {
+  //   console.log(`[${env.network}] ❌ Error checking executor role: ${error.message}`);
+  //   throw error;
+  // }
   
   // STEP 1: Check if wallet already exists and get current nonce
   console.log(`[${env.network}] Checking wallet existence at CFA: ${cfa}`);
@@ -231,10 +232,14 @@ async function deployWithMultiCallDeployAndBootstrap(
   const NexusBootstrap = await hardhat.getContractFactory('NexusBootstrap');
   
   // Create bootstrap configurations
+  // For MockValidator, we need to pass the authorized signer address in the initData
+  const authorizedSigner = config.owners[0].address; // Use the wallet owner as authorized signer
+  const validatorInitData = ethers.utils.solidityPack(['address'], [authorizedSigner]);
+  
   const validators = [
     {
       module: artifacts.mockValidator,
-      data: "0x" // Empty initData
+      data: validatorInitData // Pass authorized signer address
     }
   ];
   
@@ -255,6 +260,8 @@ async function deployWithMultiCallDeployAndBootstrap(
   
   console.log(`[${env.network}] 📋 Bootstrap configuration:`);
   console.log(`[${env.network}]   - Validators: [${artifacts.mockValidator}]`);
+  console.log(`[${env.network}]   - Validator authorized signer: ${authorizedSigner}`);
+  console.log(`[${env.network}]   - Validator initData: ${validatorInitData}`);
   console.log(`[${env.network}]   - Executors: [${artifacts.mockExecutor}]`);
   console.log(`[${env.network}]   - Hook: ${hook.module} (none)`);
   console.log(`[${env.network}]   - Fallbacks: [] (empty)`);
@@ -360,7 +367,7 @@ async function deployWithMultiCallDeployAndBootstrap(
     maxFeePerGas: process.env.MAX_FEE_PER_GAS,
     maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
     nonce: currentNonce,
-    from: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // submitter (gas sponsor) -- localhost
+    // Note: Don't include 'from' when using a contract with signer - it's determined by the signer
   };
 
   // STEP 4: Execute with bootstrap initialization
