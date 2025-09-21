@@ -8,5 +8,6 @@ remappings = [
     "account-abstraction/contracts/=node_modules/account-abstraction/contracts/",
     "solady/=node_modules/solady/src/",
     "@nomad-xyz/excessively-safe-call/=node_modules/@nomad-xyz/excessively-safe-call/src/",
-    "sentinellist/=node_modules/sentinellist/src/"
+    "sentinellist/=node_modules/sentinellist/src/",
+    "excessively-safe-call/=node_modules/@nomad-xyz/excessively-safe-call/src/"
 ]

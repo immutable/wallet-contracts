@@ -3,30 +3,43 @@ import { networkConfig } from './utils/config-loader';
 import * as dotenv from 'dotenv';
 
 import '@nomiclabs/hardhat-truffle5';
-import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-web3';
 import '@nomiclabs/hardhat-etherscan';
 import '@nomicfoundation/hardhat-chai-matchers';
 import "@nomicfoundation/hardhat-foundry";
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 import "hardhat-contract-sizer";
 
 dotenv.config();
-loadAndValidateEnvironment();
+// Skip environment validation for local development
+if (process.env.NODE_ENV !== 'development') {
+  loadAndValidateEnvironment();
+}
 
 const config: HardhatUserConfig = {
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+  },
   solidity: {
-    compilers: [{ 
+    compilers: [{
       version: '0.8.27',
       settings: {
         evmVersion: 'cancun',
         optimizer: {
           enabled: true,
-          runs: 20,
+          runs: 1,
           details: {
-            yul: true
+            yul: true,
+            yulDetails: {
+              stackAllocation: true,
+              optimizerSteps: "dhfoDgvulfnTUtnIf xa dr cs gr"
+            }
           }
         }
       }
@@ -36,11 +49,30 @@ const config: HardhatUserConfig = {
     sources: 'src/contracts',
     tests: 'tests'
   },
+  // Adiciona os remappings do Foundry para o Hardhat
+  external: {
+    contracts: [
+      {
+        artifacts: "artifacts",
+        deploy: "deploy"
+      }
+    ],
+    deployments: {
+      hardhat: ["deployments/hardhat"],
+      localhost: ["deployments/hardhat"]
+    }
+  },
   networks: {
     // Define here to easily specify private keys
     localhost: {
       url: 'http://127.0.0.1:8545',
-      accounts: []
+      accounts: [
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' // Primeira conta do Hardhat
+      ],
+      allowUnlimitedContractSize: true,
+      allowBlocksWithSameTimestamp: true,
+      gas: 30000000,
+      blockGasLimit: 30000000
     },
     devnet: {
       url: 'https://rpc.dev.immutable.com',
@@ -48,7 +80,7 @@ const config: HardhatUserConfig = {
     },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
-      
+
       accounts: []
     },
     mainnet: {
