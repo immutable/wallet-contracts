@@ -21,8 +21,21 @@ contract NexusTestImpl is NexusTest {
     }
   }
 
-  function isValidSignature(bytes32 hash, bytes calldata data) external view override returns (bytes4) {
+  function isValidSignature(bytes32 /* hash */, bytes calldata /* data */) external pure override returns (bytes4) {
     // Simplified version: always return success
     return 0x1626ba7e;
+  }
+
+  function isModuleInstalled(
+    uint256 moduleTypeId,
+    address module,
+    bytes calldata additionalContext
+  ) external view override returns (bool) {
+    return _isModuleInstalled(moduleTypeId, module, additionalContext);
+  }
+
+  function supportsModule(uint256 /* moduleTypeId */) external pure override returns (bool) {
+    // Simplified version: support all module types for testing
+    return true;
   }
 }
