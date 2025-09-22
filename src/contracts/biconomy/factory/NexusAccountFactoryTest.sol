@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import '../NexusTestImpl.sol';
+import '../Nexus.sol';
 import '../interfaces/factory/INexusFactory.sol';
 import '../lib/ProxyLib.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
@@ -30,7 +30,7 @@ contract NexusAccountFactoryTest is INexusFactory, AccessControl {
    * @notice Creates a new Nexus wallet instance. This method is analogous to the deploy() method
    * in the original Passport Factory, but with additional account existence check.
    * @dev Uses CREATE2 opcode implicitly through Solidity's `new Contract{salt: salt}()` syntax
-   * at the proxy deployment. This is the test version using NexusTestImpl.
+   * at the proxy deployment.
    * @param initData Initialization data for the new wallet
    * @param salt Unique salt for deterministic address generation
    * @return The address of the newly created or existing wallet
@@ -45,7 +45,7 @@ contract NexusAccountFactoryTest is INexusFactory, AccessControl {
       return payable(addr);
     }
 
-    address proxy = address(new NexusTestImpl{salt: salt}(entryPoint, implementation, initData));
+    address proxy = address(new Nexus{salt: salt}(entryPoint, implementation, initData));
 
     // Emit event after successful deployment (same pattern as Passport)
     emit WalletDeployed(proxy, initData, salt);
@@ -57,7 +57,7 @@ contract NexusAccountFactoryTest is INexusFactory, AccessControl {
     bytes calldata initData,
     bytes32 salt
   ) public view returns (address payable expectedAddress) {
-    bytes memory creationCode = type(NexusTestImpl).creationCode;
+    bytes memory creationCode = type(Nexus).creationCode;
     bytes memory constructorArgs = abi.encode(entryPoint, implementation, initData);
     bytes32 bytecodeHash = keccak256(abi.encodePacked(creationCode, constructorArgs));
 
