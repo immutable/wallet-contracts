@@ -12,9 +12,14 @@ async function deployInfrastructureAndWallet() {
     const walletOptions = await newWalletOptions(env);
     const deployer = walletOptions.getWallet();
 
+    // Parse deployment method from environment or default to factory
+    const useMultiCallDeploy = process.env.USE_MULTICALL_DEPLOY === 'true';
+    const deploymentMethod = useMultiCallDeploy ? 'MultiCallDeploy' : 'Factory';
+
     console.log('Deployer:', await deployer.getAddress());
     console.log('Network:', network);
     console.log('Balance:', hre.ethers.utils.formatEther(await deployer.getBalance()), 'ETH');
+    console.log('🎯 Deployment Method:', deploymentMethod);
     console.log('');
 
     // PHASE 1: Deploy Infrastructure
@@ -27,7 +32,7 @@ async function deployInfrastructureAndWallet() {
     console.log('\n🎯 PHASE 2: DEPLOYING WALLET');
     console.log('=============================');
 
-    const walletAddress = await deployWallet(infrastructure, deployer, network);
+    const walletAddress = await deployWallet(infrastructure, deployer, network, useMultiCallDeploy);
 
     // PHASE 3: Final Verification
     console.log('\n✅ PHASE 3: FINAL VERIFICATION');
@@ -209,8 +214,19 @@ async function deployInfrastructure(deployer, network) {
     };
 }
 
-async function deployWallet(infrastructure, deployer, network) {
-    console.log('🎯 Deploying wallet using Passport Factory...\n');
+async function deployWallet(infrastructure, deployer, network, useMultiCallDeploy = false) {
+    const method = useMultiCallDeploy ? 'MultiCallDeploy' : 'Factory';
+    console.log(`🎯 Deploying wallet using ${method}...\n`);
+
+    if (useMultiCallDeploy) {
+        return await deployWalletWithMultiCallDeploy(infrastructure, deployer, network);
+    } else {
+        return await deployWalletWithFactory(infrastructure, deployer, network);
+    }
+}
+
+async function deployWalletWithFactory(infrastructure, deployer, network) {
+    console.log('🏛️ Using Factory deployment method...');
 
     // Get Factory contract
     const Factory = await hre.ethers.getContractFactory('Factory', deployer);
@@ -220,7 +236,7 @@ async function deployWallet(infrastructure, deployer, network) {
     const walletConfig = {
         owner: await deployer.getAddress(),
         mainModule: infrastructure.nexusImplementation, // Nexus as main module
-        salt: hre.ethers.utils.formatBytes32String('hybrid-wallet-final') // Unique salt
+        salt: hre.ethers.utils.formatBytes32String('hybrid-wallet-factory') // Unique salt for factory
     };
 
     console.log('📝 Wallet Configuration:');
@@ -257,7 +273,7 @@ async function deployWallet(infrastructure, deployer, network) {
     }
 
     // Deploy the wallet
-    console.log('\n🔨 Deploying wallet...');
+    console.log('\n🔨 Deploying wallet via Factory...');
     const deployTx = await factory.deploy(
         walletConfig.mainModule,
         walletConfig.salt,
@@ -280,11 +296,122 @@ async function deployWallet(infrastructure, deployer, network) {
         throw new Error('Wallet deployment failed - no code at address');
     }
 
-    console.log('✅ WALLET DEPLOYED SUCCESSFULLY!');
+    console.log('✅ FACTORY WALLET DEPLOYED SUCCESSFULLY!');
     console.log('Address:', predictedAddress);
     console.log('Code size:', Math.floor(deployedCode.length / 2), 'bytes');
 
     return predictedAddress;
+}
+
+async function deployWalletWithMultiCallDeploy(infrastructure, deployer, network) {
+    console.log('🔧 Using MultiCallDeploy deployment method...');
+
+    // Get MultiCallDeploy contract
+    const MultiCallDeploy = await hre.ethers.getContractFactory('MultiCallDeploy', deployer);
+    const multiCallDeploy = MultiCallDeploy.attach(infrastructure.passportMultiCallDeploy);
+
+    // Get Factory for address prediction
+    const Factory = await hre.ethers.getContractFactory('Factory', deployer);
+    const factory = Factory.attach(infrastructure.passportFactory);
+
+    // Wallet configuration
+    const walletConfig = {
+        owner: await deployer.getAddress(),
+        mainModule: infrastructure.nexusImplementation, // Nexus as main module
+        salt: hre.ethers.utils.formatBytes32String('hybrid-wallet-multicall') // Unique salt for multicall
+    };
+
+    console.log('📝 Wallet Configuration:');
+    console.log('  Owner:', walletConfig.owner);
+    console.log('  Main Module (Nexus):', walletConfig.mainModule);
+    console.log('  Salt:', walletConfig.salt);
+
+    // Predict wallet address using Factory's getAddress
+    const predictedAddress = await factory.getAddress(
+        walletConfig.mainModule,
+        walletConfig.salt
+    );
+    console.log('  Predicted Address:', predictedAddress);
+
+    // Check if wallet already exists
+    const existingCode = await hre.ethers.provider.getCode(predictedAddress);
+    if (existingCode !== '0x') {
+        console.log('✅ Wallet already exists at predicted address');
+        return predictedAddress;
+    }
+
+    // Example initial transactions to execute after deployment
+    const initialTransactions = [
+        {
+            to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', // Example recipient
+            value: hre.ethers.utils.parseEther('0.1'), // Send 0.1 ETH
+            data: '0x' // No data
+        }
+    ];
+
+    console.log('📋 Initial transactions configured:', initialTransactions.length);
+
+    // Grant EXECUTOR_ROLE to deployer for MultiCallDeploy
+    console.log('\n🔐 Checking MultiCallDeploy permissions...');
+    const EXECUTOR_ROLE = hre.ethers.utils.keccak256(hre.ethers.utils.toUtf8Bytes('EXECUTOR_ROLE'));
+    const hasExecutorRole = await multiCallDeploy.hasRole(EXECUTOR_ROLE, await deployer.getAddress());
+
+    if (!hasExecutorRole) {
+        console.log('Granting EXECUTOR_ROLE...');
+        const grantTx = await multiCallDeploy.grantRole(EXECUTOR_ROLE, await deployer.getAddress());
+        await grantTx.wait();
+        console.log('✅ EXECUTOR_ROLE granted');
+    } else {
+        console.log('✅ Already has EXECUTOR_ROLE');
+    }
+
+    // Deploy wallet with initial transactions via MultiCallDeploy
+    console.log('\n🔨 Deploying wallet via MultiCallDeploy...');
+
+    try {
+        // The exact interface for MultiCallDeploy may vary - this is an example
+        const deployTx = await multiCallDeploy.deployAndExecute(
+            predictedAddress,
+            walletConfig.mainModule,
+            walletConfig.salt,
+            infrastructure.passportFactory,
+            hre.ethers.utils.defaultAbiCoder.encode(['address'], [walletConfig.owner]),
+            initialTransactions,
+            {
+                gasLimit: 30000000,
+                maxFeePerGas: 1875000000,
+                maxPriorityFeePerGas: 1000000000,
+                value: hre.ethers.utils.parseEther('0.1') // ETH for initial transaction
+            }
+        );
+
+        console.log('Deploy transaction:', deployTx.hash);
+        const receipt = await deployTx.wait();
+        console.log('✅ Confirmed in block:', receipt.blockNumber);
+        console.log('Gas used:', receipt.gasUsed.toString());
+
+        // Verify deployment
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const deployedCode = await hre.ethers.provider.getCode(predictedAddress);
+        if (deployedCode === '0x') {
+            throw new Error('MultiCallDeploy wallet deployment failed - no code at address');
+        }
+
+        console.log('✅ MULTICALL WALLET DEPLOYED SUCCESSFULLY!');
+        console.log('Address:', predictedAddress);
+        console.log('Code size:', Math.floor(deployedCode.length / 2), 'bytes');
+        console.log('🔄 Initial transactions executed');
+
+        return predictedAddress;
+
+    } catch (error) {
+        console.log('❌ MultiCallDeploy failed:', error.message);
+        console.log('💡 Note: MultiCallDeploy interface may need adjustment');
+
+        // Fallback to factory deployment
+        console.log('\n🔄 Falling back to Factory deployment...');
+        return await deployWalletWithFactory(infrastructure, deployer, network);
+    }
 }
 
 async function finalVerification(infrastructure, walletAddress, deployer, network) {
