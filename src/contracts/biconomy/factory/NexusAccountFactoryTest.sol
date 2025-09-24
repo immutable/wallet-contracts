@@ -1,73 +1,79 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.27;
 
-import '../Nexus.sol';
-import '../interfaces/factory/INexusFactory.sol';
-import '../lib/ProxyLib.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 
-contract NexusAccountFactoryTest is INexusFactory, AccessControl {
-  // Role to deploy new wallets (same as in Passport's Factory)
+/**
+ * @title MinimalNexus
+ * @notice Minimal version of Nexus just for testing factory deployment
+ */
+contract MinimalNexus {
+  address public immutable entryPoint;
+  address public immutable implementation;
+  bytes public initData;
+
+  constructor(address _entryPoint, address _implementation, bytes memory _initData) {
+    entryPoint = _entryPoint;
+    implementation = _implementation;
+    initData = _initData;
+  }
+}
+
+/**
+ * @title NexusAccountFactoryTest
+ * @notice Simplified version of NexusAccountFactory for testing purposes
+ * @dev Analogous to Passport's Factory.deploy() but uses Nexus's createAccount pattern
+ */
+contract NexusAccountFactoryTest is AccessControl {
   bytes32 public constant DEPLOYER_ROLE = keccak256('DEPLOYER_ROLE');
 
-  address public immutable implementation;
   address public immutable entryPoint;
+  address public immutable implementation;
 
-  event WalletDeployed(address indexed wallet, bytes indexed initData, bytes32 indexed salt);
+  event WalletDeployed(address indexed wallet, bytes initData, bytes32 salt);
 
-  constructor(address _implementation, address _entryPoint) {
-    require(_implementation != address(0), 'Invalid implementation');
-    require(_entryPoint != address(0), 'Invalid entryPoint');
-    implementation = _implementation;
-    entryPoint = _entryPoint;
-
-    // Grant deployer role to contract deployer
-    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+  constructor(address admin, address _implementation) {
+    _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _grantRole(DEPLOYER_ROLE, msg.sender);
+
+    // Hardcoded for testing
+    entryPoint = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    implementation = _implementation;
   }
 
   /**
-   * @notice Creates a new Nexus wallet instance. This method is analogous to the deploy() method
-   * in the original Passport Factory, but with additional account existence check.
-   * @dev Uses CREATE2 opcode implicitly through Solidity's `new Contract{salt: salt}()` syntax
-   * at the proxy deployment.
-   * @param initData Initialization data for the new wallet
-   * @param salt Unique salt for deterministic address generation
-   * @return The address of the newly created or existing wallet
+   * @notice Creates a new Nexus account
+   * @dev Analogous to Passport's Factory.deploy()
+   * @param initData Initialization data for the account
+   * @param salt Unique salt for CREATE2
+   * @return The address of the deployed account
    */
   function createAccount(
     bytes calldata initData,
     bytes32 salt
   ) external payable onlyRole(DEPLOYER_ROLE) returns (address payable) {
-    address addr = computeAccountAddress(initData, salt);
+    address addr = getAddress(initData, salt);
     uint codeSize = addr.code.length;
     if (codeSize > 0) {
       return payable(addr);
     }
 
-    address proxy = address(new Nexus{salt: salt}(entryPoint, implementation, initData));
+    address proxy = address(new MinimalNexus{salt: salt}(entryPoint, implementation, initData));
 
-    // Emit event after successful deployment (same pattern as Passport)
     emit WalletDeployed(proxy, initData, salt);
-
     return payable(proxy);
   }
 
-  function computeAccountAddress(
-    bytes calldata initData,
-    bytes32 salt
-  ) public view returns (address payable expectedAddress) {
-    bytes memory creationCode = type(Nexus).creationCode;
-    bytes memory constructorArgs = abi.encode(entryPoint, implementation, initData);
-    bytes32 bytecodeHash = keccak256(abi.encodePacked(creationCode, constructorArgs));
-
-    bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash));
-
-    return payable(address(uint160(uint(hash))));
-  }
-
-  // AccessControl's supportsInterface
-  function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-    return super.supportsInterface(interfaceId);
+  /**
+   * @notice Gets the deterministic address for an account
+   * @param initData Initialization data for the account
+   * @param salt Unique salt for CREATE2
+   * @return The computed address
+   */
+  function getAddress(bytes calldata initData, bytes32 salt) public view returns (address) {
+    bytes memory creationCode = type(MinimalNexus).creationCode;
+    bytes memory initCodePacked = abi.encodePacked(creationCode, abi.encode(entryPoint, implementation, initData));
+    bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(initCodePacked)));
+    return address(uint160(uint(hash)));
   }
 }

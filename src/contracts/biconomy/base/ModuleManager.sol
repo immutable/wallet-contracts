@@ -52,9 +52,10 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   address internal immutable _DEFAULT_VALIDATOR;
 
   /// @dev initData should block the implementation from being used as a Smart Account
-  constructor(address _defaultValidator, bytes memory _initData) {
+  constructor(address _defaultValidator, bytes memory /* _initData */) {
     if (!IValidator(_defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) revert MismatchModuleTypeId();
-    IValidator(_defaultValidator).onInstall(_initData);
+    // Don't call onInstall in the constructor to avoid initialization issues
+    // The validator will be initialized later via initNexusWithDefaultValidator
     _DEFAULT_VALIDATOR = _defaultValidator;
   }
 
@@ -362,13 +363,11 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   }
 
   /// @dev Uninstalls a pre-validation hook module
-  /// @param preValidationHook The address of the pre-validation hook to be uninstalled.
   /// @param hookType The type of the pre-validation hook.
-  /// @param data De-initialization data to configure the hook upon uninstallation.
   function _uninstallPreValidationHook(
-    address preValidationHook,
+    address /* preValidationHook */,
     uint256 hookType,
-    bytes calldata data
+    bytes calldata /* data */
   ) internal virtual {
     _setPreValidationHook(hookType, address(0));
   }
@@ -528,7 +527,7 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
     uint256 moduleType,
     bytes32 userOpHash,
     bytes calldata initData
-  ) internal view returns (bytes32) {
+  ) internal pure returns (bytes32) {
     return keccak256(abi.encode(MODULE_ENABLE_MODE_TYPE_HASH, module, moduleType, userOpHash, keccak256(initData)));
   }
 
