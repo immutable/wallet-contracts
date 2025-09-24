@@ -16,13 +16,16 @@ async function step1(): Promise<EnvironmentInfo> {
     const multiCallAdminPubKey = process.env.MULTICALL_ADMIN_PUB_KEY;
     const factoryAdminPubKey = process.env.FACTORY_ADMIN_PUB_KEY;
 
+    const entryPointAddress = process.env.ENTRY_POINT_ADDRESS;
+
     console.log(`[${network}] Starting Biconomy deployment step 1...`);
     console.log(`[${network}] Submitter address ${submitterAddress}`);
     console.log(`[${network}] Signer address ${signerAddress}`);
     console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
     console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
+    console.log(`[${network}] entryPointAddress ${entryPointAddress}`);
 
-    if (!multiCallAdminPubKey || !factoryAdminPubKey) {
+    if (!multiCallAdminPubKey || !factoryAdminPubKey || !entryPointAddress) {
         throw new Error('Required environment variables not set');
     }
 
@@ -38,11 +41,10 @@ async function step1(): Promise<EnvironmentInfo> {
         submitterAddress
     ]);
 
-    // Deploy NexusAccountFactoryTest with MultiCallDeploy as deployer
-    console.log(`[${network}] Deploying NexusAccountFactoryTest...`);
-    const factory = await deployContract(env, wallets, 'NexusAccountFactoryTest', [
-        factoryAdminPubKey,
-        multiCallDeploy.address
+    // Deploy NexusAccountFactory with implementation and entryPoint
+    console.log(`[${network}] Deploying NexusAccountFactory...`);
+    const factory = await deployContract(env, wallets, 'NexusAccountFactory', [
+        factoryAdminPubKey, multiCallDeploy.address
     ]);
 
     // Save deployment information
@@ -55,7 +57,7 @@ async function step1(): Promise<EnvironmentInfo> {
 
     console.log(`[${network}] Step 1 deployment completed`);
     console.log(`[${network}] NexusMultiCallDeploy deployed at: ${multiCallDeploy.address}`);
-    console.log(`[${network}] NexusAccountFactoryTest deployed at: ${factory.address}`);
+    console.log(`[${network}] NexusAccountFactory deployed at: ${factory.address}`);
 
     return env;
 }

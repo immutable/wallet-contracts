@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContractViaCREATE2 } from '../../contract';
+import { deployContract } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
@@ -30,9 +30,9 @@ async function step2(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
-    // Deploy LatestWalletImplLocator using CREATE2 for deterministic address
+    // Deploy LatestWalletImplLocator using direct deployment
     console.log(`[${network}] Deploying LatestWalletImplLocator...`);
-    const latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
+    const latestWalletImplLocator = await deployContract(env, wallets, 'LatestWalletImplLocator', [
         walletImplLocatorAdmin,
         walletImplChangerAdmin
     ]);

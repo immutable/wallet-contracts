@@ -33,7 +33,7 @@ const config: HardhatUserConfig = {
         evmVersion: 'cancun',
         optimizer: {
           enabled: true,
-          runs: 1,
+          runs: 1000,
           details: {
             yul: true,
             yulDetails: {
@@ -64,6 +64,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
     localhost: {
       url: 'http://127.0.0.1:8545',
       accounts: [
