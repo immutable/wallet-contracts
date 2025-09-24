@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-09-24T23:15:59.981Z",
+  "status": "COMPLETE_SUCCESS",
+  "network": "hardhat",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "infrastructure": {
+    "passportMultiCallDeploy": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "passportFactory": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "latestWalletImplLocator": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "startupWalletImpl": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "nexusK1Validator": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    "nexusImplementation": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "immutableSigner": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+    "locatorToNexusConfigured": true,
+    "configurationTxHash": "0x7252cc5800837c6d018039f29f0aa8e5d0598f04ce3fc8e05f32b9f75e2d2b7a"
+  },
+  "wallet": {
+    "address": "0x3d4591FDe7CA22AdB522668f8191daF24db126f6",
+    "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "mainModule": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+  }
+}
