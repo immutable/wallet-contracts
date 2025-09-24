@@ -11,8 +11,9 @@ import ContractDeployerInterface from './abi/OwnableCreate2Deployer.json';
  * We use the key to generate a salt to generate a deterministic address for
  * the contract that isn't dependent on the nonce of the contract deployer account.
 */
-const getSaltFromKey = (): string => {
-  let key: string = 'relayer-deployer-key-2';
+const getSaltFromKey = (contractName?: string): string => {
+  // If no contractName is provided, use the default key for backward compatibility
+  let key: string = contractName ? `${contractName}-${Date.now()}` : 'relayer-deployer-key-2';
   return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key]));
 };
 
@@ -32,7 +33,7 @@ export async function deployContractViaCREATE2(
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
 
-  const salt: string = getSaltFromKey();
+  const salt: string = getSaltFromKey(contractName);
   const deployer: Contract = await loadDeployerContract(env, walletsOptions);
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
   const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
