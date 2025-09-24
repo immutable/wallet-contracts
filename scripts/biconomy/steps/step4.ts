@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { utils } from 'ethers';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContractViaCREATE2 } from '../../contract';
+import { deployContract } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
@@ -33,7 +33,8 @@ async function step4(): Promise<EnvironmentInfo> {
     console.log(`[${network}] EntryPoint address ${entryPointAddress}`);
     console.log(`[${network}] DefaultValidator address ${defaultValidatorAddress}`);
 
-    if (!entryPointAddress || !defaultValidatorAddress) {
+    //if (!entryPointAddress || !defaultValidatorAddress) {
+    if (!entryPointAddress) {
         throw new Error('Required environment variables not set');
     }
 
@@ -45,7 +46,7 @@ async function step4(): Promise<EnvironmentInfo> {
 
     // Deploy new K1Validator
     console.log(`[${network}] Deploying new K1Validator...`);
-    const validator = await deployContractViaCREATE2(env, wallets, 'K1Validator', []);
+    const validator = await deployContract(env, wallets, 'K1Validator', []);
 
     // Initialize K1Validator with deployer's address as owner
     console.log(`[${network}] Initializing K1Validator...`);
@@ -57,7 +58,7 @@ async function step4(): Promise<EnvironmentInfo> {
 
     // Deploy Nexus implementation
     console.log(`[${network}] Deploying Nexus implementation...`);
-    const nexus = await deployContractViaCREATE2(env, wallets, 'Nexus', [
+    const nexus = await deployContract(env, wallets, 'Nexus', [
         entryPointAddress,
         validator.address,
         validatorInitData // Pass the same initData used to initialize K1Validator

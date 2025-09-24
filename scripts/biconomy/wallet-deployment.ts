@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { ethers as hardhat } from 'hardhat';
 import { Wallet, BigNumber } from 'ethers';
+import { ethers } from 'ethers';
 
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
@@ -51,7 +51,7 @@ async function deployWallet(): Promise<void> {
             // Example: Send 1 ETH to another address
             {
                 to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-                value: hardhat.utils.parseEther("1"),
+                value: ethers.utils.parseEther("1"),
                 data: '0x'
             }
         ]
@@ -62,8 +62,8 @@ async function deployWallet(): Promise<void> {
     console.log(`  - Transactions: ${walletConfig.transactions?.length || 0}`);
 
     // Generate deterministic salt
-    const salt = hardhat.utils.keccak256(
-        hardhat.utils.defaultAbiCoder.encode(
+    const salt = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(
             ['address'],
             [walletConfig.owner]
         )
@@ -71,7 +71,7 @@ async function deployWallet(): Promise<void> {
     console.log(`[${network}] Generated salt: ${salt}`);
 
     // Prepare initialization data for the K1Validator
-    const initData = hardhat.utils.defaultAbiCoder.encode(
+    const initData = ethers.utils.defaultAbiCoder.encode(
         ['address'],
         [walletConfig.owner]
     );
@@ -111,7 +111,7 @@ function loadDeploymentArtifacts() {
             factory: step1.factory,
             multiCallDeploy: step1.multiCallDeploy,
             nexus: step4.nexus,
-            defaultValidator: step4.defaultValidatorAddress,
+            defaultValidator: step4.validator.address,
         };
     } catch (error) {
         console.error('Failed to load deployment artifacts. Make sure all steps have been completed.');
@@ -131,7 +131,7 @@ async function deployWithFactory(
     console.log(`[${env.network}] Deploying wallet using NexusAccountFactory...`);
 
     // Get factory contract
-    const factory = await hardhat.getContractAt('NexusAccountFactoryTest', artifacts.factory);
+    const factory = await hardhat.getContractAt('NexusAccountFactory', artifacts.factory);
 
     // Calculate expected address
     const predictedAddress = await factory.getAddress(initData, salt);
@@ -174,7 +174,7 @@ async function deployWithMultiCallDeploy(
     console.log(`[${env.network}] Deploying wallet using NexusMultiCallDeploy...`);
 
     // Get factory and multicall contracts
-    const factory = await hardhat.getContractAt('NexusAccountFactoryTest', artifacts.factory);
+    const factory = await hardhat.getContractAt('NexusAccountFactory', artifacts.factory);
     const multiCallDeploy = await hardhat.getContractAt('NexusMultiCallDeploy', artifacts.multiCallDeploy);
 
     // Calculate expected address

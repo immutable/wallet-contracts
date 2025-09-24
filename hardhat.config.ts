@@ -12,6 +12,7 @@ import "hardhat-deploy-ethers";
 
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
+import "hardhat-contract-sizer";
 
 dotenv.config();
 // Skip environment validation for local development
@@ -63,6 +64,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     // Define here to easily specify private keys
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
     localhost: {
       url: 'http://127.0.0.1:8545',
       accounts: [
