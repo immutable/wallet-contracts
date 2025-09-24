@@ -44,24 +44,20 @@ async function step4(): Promise<EnvironmentInfo> {
     const wallets: WalletOptions = await newWalletOptions(env);
     const deployerAddress = await wallets.getWallet().getAddress();
 
-    // Deploy new K1Validator
-    console.log(`[${network}] Deploying new K1Validator...`);
+    // Deploy K1Validator (Nexus core validator)
+    console.log(`[${network}] Deploying K1Validator (Nexus core)...`);
     const validator = await deployContract(env, wallets, 'K1Validator', []);
 
-    // Initialize K1Validator with deployer's address as owner
-    console.log(`[${network}] Initializing K1Validator...`);
+    // Deploy Nexus Implementation (integrating with Passport infrastructure)
+    console.log(`[${network}] Deploying Nexus implementation...`);
     const validatorInitData = utils.hexConcat([deployerAddress]);
     console.log(`[${network}] K1Validator init data: ${validatorInitData}`);
-    const tx = await validator.onInstall(validatorInitData);
-    await tx.wait();
-    console.log(`[${network}] K1Validator initialized`);
 
-    // Deploy Nexus implementation
-    console.log(`[${network}] Deploying Nexus implementation...`);
+    // Deploy Nexus (core smart account implementation)
     const nexus = await deployContract(env, wallets, 'Nexus', [
-        entryPointAddress,
-        validator.address,
-        validatorInitData // Pass the same initData used to initialize K1Validator
+        entryPointAddress,      // EntryPoint for Account Abstraction
+        validator.address,      // K1Validator for signature validation
+        validatorInitData      // Initialization data for the validator
     ]);
 
     // Save deployment information
@@ -78,10 +74,10 @@ async function step4(): Promise<EnvironmentInfo> {
     }, null, 1));
 
     console.log(`[${network}] Step 4 deployment completed`);
-    console.log(`[${network}] K1Validator deployed at: ${validator.address}`);
-    console.log(`[${network}] K1Validator owner set to: ${deployerAddress}`);
-    console.log(`[${network}] Nexus implementation deployed at: ${nexus.address}`);
-    console.log(`[${network}] IMPORTANT: Update DEFAULT_VALIDATOR_ADDRESS in .env to: ${validator.address}`);
+    console.log(`[${network}] ✅ K1Validator (Nexus) deployed at: ${validator.address}`);
+    console.log(`[${network}] ✅ Nexus implementation deployed at: ${nexus.address}`);
+    console.log(`[${network}] 🔗 Integration: Passport Factory + Nexus Core`);
+    console.log(`[${network}] 📝 IMPORTANT: Update DEFAULT_VALIDATOR_ADDRESS in .env to: ${validator.address}`);
 
     return env;
 }

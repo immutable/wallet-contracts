@@ -34,17 +34,18 @@ async function step1(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
-    // Deploy NexusMultiCallDeploy
-    console.log(`[${network}] Deploying NexusMultiCallDeploy...`);
-    const multiCallDeploy = await deployContract(env, wallets, 'NexusMultiCallDeploy', [
+    // Deploy Passport MultiCallDeploy (proven working)
+    console.log(`[${network}] Deploying MultiCallDeploy (Passport)...`);
+    const multiCallDeploy = await deployContract(env, wallets, 'MultiCallDeploy', [
         multiCallAdminPubKey,
         submitterAddress
     ]);
 
-    // Deploy NexusAccountFactory with implementation and entryPoint
-    console.log(`[${network}] Deploying NexusAccountFactory...`);
-    const factory = await deployContract(env, wallets, 'NexusAccountFactory', [
-        factoryAdminPubKey, multiCallDeploy.address
+    // Deploy Passport Factory (proven working)
+    console.log(`[${network}] Deploying Factory (Passport)...`);
+    const factory = await deployContract(env, wallets, 'Factory', [
+        factoryAdminPubKey,
+        multiCallDeploy.address
     ]);
 
     // Save deployment information
@@ -56,8 +57,8 @@ async function step1(): Promise<EnvironmentInfo> {
     }, null, 1));
 
     console.log(`[${network}] Step 1 deployment completed`);
-    console.log(`[${network}] NexusMultiCallDeploy deployed at: ${multiCallDeploy.address}`);
-    console.log(`[${network}] NexusAccountFactory deployed at: ${factory.address}`);
+    console.log(`[${network}] MultiCallDeploy (Passport) deployed at: ${multiCallDeploy.address}`);
+    console.log(`[${network}] Factory (Passport) deployed at: ${factory.address}`);
 
     return env;
 }
