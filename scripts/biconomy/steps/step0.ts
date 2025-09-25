@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
@@ -26,6 +27,11 @@ async function step0(): Promise<EnvironmentInfo> {
     const create2Deployer = await deployContract(env, wallets, 'OwnableCreate2Deployer', [
         submitterAddress // Owner of the deployer
     ]);
+
+    // Save deployment information
+    fs.writeFileSync('scripts/biconomy/steps/step0.json', JSON.stringify({
+        create2DeployerAddress: create2Deployer.address,
+    }, null, 1));
 
     console.log(`[${network}] Step 0 deployment completed`);
     console.log(`[${network}] OwnableCreate2Deployer deployed at: ${create2Deployer.address}`);

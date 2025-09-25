@@ -52,10 +52,16 @@ async function deployWallet(): Promise<void> {
     const walletConfig: WalletDeploymentConfig = {
         owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Example owner address
         transactions: [
-            // Example: Send 1 ETH to another address
+            // Example: Send 0.1 ETH to another address (to force MultiCallDeploy)
             {
                 to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-                value: ethers.utils.parseEther("1"),
+                value: ethers.utils.parseEther("0.1"),
+                data: '0x'
+            },
+            // Another example transaction
+            {
+                to: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+                value: ethers.utils.parseEther("0.05"),
                 data: '0x'
             }
         ]
@@ -80,8 +86,12 @@ async function deployWallet(): Promise<void> {
         [walletConfig.owner]
     );
 
-    if (walletConfig.transactions && walletConfig.transactions.length > 0) {
-        // Deploy using MultiCallDeploy (Passport) if we have initial transactions
+    // Check if we should force MultiCallDeploy
+    const forceMultiCallDeploy = process.env.FORCE_MULTICALL_DEPLOY === 'true';
+
+    if (forceMultiCallDeploy || (walletConfig.transactions && walletConfig.transactions.length > 0)) {
+        // Deploy using MultiCallDeploy (Passport) - either forced or with initial transactions
+        console.log(`[${network}] ${forceMultiCallDeploy ? '🔀 FORCED' : '📋 AUTO'} MultiCallDeploy deployment`);
         await deployWithMultiCallDeploy(
             env,
             artifacts,
@@ -102,28 +112,44 @@ async function deployWallet(): Promise<void> {
 }
 
 /**
- * Load deployment artifacts from hybrid Passport-Nexus infrastructure
+ * Load deployment artifacts from step-by-step deployment results
  */
 function loadDeploymentArtifacts() {
     try {
-        // Load from working hybrid deployment
-        const deployment = JSON.parse(fs.readFileSync('scripts/biconomy/passport-nexus-deployment-success.json', 'utf8'));
+        // Load from individual step files
+        const step1 = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step1.json', 'utf8'));
+        const step2 = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step2.json', 'utf8'));
+        const step3 = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step3.json', 'utf8'));
+        const step4 = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step4.json', 'utf8'));
+        const step5 = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step5.json', 'utf8'));
+
+        console.log('📦 Loading deployment artifacts from steps:');
+        console.log(`   Step 1: Factory (${step1.factory}) + MultiCallDeploy (${step1.multiCallDeploy})`);
+        console.log(`   Step 2: LatestWalletImplLocator (${step2.latestWalletImplLocator})`);
+        console.log(`   Step 3: StartupWalletImpl (${step3.startupWalletImpl})`);
+        console.log(`   Step 4: K1Validator (${step4.validator.address}) + Nexus (${step4.nexus})`);
+        console.log(`   Step 5: ImmutableSigner (${step5.immutableSigner})`);
 
         return {
-            // Passport base infrastructure (proven working)
-            factory: deployment.passportInfrastructure.factory,
-            multiCallDeploy: deployment.passportInfrastructure.multiCallDeploy,
-            latestWalletImplLocator: deployment.passportInfrastructure.latestWalletImplLocator,
-            startupWalletImpl: deployment.passportInfrastructure.startupWalletImpl,
+            // Passport base infrastructure (from step1)
+            factory: step1.factory,
+            multiCallDeploy: step1.multiCallDeploy,
 
-            // Nexus core components (modern functionality)
-            nexus: deployment.nexusCore.nexusImplementation,
-            defaultValidator: deployment.nexusCore.k1Validator,
-            immutableSigner: deployment.nexusCore.immutableSigner,
+            // Implementation management (from step2, step3)
+            latestWalletImplLocator: step2.latestWalletImplLocator,
+            startupWalletImpl: step3.startupWalletImpl,
+
+            // Nexus core components (from step4, step5)
+            nexus: step4.nexus,
+            defaultValidator: step4.validator.address,
+            immutableSigner: step5.immutableSigner,
         };
     } catch (error) {
-        console.error('Failed to load hybrid deployment artifacts. Make sure the hybrid infrastructure has been deployed.');
-        console.error('Run: npx hardhat run scripts/biconomy/passport-nexus-hybrid-deployment.js --network hardhat');
+        console.error('Failed to load step deployment artifacts. Make sure all steps have been executed.');
+        console.error('Run steps 0-6 first:');
+        console.error('  NODE_ENV=development npx hardhat run scripts/biconomy/steps/step0.ts --network localhost');
+        console.error('  NODE_ENV=development npx hardhat run scripts/biconomy/steps/step1.ts --network localhost');
+        console.error('  ... etc');
         throw error;
     }
 }
@@ -158,13 +184,8 @@ async function deployWithFactory(
         // Method 1: Try direct deployment if supported
         console.log(`[${env.network}] Attempting wallet deployment...`);
 
-        // Generate a predictable address using CREATE2-style calculation
-        const walletOwner = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-        const predictedAddress = ethers.utils.getCreate2Address(
-            artifacts.factory,
-            salt,
-            ethers.utils.keccak256(initData)
-        );
+        // Use factory's getAddress method to predict wallet address
+        const predictedAddress = await factory.getAddress(artifacts.nexus, salt);
 
         console.log(`[${env.network}] Predicted wallet address: ${predictedAddress}`);
 
@@ -176,16 +197,34 @@ async function deployWithFactory(
             return;
         }
 
-        // For now, we'll mark this as ready for implementation
-        // The specific deployment method depends on the Passport Factory interface
-        console.log(`[${env.network}] 🎯 HYBRID WALLET DEPLOYMENT READY`);
-        console.log(`[${env.network}] Infrastructure validated for deployment at: ${predictedAddress}`);
+        // Deploy wallet using Factory
+        console.log(`[${env.network}] Deploying new wallet...`);
+        const deployTx = await factory.deploy(artifacts.nexus, salt, {
+            gasLimit: 30000000,
+            maxFeePerGas: 1875000000,
+            maxPriorityFeePerGas: 1000000000,
+        });
 
-        await verifyInfrastructure(artifacts, env.network);
+        console.log(`[${env.network}] Deployment transaction: ${deployTx.hash}`);
+        const receipt = await deployTx.wait();
+        console.log(`[${env.network}] ✅ Confirmed in block: ${receipt.blockNumber}`);
+
+        // Verify deployment
+        const finalCode = await hre.ethers.provider.getCode(predictedAddress);
+        if (finalCode === '0x') {
+            throw new Error('Deployment failed - no code at predicted address');
+        }
+
+        console.log(`[${env.network}] 🎉 WALLET DEPLOYED SUCCESSFULLY!`);
+        console.log(`[${env.network}] Address: ${predictedAddress}`);
+        console.log(`[${env.network}] Code size: ${Math.floor(finalCode.length / 2)} bytes`);
+        console.log(`[${env.network}] Using Nexus implementation: ${artifacts.nexus}`);
+
+        await verifyDeployment(predictedAddress, env.network);
 
     } catch (error) {
-        console.log(`[${env.network}] ❌ Deployment method needs interface investigation:`, error.message);
-        console.log(`[${env.network}] 💡 All infrastructure is ready - deployment method refinement needed`);
+        console.error(`[${env.network}] Error in Factory deployment:`, error);
+        throw error;
     }
 }
 
@@ -213,18 +252,14 @@ async function deployWithMultiCallDeploy(
     console.log(`[${env.network}] Nexus implementation: ${artifacts.nexus}`);
 
     try {
-        // Calculate expected address (approximation)
-        const predictedAddress = ethers.utils.getCreate2Address(
-            artifacts.factory,
-            salt,
-            ethers.utils.keccak256(initData)
-        );
+        // Use factory's getAddress to predict wallet address
+        const predictedAddress = await factory.getAddress(artifacts.nexus, salt);
         console.log(`[${env.network}] Predicted wallet address: ${predictedAddress}`);
 
         // Check if wallet already exists
         const walletCode = await hre.ethers.provider.getCode(predictedAddress);
         if (walletCode !== '0x') {
-            console.log(`[${env.network}] Wallet already exists at ${predictedAddress}`);
+            console.log(`[${env.network}] ✅ Wallet already exists at ${predictedAddress}`);
             await verifyDeployment(predictedAddress, env.network);
             return;
         }
@@ -238,11 +273,112 @@ async function deployWithMultiCallDeploy(
 
         console.log(`[${env.network}] Prepared ${transactions.length} initial transactions`);
 
-        // For now, mark as ready for implementation with specific MultiCallDeploy interface
-        console.log(`[${env.network}] 🎯 HYBRID MULTICALL DEPLOYMENT READY`);
-        console.log(`[${env.network}] Infrastructure validated for deployment with initial transactions`);
+        // Grant necessary roles
+        const EXECUTOR_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('EXECUTOR_ROLE'));
+        const DEPLOYER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('DEPLOYER_ROLE'));
+        const deployer = await hre.ethers.provider.getSigner().getAddress();
 
-        await verifyInfrastructure(artifacts, env.network);
+        // Grant EXECUTOR_ROLE to deployer for MultiCallDeploy
+        const hasExecutorRole = await multiCallDeploy.hasRole(EXECUTOR_ROLE, deployer);
+        if (!hasExecutorRole) {
+            console.log(`[${env.network}] Granting EXECUTOR_ROLE to deployer...`);
+            const grantTx = await multiCallDeploy.grantRole(EXECUTOR_ROLE, deployer);
+            await grantTx.wait();
+            console.log(`[${env.network}] ✅ EXECUTOR_ROLE granted to deployer`);
+        }
+
+        // Grant DEPLOYER_ROLE to MultiCallDeploy for Factory
+        const hasDeployerRole = await factory.hasRole(DEPLOYER_ROLE, artifacts.multiCallDeploy);
+        if (!hasDeployerRole) {
+            console.log(`[${env.network}] Granting DEPLOYER_ROLE to MultiCallDeploy...`);
+            const grantTx = await factory.grantRole(DEPLOYER_ROLE, artifacts.multiCallDeploy);
+            await grantTx.wait();
+            console.log(`[${env.network}] ✅ DEPLOYER_ROLE granted to MultiCallDeploy`);
+        }
+
+        // Deploy wallet via MultiCallDeploy
+        console.log(`[${env.network}] Deploying wallet via MultiCallDeploy...`);
+
+        // Calculate total ETH needed for transactions
+        const totalValue = transactions.reduce((sum, tx) => sum.add(tx.value), ethers.BigNumber.from(0));
+
+        // Try to deploy and execute via MultiCallDeploy using correct interface
+        try {
+            const deployTx = await multiCallDeploy.deployAndExecute(
+                predictedAddress,          // CFA (counterfactual address)
+                artifacts.nexus,           // Implementation (Nexus)
+                salt,                      // Salt for CREATE2
+                artifacts.factory,         // Factory address
+                transactions,              // Initial transactions array
+                0,                         // Nonce (0 for new wallet)
+                '0x',                      // Signature (empty for this use case)
+                {
+                    gasLimit: 30000000,
+                    maxFeePerGas: 1875000000,
+                    maxPriorityFeePerGas: 1000000000,
+                    value: totalValue      // ETH for initial transactions
+                }
+            );
+
+            console.log(`[${env.network}] Deployment transaction: ${deployTx.hash}`);
+            const receipt = await deployTx.wait();
+            console.log(`[${env.network}] ✅ Confirmed in block: ${receipt.blockNumber}`);
+
+            // Verify deployment
+            const finalCode = await hre.ethers.provider.getCode(predictedAddress);
+            if (finalCode === '0x') {
+                throw new Error('MultiCallDeploy failed - no code at predicted address');
+            }
+
+            console.log(`[${env.network}] 🎉 MULTICALL WALLET DEPLOYED SUCCESSFULLY!`);
+            console.log(`[${env.network}] Address: ${predictedAddress}`);
+            console.log(`[${env.network}] Code size: ${Math.floor(finalCode.length / 2)} bytes`);
+            console.log(`[${env.network}] Initial transactions executed: ${transactions.length}`);
+
+            await verifyDeployment(predictedAddress, env.network);
+
+        } catch (deployError) {
+            console.log(`[${env.network}] ⚠️  MultiCallDeploy interface incompatible, falling back to Factory...`);
+            console.log(`[${env.network}] Error: ${deployError.message}`);
+
+            // Fallback to simple Factory deployment with proper role management
+            console.log(`[${env.network}] 🔄 Falling back to Factory deployment...`);
+
+            // Grant DEPLOYER_ROLE to deployer for Factory if needed
+            const hasDeployerRoleForDeployer = await factory.hasRole(DEPLOYER_ROLE, deployer);
+            if (!hasDeployerRoleForDeployer) {
+                console.log(`[${env.network}] Granting DEPLOYER_ROLE to deployer...`);
+                const grantTx = await factory.grantRole(DEPLOYER_ROLE, deployer);
+                await grantTx.wait();
+                console.log(`[${env.network}] ✅ DEPLOYER_ROLE granted to deployer`);
+            }
+
+            const deployTx = await factory.deploy(artifacts.nexus, salt, {
+                gasLimit: 30000000,
+                maxFeePerGas: 1875000000,
+                maxPriorityFeePerGas: 1000000000,
+            });
+
+            const receipt = await deployTx.wait();
+            console.log(`[${env.network}] ✅ Factory deployment confirmed in block: ${receipt.blockNumber}`);
+
+            // Verify deployment
+            const finalCode = await hre.ethers.provider.getCode(predictedAddress);
+            if (finalCode === '0x') {
+                throw new Error('Factory deployment failed - no code at predicted address');
+            }
+
+            console.log(`[${env.network}] 🎉 FACTORY WALLET DEPLOYED SUCCESSFULLY!`);
+            console.log(`[${env.network}] Address: ${predictedAddress}`);
+            console.log(`[${env.network}] Code size: ${Math.floor(finalCode.length / 2)} bytes`);
+
+            // Note: Manual transaction execution would require signed transactions
+            if (transactions.length > 0) {
+                console.log(`[${env.network}] 💡 Note: ${transactions.length} initial transactions configured but not executed (would require signatures)`);
+            }
+
+            await verifyDeployment(predictedAddress, env.network);
+        }
 
     } catch (error) {
         console.log(`[${env.network}] ❌ MultiCall deployment method needs interface investigation:`, error.message);
