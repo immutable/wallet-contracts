@@ -3,7 +3,7 @@ import * as hre from 'hardhat';
 import { utils } from 'ethers';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContract } from '../../contract';
+import { deployContractViaCREATE2 } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
@@ -45,20 +45,34 @@ async function step4(): Promise<EnvironmentInfo> {
     const deployerAddress = await wallets.getWallet().getAddress();
 
     // Deploy K1Validator (Nexus core validator)
-    console.log(`[${network}] Deploying K1Validator (Nexus core)...`);
-    const validator = await deployContract(env, wallets, 'K1Validator', []);
+    console.log(`[${network}] Deploying K1Validator (Nexus core) via CREATE2...`);
+    let validator;
+    try {
+        validator = await deployContractViaCREATE2(env, wallets, 'K1Validator', []);
+        console.log(`[${network}] ✅ K1Validator deployed at: ${validator.address}`);
+    } catch (error) {
+        console.error('❌ Error deploying K1Validator via CREATE2:', error);
+        throw error;
+    }
 
     // Deploy Nexus Implementation (integrating with Passport infrastructure)
     console.log(`[${network}] Deploying Nexus implementation...`);
     const validatorInitData = utils.hexConcat([deployerAddress]);
     console.log(`[${network}] K1Validator init data: ${validatorInitData}`);
 
-    // Deploy Nexus (core smart account implementation)
-    const nexus = await deployContract(env, wallets, 'Nexus', [
-        entryPointAddress,      // EntryPoint for Account Abstraction
-        validator.address,      // K1Validator for signature validation
-        validatorInitData      // Initialization data for the validator
-    ]);
+    // Deploy Nexus (core smart account implementation) via CREATE2
+    let nexus;
+    try {
+        nexus = await deployContractViaCREATE2(env, wallets, 'Nexus', [
+            entryPointAddress,      // EntryPoint for Account Abstraction
+            validator.address,      // K1Validator for signature validation
+            validatorInitData      // Initialization data for the validator
+        ]);
+        console.log(`[${network}] ✅ Nexus implementation deployed at: ${nexus.address}`);
+    } catch (error) {
+        console.error('❌ Error deploying Nexus via CREATE2:', error);
+        throw error;
+    }
 
     // Save deployment information
     fs.writeFileSync('scripts/biconomy/steps/step4.json', JSON.stringify({

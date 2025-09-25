@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContract } from '../../contract';
+import { deployContractViaCREATE2 } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
@@ -30,12 +30,19 @@ async function step2(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
-    // Deploy LatestWalletImplLocator using direct deployment
-    console.log(`[${network}] Deploying LatestWalletImplLocator...`);
-    const latestWalletImplLocator = await deployContract(env, wallets, 'LatestWalletImplLocator', [
-        walletImplLocatorAdmin,
-        walletImplChangerAdmin
-    ]);
+    // Deploy LatestWalletImplLocator using CREATE2
+    console.log(`[${network}] Deploying LatestWalletImplLocator via CREATE2...`);
+    let latestWalletImplLocator;
+    try {
+        latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
+            walletImplLocatorAdmin,
+            walletImplChangerAdmin
+        ]);
+        console.log(`[${network}] LatestWalletImplLocator deployed at: ${latestWalletImplLocator.address}`);
+    } catch (error) {
+        console.error('Error deploying LatestWalletImplLocator via CREATE2:', error);
+        throw error;
+    }
 
     // Save deployment information
     fs.writeFileSync('scripts/biconomy/steps/step2.json', JSON.stringify({
