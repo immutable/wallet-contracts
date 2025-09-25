@@ -30,3 +30,7 @@ scripts/*_output*.json
 .env.devnet
 .env.testnet
 .env.mainnet
+
+artifacts
+solidity-files-cache.json
+deployments
