@@ -1,6 +1,6 @@
 // Copyright (c) Immutable Pty Ltd 2018 - 2023
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.27;
 
 import "./modules/commons/interfaces/IModuleCalls.sol";
 import '@openzeppelin/contracts/access/AccessControl.sol';
