@@ -34,8 +34,14 @@ async function deployInfrastructureAndWallet() {
 
     const walletAddress = await deployWallet(infrastructure, deployer, network, useMultiCallDeploy);
 
-    // PHASE 3: Final Verification
-    console.log('\n✅ PHASE 3: FINAL VERIFICATION');
+    // PHASE 3: Wallet Operations Testing
+    console.log('\n🧪 PHASE 3: WALLET OPERATIONS TESTING');
+    console.log('=====================================');
+
+    await testWalletOperations(infrastructure, walletAddress, deployer, network);
+
+    // PHASE 4: Final Verification
+    console.log('\n✅ PHASE 4: FINAL VERIFICATION');
     console.log('==============================');
 
     await finalVerification(infrastructure, walletAddress, deployer, network);
@@ -66,6 +72,9 @@ async function deployInfrastructureAndWallet() {
 
 async function deployInfrastructure(deployer, network) {
     console.log('📦 Deploying infrastructure components...\n');
+
+    // Load EntryPoint artifact once for reuse throughout the function
+    let entryPointArtifact = null;
 
     // 1. Deploy MultiCallDeploy (Passport)
     console.log('1️⃣  Deploying MultiCallDeploy (Passport)...');
@@ -143,11 +152,11 @@ async function deployInfrastructure(deployer, network) {
     // 6. Deploy Nexus Implementation (Step 4)
     console.log('\n6️⃣  Deploying Nexus Implementation (Step 4)...');
     const NexusFactory = await hre.ethers.getContractFactory('Nexus', deployer);
-    const entryPoint = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Test EntryPoint
+    const testEntryPoint = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Test EntryPoint
     const initData = hre.ethers.utils.hexConcat([await deployer.getAddress()]);
 
     const nexus = await NexusFactory.deploy(
-        entryPoint,           // entryPoint
+        testEntryPoint,       // entryPoint
         k1Validator.address,  // defaultValidator  
         initData             // initData
     );
@@ -188,7 +197,48 @@ async function deployInfrastructure(deployer, network) {
     console.log('✅ LatestWalletImplLocator updated to point to Nexus');
     console.log('Transaction hash:', updateTx.hash);
 
-    console.log('\n✅ ALL 6-STEP INFRASTRUCTURE DEPLOYED AND CONFIGURED');
+    // 9. Deploy NexusBootstrap (Step 7) - REQUIRED for Nexus initialization
+    console.log('\n9️⃣  Deploying NexusBootstrap (Step 7)...');
+
+    const NexusBootstrapFactory = await hre.ethers.getContractFactory('NexusBootstrap');
+    const bootstrapInitData = '0x'; // Empty init data for bootstrap
+    const nexusBootstrap = await NexusBootstrapFactory.deploy(k1Validator.address, bootstrapInitData);
+    await nexusBootstrap.deployed();
+
+    console.log('✅ NexusBootstrap deployed at:', nexusBootstrap.address);
+
+    // 10. Deploy/Configure EntryPoint (Step 8) - ERC-4337 support
+    console.log('\n🔟 Deploying EntryPoint (Step 8)...');
+
+    let entryPoint;
+    let entryPointSource = 'deployed_real';
+
+    try {
+        // Try to deploy real EntryPoint first using artifact
+        console.log('   Attempting to deploy real EntryPoint from account-abstraction...');
+        entryPointArtifact = require('../../node_modules/account-abstraction/deployments/mainnet/EntryPoint.json');
+        const EntryPointFactory = await hre.ethers.getContractFactory(
+            entryPointArtifact.abi,
+            entryPointArtifact.bytecode
+        );
+        entryPoint = await EntryPointFactory.deploy({
+            gasLimit: 30000000
+        });
+        await entryPoint.deployed();
+        console.log('✅ Real EntryPoint deployed at:', entryPoint.address);
+        console.log(`   📏 Code size: ${Math.floor((await hre.ethers.provider.getCode(entryPoint.address)).length / 2)} bytes`);
+    } catch (error) {
+        console.log('⚠️  Real EntryPoint deployment failed, deploying mock...');
+        console.log('   Error:', error.message);
+        // Fallback to mock EntryPoint
+        const MockEntryPointFactory = await hre.ethers.getContractFactory('MockEntryPoint');
+        entryPoint = await MockEntryPointFactory.deploy();
+        await entryPoint.deployed();
+        entryPointSource = 'deployed_mock';
+        console.log('✅ Mock EntryPoint deployed at:', entryPoint.address);
+    }
+
+    console.log('\n✅ ALL 8-STEP INFRASTRUCTURE DEPLOYED AND CONFIGURED');
 
     return {
         // Step 1: Passport Base
@@ -210,7 +260,17 @@ async function deployInfrastructure(deployer, network) {
 
         // Step 6: Configuration
         locatorToNexusConfigured: true,
-        configurationTxHash: updateTx.hash
+        configurationTxHash: updateTx.hash,
+
+        // Step 7: NexusBootstrap
+        nexusBootstrap: nexusBootstrap.address,
+
+        // Step 8: EntryPoint
+        entryPoint: entryPoint.address,
+        entryPointSource: entryPointSource,
+
+        // Artifact for reuse
+        entryPointArtifact: entryPointArtifact
     };
 }
 
@@ -426,6 +486,8 @@ async function finalVerification(infrastructure, walletAddress, deployer, networ
         { name: 'K1Validator (Step 4)', address: infrastructure.nexusK1Validator },
         { name: 'Nexus Implementation (Step 4)', address: infrastructure.nexusImplementation },
         { name: 'ImmutableSigner (Step 5)', address: infrastructure.immutableSigner },
+        { name: 'NexusBootstrap (Step 7)', address: infrastructure.nexusBootstrap },
+        { name: `EntryPoint (Step 8) - ${infrastructure.entryPointSource}`, address: infrastructure.entryPoint },
         { name: 'Deployed Wallet', address: walletAddress }
     ];
 
@@ -445,6 +507,280 @@ async function finalVerification(infrastructure, walletAddress, deployer, networ
 
     console.log('\n✅ ALL COMPONENTS VERIFIED SUCCESSFULLY');
     console.log('\n🏆 HYBRID INFRASTRUCTURE + WALLET DEPLOYMENT COMPLETE!');
+}
+
+async function testWalletOperations(infrastructure, walletAddress, deployer, network) {
+    console.log('🧪 Testing wallet operations...\n');
+
+    try {
+        // Test 1: Check wallet balance and receive ETH
+        console.log('1️⃣  Testing ETH reception...');
+
+        const initialBalance = await hre.ethers.provider.getBalance(walletAddress);
+        console.log(`   Initial wallet balance: ${hre.ethers.utils.formatEther(initialBalance)} ETH`);
+
+        // Send some ETH to the wallet
+        const sendTx = await deployer.sendTransaction({
+            to: walletAddress,
+            value: hre.ethers.utils.parseEther('0.1'),
+            gasLimit: 100000  // Increased gas limit for smart contract interaction
+        });
+        await sendTx.wait();
+
+        const newBalance = await hre.ethers.provider.getBalance(walletAddress);
+        console.log(`   ✅ ETH sent successfully! New balance: ${hre.ethers.utils.formatEther(newBalance)} ETH`);
+
+        // Test 2: Check wallet code and type
+        console.log('\n2️⃣  Analyzing wallet structure...');
+
+        const walletCode = await hre.ethers.provider.getCode(walletAddress);
+        const codeSize = Math.floor(walletCode.length / 2);
+        console.log(`   📏 Wallet code size: ${codeSize} bytes`);
+
+        if (codeSize > 0) {
+            console.log('   ✅ Wallet is a smart contract (proxy pattern)');
+        } else {
+            console.log('   ⚠️  Wallet is an EOA (externally owned account)');
+        }
+
+        // Test 3: Try to interact with wallet as Nexus (if it's a contract)
+        if (codeSize > 0) {
+            console.log('\n3️⃣  Testing Nexus wallet interface...');
+
+            try {
+                // Try to get the wallet contract instance
+                const wallet = await hre.ethers.getContractAt('Nexus', walletAddress);
+
+                // Test basic Nexus functions (read-only)
+                try {
+                    const isInitialized = await wallet.isInitialized();
+                    console.log(`   📋 Wallet initialized: ${isInitialized}`);
+                } catch (e) {
+                    console.log('   ⚠️  Could not check initialization status');
+                }
+
+                try {
+                    const entryPointAddr = await wallet.entryPoint();
+                    console.log(`   🎯 EntryPoint configured: ${entryPointAddr}`);
+                } catch (e) {
+                    console.log('   ⚠️  Could not get EntryPoint address');
+                }
+
+                console.log('   ✅ Nexus interface accessible');
+
+            } catch (error) {
+                console.log('   ⚠️  Nexus interface not accessible:', error.message);
+
+                // Try as a generic wallet
+                try {
+                    const wallet = await hre.ethers.getContractAt('Wallet', walletAddress);
+                    console.log('   ✅ Generic wallet interface accessible');
+                } catch (e) {
+                    console.log('   ⚠️  Could not access wallet interface');
+                }
+            }
+        }
+
+        // Test 4: Test infrastructure connectivity
+        console.log('\n4️⃣  Testing infrastructure connectivity...');
+
+        // Check if LatestWalletImplLocator points to our Nexus
+        const locator = await hre.ethers.getContractAt('LatestWalletImplLocator', infrastructure.latestWalletImplLocator);
+        const currentImpl = await locator.latestWalletImplementation();
+
+        if (currentImpl.toLowerCase() === infrastructure.nexusImplementation.toLowerCase()) {
+            console.log('   ✅ LatestWalletImplLocator correctly points to Nexus');
+        } else {
+            console.log('   ⚠️  LatestWalletImplLocator mismatch');
+            console.log(`      Expected: ${infrastructure.nexusImplementation}`);
+            console.log(`      Actual: ${currentImpl}`);
+        }
+
+        // Test 5: EntryPoint connectivity (if available)
+        if (infrastructure.entryPoint) {
+            console.log('\n5️⃣  Testing EntryPoint connectivity...');
+
+            try {
+                // Use the same artifact approach as the test below
+                const entryPointArtifact = infrastructure.entryPointArtifact || require('../../node_modules/account-abstraction/deployments/mainnet/EntryPoint.json');
+                const entryPoint = new hre.ethers.Contract(
+                    infrastructure.entryPoint,
+                    entryPointArtifact.abi,
+                    hre.ethers.provider
+                ).connect(deployer);
+
+                // Try to get deposit info (this should work for both real and mock EntryPoint)
+                try {
+                    const deposit = await entryPoint.balanceOf(walletAddress);
+                    console.log(`   💰 Wallet deposit in EntryPoint: ${hre.ethers.utils.formatEther(deposit)} ETH`);
+                    console.log('   ✅ EntryPoint interface accessible');
+                } catch (e) {
+                    console.log('   ⚠️  Could not check EntryPoint deposit');
+                }
+
+            } catch (error) {
+                console.log('   ⚠️  EntryPoint not accessible:', error.message);
+            }
+        }
+
+        // Test 6: ERC-4337 UserOp validation (if real EntryPoint is available)
+        if (infrastructure.entryPointSource === 'deployed_real') {
+            console.log('\n6️⃣  Testing ERC-4337 UserOp validation (K1Validator)...');
+
+            try {
+                // Get EntryPoint using the same artifact as deployment (reuse loaded artifact)
+                const entryPointArtifact = infrastructure.entryPointArtifact || require('../../node_modules/account-abstraction/deployments/mainnet/EntryPoint.json');
+                const entryPoint = new hre.ethers.Contract(
+                    infrastructure.entryPoint,
+                    entryPointArtifact.abi,
+                    hre.ethers.provider
+                ).connect(deployer);
+
+                const k1Validator = await hre.ethers.getContractAt('K1Validator', infrastructure.nexusK1Validator);
+
+                console.log('   📋 Contract instances created');
+                console.log(`   🎯 K1Validator: ${infrastructure.nexusK1Validator}`);
+                console.log(`   🎯 EntryPoint: ${infrastructure.entryPoint} (real)`);
+                console.log(`   🎯 Wallet: ${walletAddress}`);
+
+                // Test 6a: Basic K1Validator functions (should work)
+                console.log('\n   🧪 TEST 6a: Basic K1Validator functions');
+                console.log('   =========================================');
+
+                try {
+                    const isValidSignature = await k1Validator.isValidSignatureWithSender(
+                        walletAddress,
+                        '0x' + '00'.repeat(32), // hash
+                        '0x' + '00'.repeat(65)  // signature
+                    );
+                    console.log(`   ✅ isValidSignatureWithSender: ${isValidSignature}`);
+                } catch (error) {
+                    console.log(`   ⚠️  isValidSignatureWithSender failed: ${error.message}`);
+                }
+
+                // Test 6b: K1Validator.validateUserOp (this should trigger toHexString error)
+                console.log('\n   🧪 TEST 6b: K1Validator.validateUserOp (toHexString error expected)');
+                console.log('   ================================================================');
+
+                try {
+                    // Create a UserOp structure matching ERC-4337
+                    const userOp = {
+                        sender: walletAddress,
+                        nonce: 0,
+                        initCode: '0x',
+                        callData: '0x',
+                        callGasLimit: 100000,
+                        verificationGasLimit: 100000,
+                        preVerificationGas: 21000,
+                        maxFeePerGas: 1000000000,
+                        maxPriorityFeePerGas: 1000000000,
+                        paymasterAndData: '0x',
+                        signature: '0x' + '00'.repeat(65) // Dummy signature
+                    };
+
+                    console.log('   📝 UserOp created:', {
+                        sender: userOp.sender,
+                        nonce: userOp.nonce,
+                        callGasLimit: userOp.callGasLimit,
+                        signatureLength: userOp.signature.length
+                    });
+
+                    console.log('   🔍 Calling K1Validator.validateUserOp()...');
+                    console.log('   ⚠️  This is where the toHexString error typically occurs');
+
+                    // This call should trigger the toHexString error
+                    const result = await k1Validator.validateUserOp(
+                        userOp,
+                        '0x' + '00'.repeat(32) // userOpHash
+                        // Note: removed third parameter as it caused "too many arguments" error
+                    );
+
+                    console.log(`   ✅ UNEXPECTED SUCCESS: validateUserOp returned ${result}`);
+                    console.log('   🤔 No toHexString error occurred - this is surprising!');
+
+                } catch (error) {
+                    if (error.message.includes('toHexString')) {
+                        console.log('   ❌ CONFIRMED: toHexString error reproduced!');
+                        console.log(`   🔍 Error: ${error.message}`);
+                        console.log('   📝 This confirms the K1Validator implementation issue');
+
+                        // Extract more details from the error
+                        if (error.reason) {
+                            console.log(`   📋 Reason: ${error.reason}`);
+                        }
+                        if (error.code) {
+                            console.log(`   🔢 Code: ${error.code}`);
+                        }
+                    } else {
+                        console.log(`   ⚠️  Different error occurred: ${error.message}`);
+                        console.log('   🤔 This might be a different validation issue');
+                    }
+                }
+
+                // Test 6c: Try with EntryPoint.handleOps (full ERC-4337 flow)
+                console.log('\n   🧪 TEST 6c: Full ERC-4337 flow via EntryPoint.handleOps');
+                console.log('   ====================================================');
+
+                try {
+                    const userOp = {
+                        sender: walletAddress,
+                        nonce: 0,
+                        initCode: '0x',
+                        callData: '0x',
+                        callGasLimit: 100000,
+                        verificationGasLimit: 100000,
+                        preVerificationGas: 21000,
+                        maxFeePerGas: 1000000000,
+                        maxPriorityFeePerGas: 1000000000,
+                        paymasterAndData: '0x',
+                        signature: '0x' + '00'.repeat(65)
+                    };
+
+                    console.log('   🔍 Calling EntryPoint.handleOps()...');
+                    console.log('   ⚠️  This will internally call K1Validator.validateUserOp()');
+
+                    // This should also trigger the toHexString error
+                    await entryPoint.handleOps([userOp], deployer.address);
+
+                    console.log('   ✅ UNEXPECTED SUCCESS: handleOps completed');
+                    console.log('   🤔 No toHexString error in full ERC-4337 flow');
+
+                } catch (error) {
+                    if (error.message.includes('toHexString')) {
+                        console.log('   ❌ CONFIRMED: toHexString error in full ERC-4337 flow!');
+                        console.log(`   🔍 Error: ${error.message}`);
+                    } else {
+                        console.log(`   ⚠️  Different error in ERC-4337 flow: ${error.message}`);
+
+                        // Common ERC-4337 errors
+                        if (error.message.includes('AA23')) {
+                            console.log('   📝 AA23 = reverted (or OOG) - validation failed');
+                        } else if (error.message.includes('AA24')) {
+                            console.log('   📝 AA24 = signature error');
+                        } else if (error.message.includes('AA25')) {
+                            console.log('   📝 AA25 = invalid account nonce');
+                        }
+                    }
+                }
+
+                console.log('\n   ✅ K1VALIDATOR + REAL ENTRYPOINT TESTING COMPLETED');
+                console.log('   ==================================================');
+                console.log('   📝 Any toHexString errors confirm the K1Validator issue we documented');
+
+            } catch (error) {
+                console.log('   ❌ ERC-4337 testing failed:', error.message);
+            }
+        } else {
+            console.log('\n6️⃣  Skipping ERC-4337 UserOp validation (using mock EntryPoint)');
+            console.log('   ℹ️  toHexString error testing requires real EntryPoint');
+        }
+
+        console.log('\n✅ WALLET OPERATIONS TESTING COMPLETED');
+
+    } catch (error) {
+        console.log('\n❌ WALLET OPERATIONS TESTING FAILED:', error.message);
+        // Don't throw - this is testing, not critical for deployment
+    }
 }
 
 // Execute

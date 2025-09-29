@@ -17,11 +17,19 @@ export class WalletOptions {
   private walletImplLocatorImplChanger: Signer;
 
   constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
-    console.log(`[${env.network}] Using ledger for operations...`);
-    this.useLedger = true;
-    const accountIndex0 = 0;
-    const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
-    this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
+    // For development, use local wallets instead of Ledger
+    const isDevEnvironment = env.network === 'localhost' || env.network === 'hardhat' || process.env.NODE_ENV === 'development';
+
+    if (isDevEnvironment) {
+      console.log(`[${env.network}] Using local wallet for development...`);
+      this.useLedger = false;
+    } else {
+      console.log(`[${env.network}] Using ledger for operations...`);
+      this.useLedger = true;
+      const accountIndex0 = 0;
+      const derivationPath0 = `m/44'/60'/${accountIndex0.toString()}'/0/0`;
+      this.ledger = new LedgerSigner(hardhat.provider, derivationPath0);
+    }
 
     // Setup the 2 programmatic wallets
     this.coldWallet = coldWallet;

@@ -38,7 +38,7 @@ async function step4(): Promise<EnvironmentInfo> {
         throw new Error('Required environment variables not set');
     }
 
-    await waitForInput();
+    // await waitForInput(); // Disabled for automated deployment
 
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
@@ -57,16 +57,18 @@ async function step4(): Promise<EnvironmentInfo> {
 
     // Deploy Nexus Implementation (integrating with Passport infrastructure)
     console.log(`[${network}] Deploying Nexus implementation...`);
-    const validatorInitData = utils.hexConcat([deployerAddress]);
-    console.log(`[${network}] K1Validator init data: ${validatorInitData}`);
+
+    // IMPORTANT: Nexus constructor expects (entryPoint, implementation, initData)
+    // We need to deploy this as the base implementation, so we use validator as implementation
+    // and empty initData since this is the implementation, not a wallet instance
 
     // Deploy Nexus (core smart account implementation) via CREATE2
     let nexus;
     try {
         nexus = await deployContractViaCREATE2(env, wallets, 'Nexus', [
             entryPointAddress,      // EntryPoint for Account Abstraction
-            validator.address,      // K1Validator for signature validation
-            validatorInitData      // Initialization data for the validator
+            validator.address,      // Use K1Validator as the default implementation
+            '0x'                    // Empty initData for implementation deployment
         ]);
         console.log(`[${network}] ✅ Nexus implementation deployed at: ${nexus.address}`);
     } catch (error) {
@@ -81,8 +83,7 @@ async function step4(): Promise<EnvironmentInfo> {
         entryPointAddress,
         validator: {
             address: validator.address,
-            owner: deployerAddress,
-            initData: validatorInitData
+            owner: deployerAddress
         },
         nexus: nexus.address,
     }, null, 1));

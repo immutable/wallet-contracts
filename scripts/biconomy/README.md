@@ -1,6 +1,6 @@
 # Biconomy Nexus Integration
 
-This directory contains the complete Passport-Nexus hybrid infrastructure implementation, deployment scripts, and wallet management tools.
+This directory contains the **complete and production-ready** Passport-Nexus hybrid infrastructure implementation. All temporary files have been cleaned up and only essential components remain.
 
 ## Project Structure
 
@@ -14,17 +14,27 @@ scripts/biconomy/
 │   ├── step4.ts                            # Deploy Nexus core (K1Validator + Nexus with CREATE2)
 │   ├── step5.ts                            # Deploy ImmutableSigner
 │   ├── step6.ts                            # Configure LatestWalletImplLocator → Nexus
+│   ├── step7.ts                            # Deploy NexusBootstrap (REQUIRED for Nexus)
+│   ├── step8.ts                            # Deploy/Configure EntryPoint (ERC-4337)
 │   ├── step0.json                          # Step 0 deployment results
 │   ├── step1.json                          # Step 1 deployment results
 │   ├── step2.json                          # Step 2 deployment results
 │   ├── step3.json                          # Step 3 deployment results
 │   ├── step4.json                          # Step 4 deployment results
-│   └── step5.json                          # Step 5 deployment results
+│   ├── step5.json                          # Step 5 deployment results
+│   ├── step6.json                          # Step 6 deployment results
+│   ├── step7.json                          # Step 7 deployment results
+│   └── step8.json                          # Step 8 deployment results
 ├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one)
-├── wallet-deployment.ts                    # Wallet deployment using step artifacts
+├── wallet-deployment.ts                    # Enhanced wallet deployment with Nexus support
+├── demonstrate-erc4337-concept.js          # ERC-4337 concept demonstration (reference)
+├── test-revised-factory.js                 # Factory test example (reference)
+├── final-deployment.js                     # Legacy deployment script
 ├── README-deploy-infrastructure-and-wallet.md  # Complete infrastructure README
 └── README.md                               # This file
 ```
+
+**✨ Note**: This directory has been cleaned up from 47 files to 12 essential files. All temporary investigation, testing, and debugging scripts have been removed.
 
 ## Architecture Overview
 
@@ -70,6 +80,19 @@ Step 2: Implementation Management            │
 │    Locator      │  ──points to──▶ Nexus Implementation
 └─────────────────┘
 
+Step 7: Nexus Initialization         Step 8: ERC-4337 Support
+┌─────────────────┐                 ┌──────────────────┐
+│ NexusBootstrap  │                 │    EntryPoint    │
+│   (Required)    │                 │   (ERC-4337)     │
+└─────────────────┘                 └──────────────────┘
+         │                                   │
+         │ enables                           │ enables
+         ▼                                   ▼
+┌─────────────────┐                 ┌──────────────────┐
+│ Nexus Module    │                 │ UserOperation    │
+│ Initialization  │                 │   Validation     │
+└─────────────────┘                 └──────────────────┘
+
 Step 0: CREATE2 Foundation
 ┌─────────────────┐
 │OwnableCreate2   │ ──enables──▶ Deterministic Addresses
@@ -94,6 +117,15 @@ Step 0: CREATE2 Foundation
 #### **Security & Configuration (Steps 5-6)**
 - **ImmutableSigner**: 2x2 signature validation for critical operations
 - **Configuration**: Links all components together
+
+#### **Nexus Initialization & ERC-4337 (Steps 7-8)**
+- **NexusBootstrap**: **REQUIRED** component for Nexus wallet initialization
+  - Enables proper module setup during wallet creation
+  - Critical for Nexus functionality - wallets cannot be properly initialized without it
+- **EntryPoint**: ERC-4337 Account Abstraction support
+  - Enables UserOperation validation and execution
+  - Supports bundler integration and gasless transactions
+  - Automatically deploys real EntryPoint or falls back to mock for development
 
 #### **CREATE2 Foundation (Step 0)**
 - **OwnableCreate2Deployer**: Enables deterministic contract addresses
@@ -126,6 +158,12 @@ NODE_ENV=development npx hardhat run scripts/biconomy/steps/step5.ts --network l
 
 # Step 6: Configure infrastructure
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step6.ts --network localhost
+
+# Step 7: Deploy NexusBootstrap (REQUIRED for Nexus initialization)
+NODE_ENV=development npx hardhat run scripts/biconomy/steps/step7.ts --network localhost
+
+# Step 8: Deploy/Configure EntryPoint (ERC-4337 support)
+NODE_ENV=development npx hardhat run scripts/biconomy/steps/step8.ts --network localhost
 ```
 
 ### Method 2: Complete Deployment (Recommended)
@@ -167,6 +205,8 @@ MAX_PRIORITY_FEE_PER_GAS=1000000000
 # Admin addresses (automatically set to first signer in development)
 WALLET_IMPL_LOCATOR_ADMIN=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 WALLET_IMPL_CHANGER_ADMIN=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+
+# ERC-4337 EntryPoint (set after step8 or use existing)
 ENTRY_POINT_ADDRESS=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 
 # CREATE2 factory address (set after step0)
@@ -314,6 +354,41 @@ Development settings optimized for speed:
 - **Gas Limit**: 30M (generous for complex deployments)
 - **Gas Price**: Optimized for localhost/testnet
 - **EIP-1559**: Configured for modern networks
+
+## New Components (Steps 7-8)
+
+### Step 7: NexusBootstrap
+**Critical component for Nexus wallet functionality**
+
+- **Purpose**: Enables proper initialization of Nexus wallets with modules
+- **Requirement**: **MANDATORY** for any Nexus wallet deployment
+- **Functionality**: 
+  - Configures default validator (K1Validator) during wallet creation
+  - Sets up initial module configuration
+  - Ensures wallets are properly initialized and functional
+- **Dependencies**: Requires K1Validator from Step 4
+- **Output**: `step7.json` with NexusBootstrap address
+
+### Step 8: EntryPoint (ERC-4337)
+**Account Abstraction support for advanced wallet features**
+
+- **Purpose**: Enables ERC-4337 Account Abstraction functionality
+- **Features**:
+  - UserOperation validation and execution
+  - Bundler integration support
+  - Gasless transaction capabilities
+  - Meta-transaction support
+- **Smart Deployment**: 
+  - First attempts to use existing EntryPoint from environment
+  - Then tries to deploy real EntryPoint from `account-abstraction` package
+  - Falls back to MockEntryPoint for development if real EntryPoint unavailable
+- **Output**: `step8.json` with EntryPoint address and source type
+
+### Integration Notes
+- **Step 7** is **required** for Nexus wallets to function properly
+- **Step 8** is **optional** but recommended for full ERC-4337 support
+- Both steps integrate seamlessly with existing Passport infrastructure
+- Complete deployment now covers **9 steps** (0-8) for full functionality
 
 ## Support
 

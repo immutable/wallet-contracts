@@ -1,0 +1,12 @@
+{
+  "entryPoint": "0x0ed64d01D0B4B655E410EF1441dD677B695639E7",
+  "source": "deployed_official",
+  "officialAddress": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+  "deployment": {
+    "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "gasPrice": "1000000107",
+    "blockNumber": 154,
+    "timestamp": "2025-09-26T03:04:06.124Z",
+    "artifact": "account-abstraction/mainnet"
+  }
+}

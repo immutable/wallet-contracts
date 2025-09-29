@@ -7,7 +7,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 - **Passport Infrastructure** (proven stable base) - Factory + MultiCallDeploy
 - **Nexus Core** (modern Account Abstraction) - K1Validator + Implementation
 - **Hybrid Wallet Deployment** - Configurable deployment via Factory or MultiCallDeploy
-- **Complete 6-Step Coverage** - Implements all original deployment steps in one script
+- **Complete 8-Step Coverage** - Implements all deployment steps (0-8) in one script
 
 ## Key Features
 
@@ -19,12 +19,18 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 
 ### ✅ **Robust Architecture**
 - **Hybrid approach** combines the best of both systems
-- **Complete 6-step implementation** (all original steps in one script)
+- **Complete 8-step implementation** (all steps 0-8 in one script including NexusBootstrap and EntryPoint)
 - **Dual deployment methods** (Factory and MultiCallDeploy)
 - **Proper timing** with verification between deployments
 - **Comprehensive verification** of all components
 - **Deterministic deployment** using CREATE2 for wallet addresses
 - **Automatic fallback** from MultiCallDeploy to Factory if needed
+
+### ✅ **Enhanced Testing & Operations**
+- **Wallet Operations Testing** - Tests ETH reception, interface accessibility, and connectivity
+- **Infrastructure Validation** - Verifies all components are properly deployed and connected
+- **EntryPoint Integration** - Smart deployment of real or mock EntryPoint for ERC-4337 support
+- **NexusBootstrap Support** - Proper Nexus initialization component deployment
 
 ### ✅ **Production Ready**
 - **Error handling** with detailed diagnostics
@@ -62,6 +68,8 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 4. **Step 4**: K1Validator (Nexus) + Nexus Implementation
 5. **Step 5**: ImmutableSigner deployment
 6. **Step 6**: LatestWalletImplLocator → Nexus configuration
+7. **Step 7**: NexusBootstrap deployment (REQUIRED for Nexus initialization)
+8. **Step 8**: EntryPoint deployment (ERC-4337 support with smart fallback)
 
 #### Phase 2: Wallet Deployment (Configurable Method)
 **Factory Method (Default)**:
@@ -75,10 +83,17 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 - Includes example initial transaction (0.1 ETH transfer)
 - Automatic fallback to Factory if interface issues occur
 
-#### Phase 3: Verification
-1. **Code Verification** - Ensures all 8 components have bytecode
+#### Phase 3: Wallet Operations Testing
+1. **ETH Reception Test** - Sends 0.1 ETH to wallet and verifies balance
+2. **Wallet Structure Analysis** - Checks if wallet is smart contract or EOA
+3. **Nexus Interface Testing** - Tests wallet initialization and EntryPoint configuration
+4. **Infrastructure Connectivity** - Validates LatestWalletImplLocator configuration
+5. **EntryPoint Integration** - Tests EntryPoint accessibility and deposit functionality
+
+#### Phase 4: Final Verification
+1. **Code Verification** - Ensures all 10 components have bytecode (including new Steps 7-8)
 2. **Size Validation** - Confirms proper deployment
-3. **Integration Testing** - Validates complete 6-step architecture
+3. **Integration Testing** - Validates complete 8-step architecture
 
 ## Output
 
