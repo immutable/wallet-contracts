@@ -1,0 +1,10 @@
+{
+  "passportCompatibleNexusFactory": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+  "nexusImplementation": "0x24F5E63b0Faa059f11E5fC897215FE707bbC8ccF",
+  "oldPassportFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "network": "localhost",
+  "deployedAt": "2025-09-30T11:33:40.801Z",
+  "codeSize": 6293,
+  "cfaCompatible": true
+}

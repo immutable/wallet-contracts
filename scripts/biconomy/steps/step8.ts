@@ -47,20 +47,38 @@ async function step8(): Promise<EnvironmentInfo> {
     try {
         // Try to deploy the real EntryPoint if available in artifacts
         try {
-            const entryPoint = await deployContract(env, wallets, 'EntryPoint', []);
+            // Deploy real EntryPoint using the same approach as deploy-infrastructure-and-wallet.js
+            console.log(`[${network}] 🚀 Deploying REAL EntryPoint from account-abstraction package...`);
 
-            console.log(`[${network}] ✅ Real EntryPoint deployed at: ${entryPoint.address}`);
+            const deployer = wallets.getWallet();
+
+            // Load EntryPoint artifact from account-abstraction deployments
+            const entryPointArtifact = require('../../../node_modules/account-abstraction/deployments/mainnet/EntryPoint.json');
+            const EntryPointFactory = await hre.ethers.getContractFactory(
+                entryPointArtifact.abi,
+                entryPointArtifact.bytecode
+            );
+
+            const entryPoint = await EntryPointFactory.deploy({
+                gasLimit: 30000000
+            });
+            await entryPoint.deployed();
+
+            console.log(`[${network}] ✅ REAL EntryPoint deployed at: ${entryPoint.address}`);
+            console.log(`[${network}] 📏 Code size: ${Math.floor((await hre.ethers.provider.getCode(entryPoint.address)).length / 2)} bytes`);
 
             // Save deployment information
             fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
                 entryPoint: entryPoint.address,
-                source: 'deployed_real'
-            }, null, 1));
+                source: 'deployed_real',
+                codeSize: Math.floor((await hre.ethers.provider.getCode(entryPoint.address)).length / 2)
+            }, null, 2));
 
-            console.log(`[${network}] Step 8 (Real EntryPoint) deployment completed`);
+            console.log(`[${network}] Step 8 (REAL EntryPoint) deployment completed`);
             return env;
 
         } catch (realEntryPointError) {
+            console.log(`[${network}] ❌ Failed to deploy real EntryPoint:`, realEntryPointError.message);
             console.log(`[${network}] Real EntryPoint not available, deploying mock...`);
 
             // Deploy a minimal mock EntryPoint

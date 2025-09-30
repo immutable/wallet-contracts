@@ -298,7 +298,15 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     // Protect this function to only be callable when used with the proxy factory or when
     // account calls itself
     if (msg.sender != address(this)) {
-      Initializable.requireInitializable();
+      // Check if we're in the constructor phase (extcodesize == 0)
+      // If so, skip requireInitializable() due to transient storage isolation
+      uint256 codeSize;
+      assembly {
+        codeSize := extcodesize(address())
+      }
+      if (codeSize > 0) {
+        Initializable.requireInitializable();
+      }
     }
     _initializeAccount(initData);
   }
