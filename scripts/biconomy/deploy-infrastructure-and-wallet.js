@@ -4,6 +4,9 @@ const { newWalletOptions } = require('../wallet-options');
 const { loadEnvironmentInfo } = require('../environment');
 const fs = require('fs');
 
+// Import viem for signature (following Biconomy SDK pattern)
+const { privateKeyToAccount } = require('viem/accounts');
+
 // Generate working initData for Nexus deployment
 async function generateWorkingInitData(signerAddress, bootstrapAddress, k1ValidatorAddress) {
     // Create the NexusBootstrap interface with the correct function signature
@@ -260,7 +263,26 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
     console.log('✅ NexusBootstrap deployed at:', nexusBootstrap.address);
 
-    // 10. Deploy/Configure EntryPoint (Step 8) - ERC-4337 support
+    // 10. Deploy K1ValidatorFactory (Complete Factory)
+    console.log('\n🔟 Deploying K1ValidatorFactory (Complete Factory)...');
+    const K1ValidatorFactoryContract = await hre.ethers.getContractFactory('K1ValidatorFactory', deployer);
+    const k1ValidatorFactory = await K1ValidatorFactoryContract.deploy(
+        nexus.address,              // ACCOUNT_IMPLEMENTATION
+        await deployer.getAddress(), // factoryOwner
+        k1Validator.address,        // K1_VALIDATOR
+        nexusBootstrap.address,     // BOOTSTRAPPER
+        hre.ethers.constants.AddressZero  // REGISTRY (minimal for now)
+    );
+    await k1ValidatorFactory.deployed();
+    console.log('✅ K1ValidatorFactory:', k1ValidatorFactory.address);
+
+    // Wait and verify
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const k1FactoryCode = await hre.ethers.provider.getCode(k1ValidatorFactory.address);
+    if (k1FactoryCode === '0x') throw new Error('K1ValidatorFactory deployment verification failed');
+    console.log('✅ K1ValidatorFactory verified with', Math.floor(k1FactoryCode.length / 2), 'bytes');
+
+    // 1️⃣1️⃣ Deploy/Configure EntryPoint (Step 8) - ERC-4337 support
     console.log('\n🔟 Deploying EntryPoint (Step 8)...');
 
     let entryPoint;
@@ -347,6 +369,9 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
         // Step 7: NexusBootstrap
         nexusBootstrap: nexusBootstrap.address,
+
+        // Step 10: K1ValidatorFactory (Complete Factory)
+        k1ValidatorFactory: k1ValidatorFactory.address,
 
         // Step 8: EntryPoint
         entryPoint: entryPoint.address,
@@ -638,81 +663,6 @@ async function testWalletOperations(infrastructure, walletAddress, deployer, net
                 } catch (k1ValidatorError) {
                     console.log('      📋 Could not check K1Validator initialization:', k1ValidatorError.message);
                 }
-
-                // Try to get more information about installed modules
-                try {
-                    // Check if there's a way to list installed validators
-                    const nexusInterface = new hre.ethers.utils.Interface([
-                        'function getValidatorsPaginated(address start, uint256 pageSize) external view returns (address[] memory array, address next)',
-                        'function isValidatorInstalled(address validator) external view returns (bool)',
-                        'function getActiveValidationModule() external view returns (address)'
-                    ]);
-
-                    const nexusWithExtended = new hre.ethers.Contract(walletAddress, nexusInterface, deployer);
-
-                    try {
-                        const validators = await nexusWithExtended.getValidatorsPaginated(hre.ethers.constants.AddressZero, 10);
-                        console.log('      📋 Installed validators:', validators.array);
-
-                        if (validators.array.length > 0) {
-                            console.log('      🎯 Found', validators.array.length, 'installed validator(s)');
-                            validators.array.forEach((validator, index) => {
-                                console.log(`         ${index + 1}. ${validator}`);
-                                if (validator.toLowerCase() === infrastructure.nexusK1Validator.toLowerCase()) {
-                                    console.log('            ✅ This is our K1Validator!');
-                                }
-                            });
-                        }
-                    } catch (validatorListError) {
-                        console.log('      📋 Could not list validators:', validatorListError.message);
-                    }
-
-                    try {
-                        const isValidatorInstalledDirect = await nexusWithExtended.isValidatorInstalled(infrastructure.nexusK1Validator);
-                        console.log('      🔐 K1Validator installed (alternative check):', isValidatorInstalledDirect ? '✅' : '❌');
-                    } catch (altCheckError) {
-                        console.log('      📋 Alternative validator check failed:', altCheckError.message);
-                    }
-
-                    try {
-                        const activeValidator = await nexusWithExtended.getActiveValidationModule();
-                        console.log('      🎯 Active validation module:', activeValidator);
-                        if (activeValidator.toLowerCase() === infrastructure.nexusK1Validator.toLowerCase()) {
-                            console.log('      ✅ K1Validator is the active validator!');
-                        }
-                    } catch (activeValidatorError) {
-                        console.log('      📋 Could not get active validator:', activeValidatorError.message);
-                    }
-
-                } catch (extendedTestError) {
-                    console.log('      📋 Extended validator tests failed:', extendedTestError.message);
-                }
-
-                // Test if the wallet recognizes the owner
-                try {
-                    const ownerAddress = await deployer.getAddress();
-                    console.log('      👤 Testing owner recognition...');
-                    console.log('         Expected owner:', ownerAddress);
-
-                    // Try to check if the deployer is recognized as owner/signer
-                    const nexusOwnerInterface = new hre.ethers.utils.Interface([
-                        'function isValidSignatureNow(address signer, bytes32 hash, bytes calldata signature) external view returns (bool)',
-                        'function owner() external view returns (address)'
-                    ]);
-
-                    const nexusOwnerContract = new hre.ethers.Contract(walletAddress, nexusOwnerInterface, deployer);
-
-                    try {
-                        const owner = await nexusOwnerContract.owner();
-                        console.log('         Contract owner:', owner);
-                    } catch (ownerError) {
-                        console.log('         📋 No owner() function or error:', ownerError.message);
-                    }
-
-                } catch (ownerTestError) {
-                    console.log('      📋 Owner recognition test failed:', ownerTestError.message);
-                }
-
             } catch (readError) {
                 console.log('      ⚠️  Read operations failed:', readError.message);
             }
@@ -861,6 +811,15 @@ async function testWalletOperations(infrastructure, walletAddress, deployer, net
                 const currentNonce = await entryPoint.getNonce(walletAddress, 0);
                 console.log('      📊 Current wallet nonce:', currentNonce.toString());
 
+                // Encode K1Validator address in nonce (Nexus requirement)
+                // Nonce format: [3 bytes empty][1 byte validation mode][20 bytes validator][8 bytes nonce]
+                // MODE_VALIDATION = 0x00, so we just need to encode validator address + nonce
+                // IMPORTANT: SDK uses zeroAddress for DEFAULT_VALIDATOR, not the actual K1Validator address!
+                const validatorAddress = hre.ethers.constants.AddressZero; // Use zeroAddress like SDK
+                const encodedNonce = hre.ethers.BigNumber.from(validatorAddress).shl(64).add(currentNonce);
+                console.log('      🔧 Using zeroAddress for DEFAULT_VALIDATOR (like SDK)');
+                console.log('      🔧 Encoded nonce with validator:', encodedNonce.toString());
+
                 // Create a smaller ETH transfer (0.001 ETH) to minimize gas costs
                 const smallTransferAmount = hre.ethers.utils.parseEther('0.001');
                 const targetAddress = await deployer.getAddress();
@@ -880,7 +839,7 @@ async function testWalletOperations(infrastructure, walletAddress, deployer, net
                 // Create UserOperation with proper gas estimates
                 const userOpWithoutSignature = {
                     sender: walletAddress,
-                    nonce: currentNonce,
+                    nonce: encodedNonce,
                     initCode: '0x',
                     callData: walletCallData,
                     callGasLimit: 100000,
@@ -895,15 +854,18 @@ async function testWalletOperations(infrastructure, walletAddress, deployer, net
                 console.log('      🔧 UserOperation prepared:');
                 console.log('         Target:', targetAddress);
                 console.log('         Amount:', hre.ethers.utils.formatEther(smallTransferAmount), 'ETH');
-                console.log('         Nonce:', currentNonce.toString());
+                console.log('         Nonce (encoded):', encodedNonce.toString());
 
                 // Get the UserOp hash for signing
                 const userOpHash = await entryPoint.getUserOpHash(userOpWithoutSignature);
                 console.log('      🔐 UserOp hash for signing:', userOpHash);
 
                 // Sign the UserOp hash with the deployer (wallet owner)
-                const signature = await deployer.signMessage(hre.ethers.utils.arrayify(userOpHash));
-                console.log('      ✍️  Signature created:', signature.slice(0, 20) + '...');
+                // Using viem signature format - exactly like Biconomy SDK
+                // SDK pattern: await signer.signMessage({ message: { raw: userOpHash } })
+                const viemAccount = privateKeyToAccount(deployer.privateKey);
+                const signature = await viemAccount.signMessage({ message: { raw: userOpHash } });
+                console.log('      ✍️  Signature created (viem):', signature.slice(0, 20) + '...');
 
                 // Create the final UserOperation with signature
                 const signedUserOp = {

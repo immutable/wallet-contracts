@@ -7,7 +7,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 - **Passport Infrastructure** (proven stable base) - Factory + MultiCallDeploy
 - **Nexus Core** (modern Account Abstraction) - K1Validator + Implementation  
 - **Hybrid Wallet Deployment** - Configurable deployment via Factory or MultiCallDeploy
-- **Complete 9-Step Coverage** - Implements all deployment steps (0-9) in one script
+- **Complete 11-Step Coverage** - Implements all deployment steps (0-10) in one script
 - **CFA Compatibility** - Uses `PassportCompatibleNexusFactory` for address compatibility
 
 **⚠️ Note**: This script contains some legacy functions that are now redundant after the step-based approach implementation. Consider using `wallet-deployment.ts` for wallet-only deployments, which has been cleaned and optimized.
@@ -17,7 +17,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 | Feature | `deploy-infrastructure-and-wallet.js` | `wallet-deployment.ts` |
 |---------|---------------------------------------|------------------------|
 | **Purpose** | Complete infrastructure + wallet deployment | Wallet-only deployment using existing infrastructure |
-| **Dependencies** | Self-contained, no external files | Requires step artifacts (step0.json - step9.json) |
+| **Dependencies** | Self-contained, no external files | Requires step artifacts (step0.json - step10.json) |
 | **Code Status** | Contains some legacy functions (~60% redundant) | Cleaned & optimized (45% smaller) |
 | **Deployment Methods** | CFA Factory + MultiCallDeploy | CFA Factory + MultiCallDeploy (with robust fallback) |
 | **Use Case** | Fresh deployments, testing, development | Production wallet deployment |
@@ -33,7 +33,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 
 ### ✅ **Robust Architecture**
 - **Hybrid approach** combines the best of both systems
-- **Complete 9-step implementation** (all steps 0-9 in one script including NexusBootstrap, EntryPoint, and PassportCompatibleNexusFactory)
+- **Complete 11-step implementation** (all steps 0-10 in one script including NexusBootstrap, EntryPoint, PassportCompatibleNexusFactory, and K1ValidatorFactory)
 - **Dual deployment methods** (Factory and MultiCallDeploy)
 - **Proper timing** with verification between deployments
 - **Comprehensive verification** of all components

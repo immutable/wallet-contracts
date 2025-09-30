@@ -16,7 +16,8 @@ scripts/biconomy/
 │   ├── step6.ts                            # Configure LatestWalletImplLocator → Nexus
 │   ├── step7.ts                            # Deploy NexusBootstrap (REQUIRED for Nexus)
 │   ├── step8.ts                            # Deploy/Configure EntryPoint (ERC-4337)
-│   └── step9.ts                            # Deploy PassportCompatibleNexusFactory (CFA)
+│   ├── step9.ts                            # Deploy PassportCompatibleNexusFactory (CFA)
+│   └── step10.ts                           # Deploy K1ValidatorFactory (Complete Factory)
 │   ├── step0.json                          # Step 0 deployment results
 │   ├── step1.json                          # Step 1 deployment results
 │   ├── step2.json                          # Step 2 deployment results
@@ -26,7 +27,8 @@ scripts/biconomy/
 │   ├── step6.json                          # Step 6 deployment results
 │   ├── step7.json                          # Step 7 deployment results
 │   ├── step8.json                          # Step 8 deployment results
-│   └── step9.json                          # Step 9 deployment results
+│   ├── step9.json                          # Step 9 deployment results
+│   └── step10.json                         # Step 10 deployment results
 ├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one) 
 ├── wallet-deployment.ts                    # Step-based wallet deployment (CFA + MultiCall support)
 ├── final-deployment.js                     # Legacy deployment script
@@ -113,6 +115,22 @@ Step 9: CFA-Compatible Factory       Step 0: CREATE2 Foundation
 │ Old Passport    │                 │ Deterministic    │
 │   Addresses     │                 │   Addresses      │
 └─────────────────┘                 └──────────────────┘
+
+Step 10: Complete K1Validator Factory
+┌─────────────────┐
+│ K1ValidatorFactory│ ──uses──▶ Nexus Implementation
+│  (Official SDK)  │           K1Validator
+│                  │           NexusBootstrap
+└─────────────────┘           Registry (optional)
+         │
+         │ creates complete
+         │ Nexus accounts with
+         ▼
+┌─────────────────┐
+│ Fully Configured│
+│ Nexus Accounts  │
+│ (SDK Compatible)│
+└─────────────────┘
 ```
 
 ### Core Components
@@ -182,6 +200,9 @@ NODE_ENV=development npx hardhat run scripts/biconomy/steps/step8.ts --network l
 
 # Step 9: Deploy PassportCompatibleNexusFactory (CFA compatibility)
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step9.ts --network localhost
+
+# Step 10: Deploy K1ValidatorFactory (Complete Factory)
+NODE_ENV=development npx hardhat run scripts/biconomy/steps/step10.ts --network localhost
 ```
 
 ### Method 2: Complete Deployment (Recommended)
@@ -213,7 +234,7 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 - **🎯 Dual Deployment Methods**: PassportCompatibleNexusFactory (CFA) + MultiCallDeploy (with graceful fallback)
 - **🔄 CFA Compatibility**: Maintains address compatibility with old Passport wallets
 - **🚀 ERC-4337 Testing**: Full UserOperation testing with real EntryPoint
-- **📋 Step-based**: Uses modular step artifacts (steps 0-9)
+- **📋 Step-based**: Uses modular step artifacts (steps 0-10)
 - **⚡ Robust Fallback**: MultiCallDeploy automatically falls back to Factory if interface issues occur
 
 ## Environment Variables
@@ -397,14 +418,6 @@ Development settings optimized for speed:
 
 ### Step 8: EntryPoint (ERC-4337)
 **Account Abstraction support for advanced wallet features**
-
-### Step 9: PassportCompatibleNexusFactory (CFA)
-**CFA-compatible factory for seamless Passport address compatibility**
-- Deploys `PassportCompatibleNexusFactory` contract
-- Maintains address compatibility with old Passport wallets
-- Uses old Factory address for CFA calculations
-- Enables seamless migration without address changes
-
 - **Purpose**: Enables ERC-4337 Account Abstraction functionality
 - **Features**:
   - UserOperation validation and execution
@@ -417,11 +430,39 @@ Development settings optimized for speed:
   - Falls back to MockEntryPoint for development if real EntryPoint unavailable
 - **Output**: `step8.json` with EntryPoint address and source type
 
+### Step 9: PassportCompatibleNexusFactory (CFA)
+**CFA-compatible factory for seamless Passport address compatibility**
+- Deploys `PassportCompatibleNexusFactory` contract
+- Maintains address compatibility with old Passport wallets
+- Uses old Factory address for CFA calculations
+- Enables seamless migration without address changes
+
+### Step 10: K1ValidatorFactory (Complete Factory)
+**Official SDK-compatible factory for complete Nexus account creation**
+- **Purpose**: Deploys the **correct** K1ValidatorFactory from official Biconomy SDK
+- **Features**:
+  - Full Nexus account creation with proper initialization
+  - Uses `initNexusWithSingleValidator` for complete setup
+  - Integrates K1Validator, NexusBootstrap, and Registry
+  - SDK-compatible account creation patterns
+- **Components**:
+  - **ACCOUNT_IMPLEMENTATION**: Nexus smart account implementation
+  - **K1_VALIDATOR**: ECDSA signature validation module
+  - **BOOTSTRAPPER**: NexusBootstrap for proper initialization
+  - **REGISTRY**: Optional registry for attesters (configurable)
+- **Benefits**:
+  - **SDK Compatibility**: Creates accounts exactly like official Biconomy SDK
+  - **Complete Initialization**: Accounts are fully configured and ready to use
+  - **Registry Support**: Optional attester registry for enhanced security
+  - **Deterministic Addresses**: Predictable account addresses via CREATE2
+- **Output**: `step10.json` with K1ValidatorFactory address and configuration
+
 ### Integration Notes
 - **Step 7** is **required** for Nexus wallets to function properly
 - **Step 8** is **optional** but recommended for full ERC-4337 support
-- Both steps integrate seamlessly with existing Passport infrastructure
-- Complete deployment now covers **9 steps** (0-8) for full functionality
+- **Step 10** provides **official SDK compatibility** for complete Nexus account creation
+- All steps integrate seamlessly with existing Passport infrastructure
+- Complete deployment now covers **11 steps** (0-10) for full functionality
 
 ## Support
 

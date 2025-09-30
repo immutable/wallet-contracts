@@ -35,7 +35,8 @@ function loadStepArtifacts() {
         'scripts/biconomy/steps/step6.json', // LatestWalletImplLocator update
         'scripts/biconomy/steps/step7.json', // NexusBootstrap
         'scripts/biconomy/steps/step8.json', // EntryPoint
-        'scripts/biconomy/steps/step9.json'  // PassportCompatibleNexusFactory
+        'scripts/biconomy/steps/step9.json', // PassportCompatibleNexusFactory
+        'scripts/biconomy/steps/step10.json' // K1ValidatorFactory
     ];
 
     const artifacts: any = {};

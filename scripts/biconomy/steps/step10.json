@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-09-30T22:28:23.790Z",
+  "network": "localhost",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "step": 10,
+  "description": "K1ValidatorFactory (Complete Factory)",
+  "k1ValidatorFactory": "0x7bc06c482DEAd17c0e297aFbC32f6e63d3846650",
+  "accountImplementation": "0x24F5E63b0Faa059f11E5fC897215FE707bbC8ccF",
+  "k1ValidatorModule": "0x057bA9624F8912122D9E2370Ec8d6197748644Ca",
+  "bootstrapper": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+  "registry": "0x0000000000000000000000000000000000000000",
+  "codeSize": 6677,
+  "configurationVerified": true,
+  "status": "SUCCESS",
+  "gasUsed": "N/A"
+}
