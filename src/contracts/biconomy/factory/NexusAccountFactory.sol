@@ -1,83 +1,64 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import '../Nexus.sol';
-import '../interfaces/factory/INexusFactory.sol';
-import '../lib/ProxyLib.sol';
-import '@openzeppelin/contracts/access/AccessControl.sol';
+// ──────────────────────────────────────────────────────────────────────────────
+//     _   __    _  __
+//    / | / /__ | |/ /_  _______
+//   /  |/ / _ \|   / / / / ___/
+//  / /|  /  __/   / /_/ (__  )
+// /_/ |_/\___/_/|_\__,_/____/
+//
+// ──────────────────────────────────────────────────────────────────────────────
+// Nexus: A suite of contracts for Modular Smart Accounts compliant with ERC-7579 and ERC-4337, developed by Biconomy.
+// Learn more at https://biconomy.io. To report security issues, please contact us at: security@biconomy.io
 
-contract NexusAccountFactory is INexusFactory, AccessControl {
-  // Role to deploy new wallets (same as in Passport's Factory)
-  bytes32 public constant DEPLOYER_ROLE = keccak256('DEPLOYER_ROLE');
+import {Stakeable} from '../common/Stakeable.sol';
+import {INexusFactory} from '../interfaces/factory/INexusFactory.sol';
+import {ProxyLib} from '../lib/ProxyLib.sol';
 
-  address public immutable implementation;
-  address public immutable entryPoint;
+/// @title Nexus Account Factory
+/// @notice Manages the creation of Modular Smart Accounts compliant with ERC-7579 and ERC-4337 using a factory pattern.
+/// @author @livingrockrises | Biconomy | chirag@biconomy.io
+/// @author @aboudjem | Biconomy | adam.boudjemaa@biconomy.io
+/// @author @filmakarov | Biconomy | filipp.makarov@biconomy.io
+/// @author @zeroknots | Rhinestone.wtf | zeroknots.eth
+/// Special thanks to the Solady team for foundational contributions: https://github.com/Vectorized/solady
+contract NexusAccountFactory is Stakeable, INexusFactory {
+  /// @notice Address of the implementation contract used to create new Nexus instances.
+  /// @dev This address is immutable and set upon deployment, ensuring the implementation cannot be changed.
+  address public immutable ACCOUNT_IMPLEMENTATION;
 
-  event WalletDeployed(address indexed wallet, bytes indexed initData, bytes32 indexed salt);
-
-  constructor(address _implementation, address _entryPoint) {
-    require(_implementation != address(0), 'Invalid implementation');
-    require(_entryPoint != address(0), 'Invalid entryPoint');
-    implementation = _implementation;
-    entryPoint = _entryPoint;
-
-    // Grant deployer role to contract deployer
-    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    _grantRole(DEPLOYER_ROLE, msg.sender);
+  /// @notice Constructor to set the smart account implementation address and the factory owner.
+  /// @param implementation_ The address of the Nexus implementation to be used for all deployments.
+  /// @param owner_ The address of the owner of the factory.
+  constructor(address implementation_, address owner_) Stakeable(owner_) {
+    require(implementation_ != address(0), ImplementationAddressCanNotBeZero());
+    require(owner_ != address(0), ZeroAddressNotAllowed());
+    ACCOUNT_IMPLEMENTATION = implementation_;
   }
 
-  function getAddress(bytes calldata initData, bytes32 salt) public view returns (address) {
-    bytes memory creationCode = type(Nexus).creationCode;
-    bytes memory constructorArgs = abi.encode(entryPoint, implementation, initData);
-    bytes32 bytecodeHash = keccak256(abi.encodePacked(creationCode, constructorArgs));
-
-    bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash));
-
-    return address(uint160(uint(hash)));
-  }
-
-  /**
-   * @notice Creates a new Nexus wallet instance. This method is analogous to the deploy() method
-   * in the original Passport Factory, but with additional account existence check.
-   * @dev Uses CREATE2 opcode implicitly through Solidity's `new Contract{salt: salt}()` syntax
-   * at the proxy deployment.
-   * @param initData Initialization data for the new wallet
-   * @param salt Unique salt for deterministic address generation
-   * @return The address of the newly created or existing wallet
-   */
-  function createAccount(
-    bytes calldata initData,
-    bytes32 salt
-  ) external payable onlyRole(DEPLOYER_ROLE) returns (address payable) {
-    address addr = getAddress(initData, salt);
-    uint codeSize = addr.code.length;
-    if (codeSize > 0) {
-      return payable(addr);
+  /// @notice Creates a new Nexus account with the provided initialization data.
+  /// @param initData Initialization data to be called on the new Smart Account.
+  /// @param salt Unique salt for the Smart Account creation.
+  /// @return The address of the newly created Nexus account.
+  function createAccount(bytes calldata initData, bytes32 salt) external payable override returns (address payable) {
+    // Deploy the Nexus account using the ProxyLib
+    (bool alreadyDeployed, address payable account) = ProxyLib.deployProxy(ACCOUNT_IMPLEMENTATION, salt, initData);
+    if (!alreadyDeployed) {
+      emit AccountCreated(account, initData, salt);
     }
-
-    address proxy = address(new Nexus{salt: salt}(entryPoint, implementation, initData));
-
-    // Emit event after successful deployment (same pattern as Passport)
-    emit WalletDeployed(proxy, initData, salt);
-
-    return payable(proxy);
+    return account;
   }
 
+  /// @notice Computes the expected address of a Nexus contract using the factory's deterministic deployment algorithm.
+  /// @param initData - Initialization data to be called on the new Smart Account.
+  /// @param salt - Unique salt for the Smart Account creation.
+  /// @return expectedAddress The expected address at which the Nexus contract will be deployed if the provided parameters are used.
   function computeAccountAddress(
     bytes calldata initData,
     bytes32 salt
-  ) external view returns (address payable expectedAddress) {
-    bytes memory creationCode = type(Nexus).creationCode;
-    bytes memory constructorArgs = abi.encode(entryPoint, implementation, initData);
-    bytes32 bytecodeHash = keccak256(abi.encodePacked(creationCode, constructorArgs));
-
-    bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash));
-
-    return payable(address(uint160(uint(hash))));
-  }
-
-  // AccessControl's supportsInterface
-  function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-    return super.supportsInterface(interfaceId);
+  ) external view override returns (address payable expectedAddress) {
+    // Return the expected address of the Nexus account using the provided initialization data and salt
+    return ProxyLib.predictProxyAddress(ACCOUNT_IMPLEMENTATION, salt, initData);
   }
 }
