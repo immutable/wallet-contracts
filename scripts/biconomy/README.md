@@ -16,6 +16,7 @@ scripts/biconomy/
 │   ├── step6.ts                            # Configure LatestWalletImplLocator → Nexus
 │   ├── step7.ts                            # Deploy NexusBootstrap (REQUIRED for Nexus)
 │   ├── step8.ts                            # Deploy/Configure EntryPoint (ERC-4337)
+│   └── step9.ts                            # Deploy PassportCompatibleNexusFactory (CFA)
 │   ├── step0.json                          # Step 0 deployment results
 │   ├── step1.json                          # Step 1 deployment results
 │   ├── step2.json                          # Step 2 deployment results
@@ -24,17 +25,22 @@ scripts/biconomy/
 │   ├── step5.json                          # Step 5 deployment results
 │   ├── step6.json                          # Step 6 deployment results
 │   ├── step7.json                          # Step 7 deployment results
-│   └── step8.json                          # Step 8 deployment results
-├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one)
-├── wallet-deployment.ts                    # Enhanced wallet deployment with Nexus support
-├── demonstrate-erc4337-concept.js          # ERC-4337 concept demonstration (reference)
-├── test-revised-factory.js                 # Factory test example (reference)
+│   ├── step8.json                          # Step 8 deployment results
+│   └── step9.json                          # Step 9 deployment results
+├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one) 
+├── wallet-deployment.ts                    # Step-based wallet deployment (CFA + MultiCall support)
 ├── final-deployment.js                     # Legacy deployment script
 ├── README-deploy-infrastructure-and-wallet.md  # Complete infrastructure README
 └── README.md                               # This file
 ```
 
-**✨ Note**: This directory has been cleaned up from 47 files to 12 essential files. All temporary investigation, testing, and debugging scripts have been removed.
+**✨ Note**: This directory has been cleaned up from 47 files to 8 essential files. All temporary investigation, testing, debugging scripts, and unused legacy contracts have been removed.
+
+**🗑️ Recently Removed (Legacy/Unused):**
+- `deploy-real-entrypoint.js` - Replaced by `step8.ts` 
+- `PassportNexusMultiCallDeploy.sol` - Replaced by existing `MultiCallDeploy.sol` + `PassportCompatibleNexusFactory.sol`
+- `PassportNexusUpgradeController.sol` - Upgrade approach replaced by direct CFA deployment
+- `PassportNexusUpgradeFactory.sol` - Replaced by `PassportCompatibleNexusFactory.sol`
 
 ## Architecture Overview
 
@@ -93,11 +99,20 @@ Step 7: Nexus Initialization         Step 8: ERC-4337 Support
 │ Initialization  │                 │   Validation     │
 └─────────────────┘                 └──────────────────┘
 
-Step 0: CREATE2 Foundation
-┌─────────────────┐
-│OwnableCreate2   │ ──enables──▶ Deterministic Addresses
-│   Deployer      │
-└─────────────────┘
+Step 9: CFA-Compatible Factory       Step 0: CREATE2 Foundation
+┌─────────────────┐                 ┌──────────────────┐
+│PassportCompatible│ ──uses──▶      │ OwnableCreate2   │
+│  NexusFactory   │                 │    Deployer      │
+│   (CFA Compat)  │                 │                  │
+└─────────────────┘                 └──────────────────┘
+         │                                   │
+         │ maintains address                 │ enables
+         │ compatibility with                │ deterministic
+         ▼                                   ▼
+┌─────────────────┐                 ┌──────────────────┐
+│ Old Passport    │                 │ Deterministic    │
+│   Addresses     │                 │   Addresses      │
+└─────────────────┘                 └──────────────────┘
 ```
 
 ### Core Components
@@ -164,6 +179,9 @@ NODE_ENV=development npx hardhat run scripts/biconomy/steps/step7.ts --network l
 
 # Step 8: Deploy/Configure EntryPoint (ERC-4337 support)
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step8.ts --network localhost
+
+# Step 9: Deploy PassportCompatibleNexusFactory (CFA compatibility)
+NODE_ENV=development npx hardhat run scripts/biconomy/steps/step9.ts --network localhost
 ```
 
 ### Method 2: Complete Deployment (Recommended)
@@ -180,15 +198,23 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 
 ### Method 3: Wallet-Only Deployment
 
-Deploy wallet using existing infrastructure:
+Deploy wallet using existing infrastructure with the **cleaned and optimized** `wallet-deployment.ts`:
 
 ```bash
-# Deploy wallet using step artifacts (automatic MultiCallDeploy if transactions present)
+# Deploy wallet using step artifacts (default: PassportCompatibleNexusFactory)
 NODE_ENV=development npx hardhat run scripts/biconomy/wallet-deployment.ts --network localhost
 
-# Force MultiCallDeploy deployment
-FORCE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/wallet-deployment.ts --network localhost
+# Deploy using MultiCallDeploy with fallback to Factory
+USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/wallet-deployment.ts --network localhost
 ```
+
+**✨ Features of wallet-deployment.ts:**
+- **🧹 Cleaned & Optimized**: 45% smaller (562 lines removed), only active functions remain
+- **🎯 Dual Deployment Methods**: PassportCompatibleNexusFactory (CFA) + MultiCallDeploy (with graceful fallback)
+- **🔄 CFA Compatibility**: Maintains address compatibility with old Passport wallets
+- **🚀 ERC-4337 Testing**: Full UserOperation testing with real EntryPoint
+- **📋 Step-based**: Uses modular step artifacts (steps 0-9)
+- **⚡ Robust Fallback**: MultiCallDeploy automatically falls back to Factory if interface issues occur
 
 ## Environment Variables
 
@@ -371,6 +397,13 @@ Development settings optimized for speed:
 
 ### Step 8: EntryPoint (ERC-4337)
 **Account Abstraction support for advanced wallet features**
+
+### Step 9: PassportCompatibleNexusFactory (CFA)
+**CFA-compatible factory for seamless Passport address compatibility**
+- Deploys `PassportCompatibleNexusFactory` contract
+- Maintains address compatibility with old Passport wallets
+- Uses old Factory address for CFA calculations
+- Enables seamless migration without address changes
 
 - **Purpose**: Enables ERC-4337 Account Abstraction functionality
 - **Features**:

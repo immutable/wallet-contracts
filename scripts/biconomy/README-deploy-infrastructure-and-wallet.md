@@ -5,9 +5,23 @@
 The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained deployment solution** that implements a hybrid approach combining:
 
 - **Passport Infrastructure** (proven stable base) - Factory + MultiCallDeploy
-- **Nexus Core** (modern Account Abstraction) - K1Validator + Implementation
+- **Nexus Core** (modern Account Abstraction) - K1Validator + Implementation  
 - **Hybrid Wallet Deployment** - Configurable deployment via Factory or MultiCallDeploy
-- **Complete 8-Step Coverage** - Implements all deployment steps (0-8) in one script
+- **Complete 9-Step Coverage** - Implements all deployment steps (0-9) in one script
+- **CFA Compatibility** - Uses `PassportCompatibleNexusFactory` for address compatibility
+
+**⚠️ Note**: This script contains some legacy functions that are now redundant after the step-based approach implementation. Consider using `wallet-deployment.ts` for wallet-only deployments, which has been cleaned and optimized.
+
+## Script Comparison
+
+| Feature | `deploy-infrastructure-and-wallet.js` | `wallet-deployment.ts` |
+|---------|---------------------------------------|------------------------|
+| **Purpose** | Complete infrastructure + wallet deployment | Wallet-only deployment using existing infrastructure |
+| **Dependencies** | Self-contained, no external files | Requires step artifacts (step0.json - step9.json) |
+| **Code Status** | Contains some legacy functions (~60% redundant) | Cleaned & optimized (45% smaller) |
+| **Deployment Methods** | CFA Factory + MultiCallDeploy | CFA Factory + MultiCallDeploy (with robust fallback) |
+| **Use Case** | Fresh deployments, testing, development | Production wallet deployment |
+| **Recommended For** | Initial setup, complete redeployment | Regular wallet deployment operations |
 
 ## Key Features
 
@@ -19,7 +33,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 
 ### ✅ **Robust Architecture**
 - **Hybrid approach** combines the best of both systems
-- **Complete 8-step implementation** (all steps 0-8 in one script including NexusBootstrap and EntryPoint)
+- **Complete 9-step implementation** (all steps 0-9 in one script including NexusBootstrap, EntryPoint, and PassportCompatibleNexusFactory)
 - **Dual deployment methods** (Factory and MultiCallDeploy)
 - **Proper timing** with verification between deployments
 - **Comprehensive verification** of all components
@@ -219,9 +233,23 @@ Step 2: Implementation Management            │
 │    Locator      │  ──points to──▶ Nexus Implementation
 └─────────────────┘
 
+Step 7: Nexus Initialization         Step 8: ERC-4337 Support
+┌─────────────────┐                 ┌──────────────────┐
+│ NexusBootstrap  │                 │    EntryPoint    │
+│   (Required)    │                 │   (ERC-4337)     │
+└─────────────────┘                 └──────────────────┘
+
+Step 9: CFA-Compatible Factory       Step 0: CREATE2 Foundation
+┌─────────────────┐                 ┌──────────────────┐
+│PassportCompatible│ ──uses──▶      │ OwnableCreate2   │
+│  NexusFactory   │                 │    Deployer      │
+│   (CFA Compat)  │                 │                  │
+└─────────────────┘                 └──────────────────┘
+
 Deployment Methods:
-• Factory Method:     Factory ──deploy──▶ Wallet (using Nexus as main module)
+• CFA Factory:        PassportCompatibleNexusFactory ──deploy──▶ Wallet (CFA compatible)
 • MultiCallDeploy:    MultiCallDeploy ──deploy+execute──▶ Wallet + Initial TXs
+• Fallback:           Factory ──deploy──▶ Wallet (if MultiCallDeploy fails)
 ```
 
 ## Configuration
