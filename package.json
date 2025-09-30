@@ -100,7 +100,7 @@
   },
   "dependencies": {
     "@axelar-network/axelar-gmp-sdk-solidity": "^6.0.6",
-    "@biconomy/abstractjs": "^1.1.7",
+    "@biconomy/abstractjs": "^1.1.9",
     "@biconomy/account": "^4.5.7",
     "@metamask/delegation-toolkit": "^0.11.0",
     "@nomad-xyz/excessively-safe-call": "^0.0.1-rc.1",
@@ -110,6 +110,6 @@
     "ethereum-public-key-to-address": "^0.0.5",
     "sentinellist": "github:rhinestonewtf/sentinellist#v1.0.0",
     "solady": "^0.1.26",
-    "viem": "^2.26.2"
+    "viem": "^2.37.9"
   }
 }
