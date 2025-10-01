@@ -31,7 +31,7 @@ async function step6(): Promise<EnvironmentInfo> {
         throw new Error('Required addresses not found in step JSON files');
     }
 
-    await waitForInput();
+    // await waitForInput(); // Commented out for automated deployment
 
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);

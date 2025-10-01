@@ -31,12 +31,13 @@ async function step7(): Promise<EnvironmentInfo> {
     console.log(`[${network}] Deploying NexusBootstrap...`);
 
     // NexusBootstrap constructor needs: (defaultValidator, initData)
-    // For bootstrap, we can use empty initData since it's meant for initialization delegation
-    const bootstrapInitData = '0x';
+    // K1Validator requires non-empty initData with owner address
+    const deployerAddress = await wallets.getWallet().getAddress();
+    const bootstrapInitData = hre.ethers.utils.solidityPack(['address'], [deployerAddress]);
 
     const nexusBootstrap = await deployContract(env, wallets, 'NexusBootstrap', [
         validatorAddress,    // K1Validator as default validator
-        bootstrapInitData    // Empty init data for bootstrap
+        bootstrapInitData    // Owner address for K1Validator initialization
     ]);
 
     console.log(`[${network}] ✅ NexusBootstrap deployed at: ${nexusBootstrap.address}`);

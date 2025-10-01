@@ -6,28 +6,24 @@ import { newWalletOptions, WalletOptions } from '../../wallet-options';
 import { deployContract } from '../../contract';
 
 /**
- * Step 9 - Deploy PassportCompatibleNexusFactory (CFA Compatible)
- * Deploy our custom factory that maintains CFA compatibility with old Passport accounts
- * while enabling new Nexus wallet deployments
+ * Step 9 - Deploy NexusAccountFactory (Simplified Architecture)
+ * Deploy the factory that creates Nexus wallets with CFA compatibility
+ * Uses direct Nexus deployment approach for simplified architecture
  */
 async function step9(): Promise<EnvironmentInfo> {
     const env = loadEnvironmentInfo(hre.network.name);
     const { network } = env;
 
-    console.log(`[${network}] Starting deployment of PassportCompatibleNexusFactory (Step 9)...`);
+    console.log(`[${network}] Starting deployment of NexusAccountFactory (Step 9)...`);
 
     // Read required addresses from previous steps
-    const step1Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step1.json', 'utf8'));
     const step4Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step4.json', 'utf8'));
-
-    const oldPassportFactory = step1Data.factory;
     const nexusImplementation = step4Data.nexus;
 
-    console.log(`[${network}] Old Passport Factory (for CFA): ${oldPassportFactory}`);
     console.log(`[${network}] Nexus Implementation: ${nexusImplementation}`);
 
-    if (!oldPassportFactory || !nexusImplementation) {
-        throw new Error('Required addresses not found in previous step JSON files');
+    if (!nexusImplementation) {
+        throw new Error('Nexus implementation not found in step4.json');
     }
 
     // Setup wallet
@@ -35,19 +31,19 @@ async function step9(): Promise<EnvironmentInfo> {
     const deployer = wallets.getWallet();
     const deployerAddress = await deployer.getAddress(); // Cache address
 
-    // Deploy PassportCompatibleNexusFactory
-    console.log(`[${network}] Deploying PassportCompatibleNexusFactory...`);
-    console.log(`[${network}] - Nexus Implementation: ${nexusImplementation}`);
-    console.log(`[${network}] - Old Passport Factory: ${oldPassportFactory}`);
-    console.log(`[${network}] - Owner: ${deployerAddress}`);
-
-    const passportCompatibleNexusFactory = await deployContract(env, wallets, 'PassportCompatibleNexusFactory', [
+    // Deploy NexusAccountFactory (Simplified Architecture)
+    console.log(`[${network}] Deploying NexusAccountFactory...`);
+    const nexusAccountFactory = await deployContract(env, wallets, 'NexusAccountFactory', [
         nexusImplementation,    // Nexus implementation address
-        oldPassportFactory,     // Old Passport factory for CFA compatibility
-        deployerAddress         // Owner (cached)
+        deployerAddress         // Owner address
     ]);
 
-    // Verify deployment using viem public client
+    console.log(`[${network}] ✅ NexusAccountFactory deployed at: ${nexusAccountFactory.address}`);
+
+    // NOTE: Using simplified architecture - direct Nexus deployment via NexusAccountFactory
+    console.log(`[${network}] ✅ Using simplified architecture - direct Nexus deployment`);
+
+    // Verify NexusAccountFactory deployment
     const networkConfig = hre.network.config as any;
     const rpcUrl = networkConfig.url || 'http://localhost:8545';
     const publicClient = createPublicClient({
@@ -55,35 +51,30 @@ async function step9(): Promise<EnvironmentInfo> {
     });
 
     const deployedCode = await publicClient.getCode({
-        address: passportCompatibleNexusFactory.address as `0x${string}`
+        address: nexusAccountFactory.address as `0x${string}`
     });
 
     if (!deployedCode || deployedCode === '0x') {
-        throw new Error('PassportCompatibleNexusFactory deployment verification failed');
+        throw new Error('NexusAccountFactory deployment verification failed');
     }
 
-    console.log(`[${network}] ✅ PassportCompatibleNexusFactory deployed successfully`);
+    console.log(`[${network}] ✅ NexusAccountFactory deployed successfully`);
     console.log(`[${network}] 📏 Code size: ${Math.floor(deployedCode.length / 2)} bytes`);
 
     // Test the factory configuration
     console.log(`[${network}] 🔍 Verifying factory configuration...`);
 
-    const PassportCompatibleNexusFactory = await hre.ethers.getContractFactory('PassportCompatibleNexusFactory', deployer);
-    const factoryContract = PassportCompatibleNexusFactory.attach(passportCompatibleNexusFactory.address);
+    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory', deployer);
+    const factoryContract = NexusAccountFactory.attach(nexusAccountFactory.address);
 
     try {
-        const [nexusImpl, oldFactory, currentFactory] = await factoryContract.getFactoryAddresses();
-
+        const owner = await factoryContract.owner();
         console.log(`[${network}] ✅ Configuration verified:`);
-        console.log(`[${network}]    Nexus Implementation: ${nexusImpl}`);
-        console.log(`[${network}]    Old Passport Factory: ${oldFactory}`);
-        console.log(`[${network}]    Current Factory: ${currentFactory}`);
+        console.log(`[${network}]    Factory Owner: ${owner}`);
+        console.log(`[${network}]    Nexus Implementation: ${nexusImplementation}`);
 
-        if (nexusImpl.toLowerCase() !== nexusImplementation.toLowerCase()) {
-            throw new Error('Nexus implementation address mismatch');
-        }
-        if (oldFactory.toLowerCase() !== oldPassportFactory.toLowerCase()) {
-            throw new Error('Old Passport factory address mismatch');
+        if (owner.toLowerCase() !== deployerAddress.toLowerCase()) {
+            throw new Error('Factory owner address mismatch');
         }
 
     } catch (verificationError) {
@@ -93,23 +84,23 @@ async function step9(): Promise<EnvironmentInfo> {
 
     // Save deployment information
     const deploymentData = {
-        passportCompatibleNexusFactory: passportCompatibleNexusFactory.address,
+        // nexusCompatibleMainModule: removed - not needed anymore
+        nexusAccountFactory: nexusAccountFactory.address,
         nexusImplementation: nexusImplementation,
-        oldPassportFactory: oldPassportFactory,
-        owner: deployerAddress, // Use cached address
+        deployer: deployerAddress, // Use cached address
         network: network,
         deployedAt: new Date().toISOString(),
         codeSize: Math.floor(deployedCode.length / 2),
-        cfaCompatible: true
+        simplifiedArchitecture: true
     };
 
     fs.writeFileSync('scripts/biconomy/steps/step9.json', JSON.stringify(deploymentData, null, 2));
 
-    console.log(`[${network}] Step 9 (CFA Compatible Factory) deployment completed`);
-    console.log(`[${network}] ✅ PassportCompatibleNexusFactory deployed at: ${passportCompatibleNexusFactory.address}`);
-    console.log(`[${network}] 🔄 CFA Compatibility: ENABLED`);
-    console.log(`[${network}] 📋 This factory maintains address compatibility with existing Passport accounts`);
-    console.log(`[${network}] 📋 while enabling new Nexus wallet deployments`);
+    console.log(`[${network}] Step 9 (NexusAccountFactory) deployment completed`);
+    console.log(`[${network}] ✅ NexusAccountFactory deployed at: ${nexusAccountFactory.address}`);
+    console.log(`[${network}] 🚀 Simplified Architecture: ENABLED`);
+    console.log(`[${network}] 📋 Direct Nexus deployment with CFA compatibility`);
+    console.log(`[${network}] 📋 No bridge module needed - architecture simplified`);
 
     return env;
 }
@@ -121,11 +112,10 @@ step9()
 
         // Load the result and show summary
         const step9Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step9.json', 'utf8'));
-        console.log(`[${env.network}] 📋 CFA Compatible Factory Summary:`);
-        console.log(`[${env.network}]    Factory Address: ${step9Data.passportCompatibleNexusFactory}`);
+        console.log(`[${env.network}] 📋 NexusAccountFactory Summary:`);
+        console.log(`[${env.network}]    Factory Address: ${step9Data.nexusAccountFactory}`);
         console.log(`[${env.network}]    Nexus Implementation: ${step9Data.nexusImplementation}`);
-        console.log(`[${env.network}]    Old Passport Factory: ${step9Data.oldPassportFactory}`);
-        console.log(`[${env.network}]    CFA Compatible: ${step9Data.cfaCompatible ? '✅' : '❌'}`);
+        console.log(`[${env.network}]    Simplified Architecture: ${step9Data.simplifiedArchitecture ? '✅' : '❌'}`);
 
         process.exit(0);
     })

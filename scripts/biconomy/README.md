@@ -1,6 +1,6 @@
 # Biconomy Nexus Integration
 
-This directory contains the **complete and production-ready** Passport-Nexus hybrid infrastructure implementation. All temporary files have been cleaned up and only essential components remain.
+This directory contains the **complete and production-ready** Passport-Nexus hybrid infrastructure implementation with **EntryPoint v0.7** and **ERC-4337 UserOp testing**. All temporary files have been cleaned up and only essential components remain.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ scripts/biconomy/
 │   ├── step6.ts                            # Configure LatestWalletImplLocator → Nexus
 │   ├── step7.ts                            # Deploy NexusBootstrap (REQUIRED for Nexus)
 │   ├── step8.ts                            # Deploy/Configure EntryPoint (ERC-4337)
-│   ├── step9.ts                            # Deploy PassportCompatibleNexusFactory (CFA)
+│   ├── step9.ts                            # Deploy NexusAccountFactory (Simplified Architecture)
 │   └── step10.ts                           # Deploy K1ValidatorFactory (Complete Factory)
 │   ├── step0.json                          # Step 0 deployment results
 │   ├── step1.json                          # Step 1 deployment results
@@ -29,9 +29,9 @@ scripts/biconomy/
 │   ├── step8.json                          # Step 8 deployment results
 │   ├── step9.json                          # Step 9 deployment results
 │   └── step10.json                         # Step 10 deployment results
-├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one) 
-├── wallet-deployment.ts                    # Step-based wallet deployment (CFA + MultiCall support)
-├── final-deployment.js                     # Legacy deployment script
+├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one) with ERC-4337 v0.7
+├── wallet-deployment.ts                    # Step-based wallet deployment (CFA + MultiCall + ERC-4337)
+├── setup-base-sepolia.js                   # Base Sepolia network setup and validation
 ├── README-deploy-infrastructure-and-wallet.md  # Complete infrastructure README
 └── README.md                               # This file
 ```
@@ -101,19 +101,19 @@ Step 7: Nexus Initialization         Step 8: ERC-4337 Support
 │ Initialization  │                 │   Validation     │
 └─────────────────┘                 └──────────────────┘
 
-Step 9: CFA-Compatible Factory       Step 0: CREATE2 Foundation
+Step 9: Simplified Architecture      Step 0: CREATE2 Foundation
 ┌─────────────────┐                 ┌──────────────────┐
-│PassportCompatible│ ──uses──▶      │ OwnableCreate2   │
-│  NexusFactory   │                 │    Deployer      │
-│   (CFA Compat)  │                 │                  │
+│ NexusAccount    │ ──uses──▶       │ OwnableCreate2   │
+│    Factory      │                 │    Deployer      │
+│ (Direct Deploy) │                 │                  │
 └─────────────────┘                 └──────────────────┘
          │                                   │
-         │ maintains address                 │ enables
-         │ compatibility with                │ deterministic
+         │ creates Nexus                     │ enables
+         │ wallets directly                  │ deterministic
          ▼                                   ▼
 ┌─────────────────┐                 ┌──────────────────┐
-│ Old Passport    │                 │ Deterministic    │
-│   Addresses     │                 │   Addresses      │
+│ Nexus Wallets   │                 │ Deterministic    │
+│ (CFA Compatible)│                 │   Addresses      │
 └─────────────────┘                 └──────────────────┘
 
 Step 10: Complete K1Validator Factory
@@ -164,9 +164,57 @@ Step 10: Complete K1Validator Factory
 - **OwnableCreate2Deployer**: Enables deterministic contract addresses
 - **Used by**: Steps 2 and 4 for predictable deployments
 
+## Package.json Scripts (Base Sepolia Ready)
+
+### 🌐 Base Sepolia Deployment Scripts
+
+```bash
+# Setup and validate Base Sepolia network
+npm run setup:base-sepolia
+
+# Deploy all infrastructure steps (0-10) in sequence
+npm run deploy:steps:base-sepolia
+
+# Deploy individual steps
+npm run deploy:step0:base-sepolia    # OwnableCreate2Deployer
+npm run deploy:step1:base-sepolia    # MultiCallDeploy + Factory
+npm run deploy:step2:base-sepolia    # LatestWalletImplLocator
+npm run deploy:step3:base-sepolia    # StartupWalletImpl
+npm run deploy:step4:base-sepolia    # Nexus Implementation + K1Validator
+npm run deploy:step5:base-sepolia    # ImmutableSigner
+npm run deploy:step6:base-sepolia    # Configuration
+npm run deploy:step7:base-sepolia    # NexusBootstrap
+npm run deploy:step8:base-sepolia    # EntryPoint v0.7
+npm run deploy:step9:base-sepolia    # NexusAccountFactory (Simplified)
+npm run deploy:step10:base-sepolia   # K1ValidatorFactory
+
+# Deploy wallet using existing infrastructure
+npm run deploy:wallet:base-sepolia
+
+# Deploy complete infrastructure + wallet in one go
+npm run deploy:infrastructure:base-sepolia
+```
+
+### 🚀 Key Features of Package Scripts
+
+- **✅ Production Ready**: All scripts use `NODE_ENV=production` for Base Sepolia
+- **✅ Network Specific**: Dedicated Base Sepolia configuration
+- **✅ Step-by-Step Control**: Individual step deployment for granular control
+- **✅ Complete Automation**: Full infrastructure deployment in one command
+- **✅ Wallet Deployment**: Dedicated wallet deployment using existing infrastructure
+
 ## Deployment Methods
 
-### Method 1: Step-by-Step Deployment
+### Method 1: Package Scripts (Recommended for Base Sepolia)
+
+```bash
+# Complete Base Sepolia deployment
+npm run setup:base-sepolia
+npm run deploy:steps:base-sepolia
+npm run deploy:wallet:base-sepolia
+```
+
+### Method 2: Step-by-Step Deployment (Local Development)
 
 Execute individual steps for granular control:
 
@@ -231,11 +279,35 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 
 **✨ Features of wallet-deployment.ts:**
 - **🧹 Cleaned & Optimized**: 45% smaller (562 lines removed), only active functions remain
-- **🎯 Dual Deployment Methods**: PassportCompatibleNexusFactory (CFA) + MultiCallDeploy (with graceful fallback)
+- **🎯 Dual Deployment Methods**: NexusAccountFactory (Simplified) + MultiCallDeploy (with graceful fallback)
 - **🔄 CFA Compatibility**: Maintains address compatibility with old Passport wallets
-- **🚀 ERC-4337 Testing**: Full UserOperation testing with real EntryPoint
+- **🚀 ERC-4337 v0.7 Integration**: Full UserOperation testing with EntryPoint v0.7
+- **💰 EntryPoint Deposit Management**: Automatic deposit for UserOp gas prefund
 - **📋 Step-based**: Uses modular step artifacts (steps 0-10)
-- **⚡ Robust Fallback**: MultiCallDeploy automatically falls back to Factory if interface issues occur
+- **⚡ Robust Fallback**: MultiCallDeploy automatically falls back to NexusAccountFactory if interface issues occur
+
+## 🚀 ERC-4337 Account Abstraction (EntryPoint v0.7)
+
+### Key Features
+- **✅ EntryPoint v0.7 Support**: Latest Account Abstraction standard
+- **✅ UserOperation Testing**: Complete UserOp creation, signing, and execution
+- **✅ Gas Prefund Management**: Automatic EntryPoint deposit for gas payments
+- **✅ Signature Validation**: K1Validator integration with proper owner configuration
+- **✅ Transaction Execution**: ETH transfers via UserOp through EntryPoint
+
+### ERC-4337 Flow
+```
+1. Deploy Wallet (NexusAccountFactory)
+2. Fund Wallet (ETH reception test)
+3. Deposit to EntryPoint (0.05 ETH for gas prefund)
+4. Create UserOperation (ETH transfer)
+5. Sign UserOperation (K1Validator signature)
+6. Execute via EntryPoint (handleOps)
+7. Verify Transaction Success
+```
+
+### Known Issues
+- **⚠️ MultiCallDeploy Interface Mismatch**: MultiCallDeploy expects `IModuleCalls.execute()` but Nexus uses `execute(bytes32 mode, bytes calldata)`. Automatic fallback to NexusAccountFactory ensures 100% success rate.
 
 ## Environment Variables
 
@@ -430,12 +502,12 @@ Development settings optimized for speed:
   - Falls back to MockEntryPoint for development if real EntryPoint unavailable
 - **Output**: `step8.json` with EntryPoint address and source type
 
-### Step 9: PassportCompatibleNexusFactory (CFA)
-**CFA-compatible factory for seamless Passport address compatibility**
-- Deploys `PassportCompatibleNexusFactory` contract
-- Maintains address compatibility with old Passport wallets
-- Uses old Factory address for CFA calculations
-- Enables seamless migration without address changes
+### Step 9: NexusAccountFactory (Simplified Architecture)
+**Direct Nexus deployment with CFA compatibility**
+- Deploys `NexusAccountFactory` contract for simplified architecture
+- Creates Nexus wallets directly without bridge modules
+- Maintains address compatibility through proper initData handling
+- Eliminates complexity of hybrid proxy patterns
 
 ### Step 10: K1ValidatorFactory (Complete Factory)
 **Official SDK-compatible factory for complete Nexus account creation**

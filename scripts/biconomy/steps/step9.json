@@ -1,10 +1,9 @@
 {
-  "passportCompatibleNexusFactory": "0x276C216D241856199A83bf27b2286659e5b877D3",
-  "nexusImplementation": "0xD6Bbb18a1141ab3eC0fAf542272F486C1566b1Dc",
-  "oldPassportFactory": "0xc96304e3c037f81dA488ed9dEa1D8F2a48278a75",
-  "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "nexusAccountFactory": "0x1bEfE2d8417e22Da2E0432560ef9B2aB68Ab75Ad",
+  "nexusImplementation": "0xfA033Fb75133B33f94024c3267d23bca9e3cbD48",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "network": "localhost",
-  "deployedAt": "2025-10-01T01:03:15.459Z",
-  "codeSize": 6293,
-  "cfaCompatible": true
+  "deployedAt": "2025-10-01T12:23:58.975Z",
+  "codeSize": 42427,
+  "simplifiedArchitecture": true
 }

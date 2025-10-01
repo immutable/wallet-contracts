@@ -43,7 +43,9 @@ async function step8(): Promise<EnvironmentInfo> {
             fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
                 entryPoint: existingEntryPoint,
                 source: 'environment'
-            }, null, 1));
+            ,
+                version: 'v0.7',
+                description: 'EntryPoint v0.7 (Real Implementation)'}, null, 1));
 
             console.log(`[${network}] Step 8 (EntryPoint) using existing deployment completed`);
             return env;
@@ -63,19 +65,17 @@ async function step8(): Promise<EnvironmentInfo> {
 
             const deployer = wallets.getWallet();
 
-            // Load EntryPoint artifact from account-abstraction deployments
-            const entryPointArtifact = require('../../../node_modules/account-abstraction/deployments/mainnet/EntryPoint.json');
-            const EntryPointFactory = await hre.ethers.getContractFactory(
-                entryPointArtifact.abi,
-                entryPointArtifact.bytecode
-            );
+            // Deploy EntryPoint v0.7 from our compiled contracts (not deployments)
+            console.log(`[${network}] 📋 Using EntryPoint v0.7 from compiled contracts...`);
+            const EntryPointFactory = await hre.ethers.getContractFactory('EntryPoint');
 
+            // Deploy EntryPoint v0.7 (compiled from account-abstraction source)
             const entryPoint = await EntryPointFactory.deploy({
                 gasLimit: 30000000 // Keep as number for gas limit
             });
             await entryPoint.deployed();
 
-            console.log(`[${network}] ✅ REAL EntryPoint deployed at: ${entryPoint.address}`);
+            console.log(`[${network}] ✅ EntryPoint v0.7 deployed at: ${entryPoint.address}`);
 
             // Get code size using viem
             const entryPointCode = await publicClient.getCode({
@@ -86,7 +86,7 @@ async function step8(): Promise<EnvironmentInfo> {
             // Save deployment information
             fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
                 entryPoint: entryPoint.address,
-                source: 'deployed_real',
+                source: 'deployed_v07',
                 codeSize: Math.floor((entryPointCode?.length || 0) / 2)
             }, null, 2));
 

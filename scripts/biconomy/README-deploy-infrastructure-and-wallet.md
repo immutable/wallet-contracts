@@ -6,9 +6,11 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 
 - **Passport Infrastructure** (proven stable base) - Factory + MultiCallDeploy
 - **Nexus Core** (modern Account Abstraction) - K1Validator + Implementation  
-- **Hybrid Wallet Deployment** - Configurable deployment via Factory or MultiCallDeploy
+- **EntryPoint v0.7** - Latest ERC-4337 Account Abstraction standard
+- **ERC-4337 UserOp Testing** - Complete UserOperation creation, signing, and execution
+- **Simplified Architecture** - Direct Nexus deployment via `NexusAccountFactory`
 - **Complete 11-Step Coverage** - Implements all deployment steps (0-10) in one script
-- **CFA Compatibility** - Uses `PassportCompatibleNexusFactory` for address compatibility
+- **CFA Compatibility** - Maintains address compatibility with old Passport wallets
 
 **⚠️ Note**: This script contains some legacy functions that are now redundant after the step-based approach implementation. Consider using `wallet-deployment.ts` for wallet-only deployments, which has been cleaned and optimized.
 
@@ -19,7 +21,9 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 | **Purpose** | Complete infrastructure + wallet deployment | Wallet-only deployment using existing infrastructure |
 | **Dependencies** | Self-contained, no external files | Requires step artifacts (step0.json - step10.json) |
 | **Code Status** | Contains some legacy functions (~60% redundant) | Cleaned & optimized (45% smaller) |
-| **Deployment Methods** | CFA Factory + MultiCallDeploy | CFA Factory + MultiCallDeploy (with robust fallback) |
+| **Deployment Methods** | NexusAccountFactory + MultiCallDeploy fallback | NexusAccountFactory + MultiCallDeploy fallback |
+| **ERC-4337 Support** | ✅ EntryPoint v0.7 + UserOp testing | ✅ EntryPoint v0.7 + UserOp testing |
+| **EntryPoint Deposit** | ✅ Automatic prefund management | ✅ Automatic prefund management |
 | **Use Case** | Fresh deployments, testing, development | Production wallet deployment |
 | **Recommended For** | Initial setup, complete redeployment | Regular wallet deployment operations |
 
@@ -43,8 +47,17 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 ### ✅ **Enhanced Testing & Operations**
 - **Wallet Operations Testing** - Tests ETH reception, interface accessibility, and connectivity
 - **Infrastructure Validation** - Verifies all components are properly deployed and connected
-- **EntryPoint Integration** - Smart deployment of real or mock EntryPoint for ERC-4337 support
+- **EntryPoint v0.7 Integration** - Real EntryPoint deployment with ERC-4337 support
+- **ERC-4337 UserOp Testing** - Complete UserOperation creation, signing, and execution
+- **EntryPoint Deposit Management** - Automatic prefund deposit for gas payments
 - **NexusBootstrap Support** - Proper Nexus initialization component deployment
+
+### ✅ **Base Sepolia Production Ready**
+- **Network Setup Script** - `setup-base-sepolia.js` validates network and account
+- **Package.json Scripts** - Dedicated Base Sepolia deployment commands
+- **Production Environment** - `NODE_ENV=production` configuration
+- **Gas Optimization** - Testnet-optimized gas settings
+- **Balance Validation** - Automatic ETH balance checking and warnings
 
 ### ✅ **Production Ready**
 - **Error handling** with detailed diagnostics
@@ -55,11 +68,31 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 ## Usage
 
 ### Prerequisites
-- Hardhat node running locally
+- For **Local Development**: Hardhat node running locally
+- For **Base Sepolia**: Private key and sufficient ETH balance
 - Environment variables configured (see `env-setup.md`)
 - Node.js with required dependencies
 
-### Basic Deployment
+### Base Sepolia Deployment (Recommended)
+
+#### Using Package.json Scripts
+```bash
+# 1. Setup and validate Base Sepolia
+npm run setup:base-sepolia
+
+# 2. Deploy all infrastructure (steps 0-10)
+npm run deploy:steps:base-sepolia
+
+# 3. Deploy wallet using existing infrastructure
+npm run deploy:wallet:base-sepolia
+
+# Alternative: Deploy everything in one go
+npm run deploy:infrastructure:base-sepolia
+```
+
+### Local Development Deployment
+
+#### Basic Deployment
 
 #### Default Method (Factory)
 ```bash
@@ -239,17 +272,17 @@ Step 7: Nexus Initialization         Step 8: ERC-4337 Support
 │   (Required)    │                 │   (ERC-4337)     │
 └─────────────────┘                 └──────────────────┘
 
-Step 9: CFA-Compatible Factory       Step 0: CREATE2 Foundation
+Step 9: Simplified Architecture      Step 0: CREATE2 Foundation
 ┌─────────────────┐                 ┌──────────────────┐
-│PassportCompatible│ ──uses──▶      │ OwnableCreate2   │
-│  NexusFactory   │                 │    Deployer      │
-│   (CFA Compat)  │                 │                  │
+│ NexusAccount    │ ──uses──▶       │ OwnableCreate2   │
+│    Factory      │                 │    Deployer      │
+│ (Direct Deploy) │                 │                  │
 └─────────────────┘                 └──────────────────┘
 
 Deployment Methods:
-• CFA Factory:        PassportCompatibleNexusFactory ──deploy──▶ Wallet (CFA compatible)
-• MultiCallDeploy:    MultiCallDeploy ──deploy+execute──▶ Wallet + Initial TXs
-• Fallback:           Factory ──deploy──▶ Wallet (if MultiCallDeploy fails)
+• NexusAccountFactory: NexusAccountFactory ──deploy──▶ Nexus Wallet (CFA compatible)
+• MultiCallDeploy:     MultiCallDeploy ──deploy+execute──▶ Wallet + Initial TXs (fallback)
+• Automatic Fallback:  NexusAccountFactory ──deploy──▶ Nexus Wallet (if MultiCallDeploy fails)
 ```
 
 ## Configuration

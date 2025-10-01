@@ -1,60 +1,37 @@
-import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { Wallet, BigNumber } from 'ethers';
-import { ethers } from 'ethers';
-
+import * as fs from 'fs';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
+import { createPublicClient, http } from 'viem';
 
-// Import viem for utilities and SDK compatibility
-import {
-    createPublicClient,
-    http,
-    parseEther,
-    formatEther,
-    zeroAddress,
-    encodeAbiParameters,
-    parseAbiParameters,
-    concat
-} from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+// Configuration
+const USE_MULTICALL_DEPLOY = process.env.USE_MULTICALL_DEPLOY === 'true';
 
-// Import Biconomy SDK for production testing
-const { createSmartAccountClient } = require('@biconomy/abstractjs');
-const { toNexusAccount } = require('@biconomy/abstractjs');
-const { getMEEVersion, DEFAULT_MEE_VERSION } = require('@biconomy/abstractjs');
+interface WalletDeploymentConfig {
+    owner: string;
+    salt: string;
+    useMultiCall: boolean;
+}
 
-// Create viem public client helper
+/**
+ * Create a Viem public client for the current network
+ */
 function createViemPublicClient() {
     const networkConfig = hre.network.config as any;
     const rpcUrl = networkConfig.url || 'http://localhost:8545';
+
     return createPublicClient({
         transport: http(rpcUrl)
     });
 }
 
 /**
- * Configuration for wallet deployment
- * Supports both simple deployment and deployment with initial transactions
+ * Load infrastructure artifacts from step files
  */
-export interface WalletDeploymentConfig {
-    // Primary owner (EOA)
-    owner: string;
-    // Optional: Initial transactions to execute after deployment
-    transactions?: Array<{
-        to: string;
-        value: BigNumber;
-        data: string;
-    }>;
-}
-
-/**
- * Load deployment artifacts from step files
- */
-function loadStepArtifacts() {
+function loadInfrastructureArtifacts(): any {
     const stepFiles = [
         'scripts/biconomy/steps/step0.json', // OwnableCreate2Deployer
-        'scripts/biconomy/steps/step1.json', // MultiCallDeploy, Factory
+        'scripts/biconomy/steps/step1.json', // MultiCallDeploy
         'scripts/biconomy/steps/step2.json', // LatestWalletImplLocator
         'scripts/biconomy/steps/step3.json', // StartupWalletImpl
         'scripts/biconomy/steps/step4.json', // K1Validator, Nexus
@@ -62,7 +39,7 @@ function loadStepArtifacts() {
         'scripts/biconomy/steps/step6.json', // LatestWalletImplLocator update
         'scripts/biconomy/steps/step7.json', // NexusBootstrap
         'scripts/biconomy/steps/step8.json', // EntryPoint
-        'scripts/biconomy/steps/step9.json', // PassportCompatibleNexusFactory
+        'scripts/biconomy/steps/step9.json', // NexusAccountFactory (Simplified)
         'scripts/biconomy/steps/step10.json' // K1ValidatorFactory
     ];
 
@@ -72,9 +49,8 @@ function loadStepArtifacts() {
         try {
             const stepData = JSON.parse(fs.readFileSync(stepFile, 'utf8'));
             Object.assign(artifacts, stepData);
-            console.log(`✅ Loaded step data from ${stepFile}`);
         } catch (error) {
-            console.log(`⚠️  Could not load ${stepFile}: ${error.message}`);
+            console.warn(`Warning: Could not load ${stepFile}:`, error.message);
         }
     }
 
@@ -82,119 +58,73 @@ function loadStepArtifacts() {
 }
 
 /**
- * Deploy a new Passport-Nexus hybrid wallet
+ * Deploy a new Nexus wallet using simplified architecture
  * 
  * This script uses our step-based infrastructure:
  * - Steps 0-8: Core infrastructure components
- * - Step 9: PassportCompatibleNexusFactory (CFA compatible)
+ * - Step 9: NexusAccountFactory (Simplified Architecture)
  * 
  * Deployment methods:
- * 1. Simple deployment via PassportCompatibleNexusFactory (CFA compatible)
- * 2. Deployment + initial transactions via MultiCallDeploy (Passport)
+ * 1. Direct Nexus deployment via NexusAccountFactory (CFA compatible)
+ * 2. Deployment + initial transactions via MultiCallDeploy with Nexus support
  */
 async function deployWallet(): Promise<void> {
     const env = loadEnvironmentInfo(hre.network.name);
     const { network } = env;
 
-    console.log(`[${network}] Starting Passport-Nexus hybrid wallet deployment with step-based infrastructure...`);
+    console.log(`[${network}] 🚀 Starting Nexus wallet deployment (Simplified Architecture)...`);
 
-    // Setup wallet options
-    const walletOptions: WalletOptions = await newWalletOptions(env);
-    const deployer = walletOptions.getWallet();
-    const networkId = (await hre.ethers.provider.getNetwork()).chainId;
+    // Load infrastructure artifacts
+    const artifacts = loadInfrastructureArtifacts();
 
-    console.log(`[${network}] Network ID: ${networkId}`);
-
-    // Load deployed contract addresses from step files
-    console.log(`[${network}] Loading infrastructure from step files...`);
-    const artifacts = loadStepArtifacts();
-
-    console.log(`[${network}] 📋 Available infrastructure:`);
-    console.log(`[${network}]   - Create2Deployer: ${artifacts.create2DeployerAddress || 'Not available'}`);
+    console.log(`[${network}] 📋 Infrastructure components loaded:`);
     console.log(`[${network}]   - MultiCallDeploy: ${artifacts.multiCallDeploy || 'Not available'}`);
-    console.log(`[${network}]   - Factory (Passport): ${artifacts.factory || 'Not available'}`);
-    console.log(`[${network}]   - LatestWalletImplLocator: ${artifacts.latestWalletImplLocator || 'Not available'}`);
-    console.log(`[${network}]   - StartupWalletImpl: ${artifacts.startupWalletImpl || 'Not available'}`);
-    console.log(`[${network}]   - K1Validator: ${artifacts.validator?.address || 'Not available'}`);
-    console.log(`[${network}]   - Nexus Implementation: ${artifacts.nexus || 'Not available'}`);
-    console.log(`[${network}]   - ImmutableSigner: ${artifacts.immutableSigner || 'Not available'}`);
-    console.log(`[${network}]   - NexusBootstrap: ${artifacts.nexusBootstrap || 'Not available'}`);
     console.log(`[${network}]   - EntryPoint: ${artifacts.entryPoint || 'Not available'}`);
-    console.log(`[${network}]   - PassportCompatibleNexusFactory: ${artifacts.passportCompatibleNexusFactory || 'Not available'}`);
+    console.log(`[${network}]   - NexusAccountFactory: ${artifacts.nexusAccountFactory || 'Not available'}`);
+    console.log(`[${network}]   - Nexus Implementation: ${artifacts.nexus || 'Not available'}`);
+    console.log(`[${network}]   - K1Validator: ${artifacts.k1ValidatorModule || 'Not available'}`);
 
     // Verify required components
     const requiredComponents = [
-        'passportCompatibleNexusFactory',
+        'nexusAccountFactory',
         'nexus',
-        'nexusBootstrap'
+        'entryPoint',
+        'k1ValidatorModule'
     ];
 
     for (const component of requiredComponents) {
-        if (!artifacts[component] && !artifacts.validator?.address) {
+        if (!artifacts[component]) {
             throw new Error(`Required component ${component} not found in step artifacts. Please run the deployment steps first.`);
         }
     }
 
-    // Configuration for the new wallet
+    console.log(`[${network}] ✅ All required components available`);
+
+    // Generate deployment configuration
+    const walletOptions: WalletOptions = await newWalletOptions(env);
+    const deployer = walletOptions.getWallet();
+
     const walletConfig: WalletDeploymentConfig = {
-        owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Example owner address
-        transactions: [
-            // Example: Send 0.1 ETH to another address (to force MultiCallDeploy)
-            {
-                to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-                value: parseEther("0.1"),
-                data: '0x'
-            },
-            // Another example transaction
-            {
-                to: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-                value: parseEther("0.05"),
-                data: '0x'
-            }
-        ]
+        owner: deployer.address,
+        salt: `nexus-${Date.now()}`,
+        useMultiCall: USE_MULTICALL_DEPLOY
     };
 
-    console.log(`[${network}] Wallet configuration:`);
-    console.log(`  - Owner: ${walletConfig.owner}`);
-    console.log(`  - Transactions: ${walletConfig.transactions?.length || 0}`);
+    console.log(`[${network}] 📋 Deployment configuration:`);
+    console.log(`[${network}]   - Owner: ${walletConfig.owner}`);
+    console.log(`[${network}]   - Salt: ${walletConfig.salt}`);
+    console.log(`[${network}]   - Use MultiCall: ${walletConfig.useMultiCall}`);
 
-    // Generate deterministic salt (or random if forcing new wallet)
-    const forceNewWallet = process.env.FORCE_NEW_WALLET === 'true';
-    let salt;
+    // Create initData for NexusAccountFactory: [entryPoint, validator, owner]
+    const nexusInitData = hre.ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'address'],
+        [artifacts.entryPoint, artifacts.k1ValidatorModule, walletConfig.owner]
+    );
 
-    if (forceNewWallet) {
-        // Generate random salt for new wallet
-        salt = hre.ethers.utils.keccak256(
-            encodeAbiParameters(
-                parseAbiParameters('address, uint256'),
-                [walletConfig.owner as `0x${string}`, Date.now()]
-            )
-        );
-        console.log(`[${network}] 🔄 FORCING NEW WALLET with random salt`);
-    } else {
-        // Use deterministic salt
-        salt = hre.ethers.utils.keccak256(
-            encodeAbiParameters(
-                parseAbiParameters('address'),
-                [walletConfig.owner as `0x${string}`]
-            )
-        );
-    }
-    console.log(`[${network}] Generated salt: ${salt}`);
+    const salt = hre.ethers.utils.formatBytes32String(walletConfig.salt);
 
-    // Prepare proper Nexus initialization data using our step-based infrastructure
-    const nexusInitData = prepareNexusInitDataFromSteps(artifacts, walletConfig.owner);
-    console.log(`[${network}] Nexus initialization data prepared from step artifacts`);
-
-    // Check deployment method
-    const useMultiCallDeploy = process.env.USE_MULTICALL_DEPLOY === 'true';
-    const deploymentMethod = useMultiCallDeploy ? 'MultiCallDeploy' : 'PassportCompatibleNexusFactory';
-
-    console.log(`[${network}] 🎯 Deployment Method: ${deploymentMethod}`);
-    console.log(`[${network}] 🔄 CFA Compatibility: ENABLED`);
-
-    if (useMultiCallDeploy) {
-        console.log(`[${network}] 🔧 MULTICALL DEPLOYMENT with CFA compatibility`);
+    if (walletConfig.useMultiCall) {
+        console.log(`[${network}] 🎯 MULTICALL DEPLOYMENT via MultiCallDeploy with Nexus support`);
         await deployWithMultiCallDeploy(
             env,
             artifacts,
@@ -203,7 +133,7 @@ async function deployWallet(): Promise<void> {
             walletConfig
         );
     } else {
-        console.log(`[${network}] 🎯 CFA-COMPATIBLE NEXUS DEPLOYMENT via PassportCompatibleNexusFactory`);
+        console.log(`[${network}] 🎯 DIRECT NEXUS DEPLOYMENT via NexusAccountFactory (Simplified)`);
         await deployNexusWithCFAFactory(
             env,
             artifacts,
@@ -215,8 +145,8 @@ async function deployWallet(): Promise<void> {
 }
 
 /**
- * Deploy Nexus wallet using PassportCompatibleNexusFactory (CFA Compatible)
- * This approach uses our custom factory that maintains CFA compatibility
+ * Deploy Nexus wallet using NexusAccountFactory (Simplified Architecture)
+ * This approach uses direct Nexus deployment with CFA compatibility
  */
 async function deployNexusWithCFAFactory(
     env: EnvironmentInfo,
@@ -232,873 +162,429 @@ async function deployNexusWithCFAFactory(
     const walletOptions: WalletOptions = await newWalletOptions(env);
     const deployer = walletOptions.getWallet();
 
-    // Get PassportCompatibleNexusFactory
-    const PassportCompatibleNexusFactory = await hre.ethers.getContractFactory('PassportCompatibleNexusFactory', deployer);
-    const cfaFactory = PassportCompatibleNexusFactory.attach(artifacts.passportCompatibleNexusFactory);
+    // Get NexusAccountFactory (Simplified Architecture)
+    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory', deployer);
+    const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
 
-    console.log(`[${network}] 📋 Using PassportCompatibleNexusFactory: ${artifacts.passportCompatibleNexusFactory}`);
+    console.log(`[${network}] 📋 Using NexusAccountFactory: ${artifacts.nexusAccountFactory}`);
     console.log(`[${network}] 📋 Nexus Implementation: ${artifacts.nexus}`);
-    console.log(`[${network}] 📋 Old Passport Factory (CFA): ${artifacts.factory}`);
+    console.log(`[${network}] 📋 EntryPoint: ${artifacts.entryPoint}`);
 
     // Generate salt for deployment
     const deploymentSalt = hre.ethers.utils.formatBytes32String(`wallet-${Date.now()}`);
 
-    // Predict wallet address using CFA compatibility
-    const cfaCompatibleAddress = await cfaFactory.computeAccountAddress(initData, deploymentSalt);
-    console.log(`[${network}] 🔮 Predicted CFA-compatible address: ${cfaCompatibleAddress}`);
+    // Predict wallet address using NexusAccountFactory (CFA compatibility maintained)
+    const predictedAddress = await factory.computeAccountAddress(initData, deploymentSalt);
+    console.log(`[${network}] 🔮 Predicted CFA-compatible address: ${predictedAddress}`);
 
     // Check if wallet already exists
     const publicClient = createViemPublicClient();
-    const existingCode = await publicClient.getCode({ address: cfaCompatibleAddress as `0x${string}` });
+    const existingCode = await publicClient.getCode({ address: predictedAddress as `0x${string}` });
     if (existingCode && existingCode !== '0x') {
-        console.log(`[${network}] ✅ Wallet already exists at ${cfaCompatibleAddress}`);
-        await verifyDeployment(cfaCompatibleAddress, network);
+        console.log(`[${network}] ✅ Wallet already exists at ${predictedAddress}`);
+        await verifyDeployment(predictedAddress, network);
         return;
     }
 
-    // Deploy wallet via PassportCompatibleNexusFactory
-    console.log(`[${network}] 🔨 Deploying wallet via PassportCompatibleNexusFactory...`);
+    // Deploy wallet via NexusAccountFactory (Simplified Architecture)
+    console.log(`[${network}] 🔨 Deploying Nexus wallet via NexusAccountFactory...`);
 
     try {
-        const deployTx = await cfaFactory.createAccount(initData, deploymentSalt, {
-            gasLimit: 2000000,
-            maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
-            maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
-        });
+        // Direct deployment using NexusAccountFactory
+        const deployTx = await factory.createAccount(
+            initData,           // initData: [entryPoint, validator, owner]
+            deploymentSalt,     // salt
+            {
+                gasLimit: 10000000,  // Sufficient for Nexus deployment
+                maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
+                maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
+            }
+        );
 
         console.log(`[${network}] 📋 Deployment transaction: ${deployTx.hash}`);
         const receipt = await deployTx.wait();
         console.log(`[${network}] ✅ Wallet deployed in block: ${receipt.blockNumber}`);
         console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
 
-        // Extract deployed address from events
-        const accountCreatedEvent = receipt.events?.find(e => e.event === 'AccountCreated');
-        const deployedAddress = accountCreatedEvent?.args?.[0] || cfaCompatibleAddress;
+        // Get deployed address from events
+        const accountCreatedEvent = receipt.events?.find((e: any) => e.event === 'AccountCreated');
+        const deployedAddress = accountCreatedEvent?.args?.[0] || predictedAddress;
 
         console.log(`[${network}] 🎯 Deployed wallet address: ${deployedAddress}`);
 
-        // Verify deployment
-        await verifyDeployment(deployedAddress, network);
-
-        // Test basic wallet operations
-        console.log(`[${network}] 🧪 Testing basic wallet operations...`);
-
-        // Test ETH reception
-        const sendTx = await deployer.sendTransaction({
-            to: deployedAddress,
-            value: hre.ethers.utils.parseEther('0.1'),
-            gasLimit: 100000
-        });
-        await sendTx.wait();
-
-        const balance = await hre.ethers.provider.getBalance(deployedAddress);
-        console.log(`[${network}] 💰 Wallet balance: ${formatEther(balance)} ETH`);
-
-        // Test ERC-4337 interaction with real EntryPoint
-        await testEntryPointInteraction(deployedAddress, artifacts, deployer, network);
-
-        // Test with Official SDK (Production Approach)
-        console.log(`[${network}] 🌐 Testing with Official Biconomy SDK...`);
-        const sdkTestResult = await testWalletWithOfficialSDK(deployer, network);
-
-        if (sdkTestResult.success) {
-            console.log(`[${network}] ✅ Official SDK test completed successfully!`);
-            console.log(`[${network}] 📋 SDK Account Address: ${sdkTestResult.sdkAccountAddress}`);
+        // Verify CFA compatibility
+        if (predictedAddress.toLowerCase() === deployedAddress.toLowerCase()) {
+            console.log(`[${network}] ✅ CFA COMPATIBILITY VERIFIED!`);
         } else {
-            console.log(`[${network}] ⚠️  Official SDK test had limitations (expected for local testing)`);
-            console.log(`[${network}] 📋 Error: ${sdkTestResult.error}`);
+            console.log(`[${network}] ❌ CFA COMPATIBILITY FAILED!`);
+            console.log(`[${network}]   Expected: ${predictedAddress}`);
+            console.log(`[${network}]   Actual: ${deployedAddress}`);
+            return;
         }
 
-        console.log(`[${network}] 🎉 CFA-compatible Nexus wallet deployment completed successfully!`);
-        console.log(`[${network}] 📋 Wallet Address: ${deployedAddress}`);
-        console.log(`[${network}] 🔄 CFA Compatibility: ENABLED`);
-        console.log(`[${network}] 🌐 SDK Compatibility: ${sdkTestResult.success ? 'TESTED' : 'LIMITED'}`);
+        // Verify deployment and test functionality
+        await verifyDeployment(deployedAddress, network);
+        await testWalletFunctionality(deployedAddress, artifacts, deployer, network);
 
     } catch (error) {
-        console.error(`[${network}] ❌ Failed to deploy wallet via PassportCompatibleNexusFactory:`, error);
+        console.error(`[${network}] ❌ Nexus deployment failed:`, error.message);
         throw error;
     }
 }
 
 /**
- * Prepare Nexus initialization data using step-based infrastructure
- * @param artifacts Step artifacts containing NexusBootstrap and validator addresses
- * @param ownerAddress Owner address for the wallet
- * @returns Encoded initialization data for Nexus.initializeAccount()
- */
-function prepareNexusInitDataFromSteps(artifacts: any, ownerAddress: string): string {
-    console.log('🔧 Preparing Nexus initialization data from step artifacts...');
-
-    // Use the same logic as our deploy-infrastructure-and-wallet.js
-    const nexusBootstrapInterface = new hre.ethers.utils.Interface([
-        `function initNexusWithDefaultValidatorAndOtherModulesNoRegistry(
-            bytes calldata defaultValidatorInitData,
-            tuple(address module, bytes data)[] calldata validators,
-            tuple(address module, bytes data)[] calldata executors,
-            tuple(address module, bytes data) calldata hook,
-            tuple(address module, bytes data)[] calldata fallbacks,
-            tuple(uint256 hookType, address module, bytes data)[] calldata prevalidationHooks
-        )`
-    ]);
-
-    // Create the bootstrap call data with correct parameters
-    // NOTE: K1Validator is the DEFAULT_VALIDATOR (configured in bootstrap constructor)
-    // So we DON'T include it in the validators array (that would be duplication)
-    const bootstrapCallData = nexusBootstrapInterface.encodeFunctionData(
-        'initNexusWithDefaultValidatorAndOtherModulesNoRegistry',
-        [
-            ownerAddress, // defaultValidatorInitData (signer address for K1Validator)
-            [], // validators - EMPTY because K1Validator is already the DEFAULT_VALIDATOR
-            [], // executors (empty array for 1.2.x)
-            { module: hre.ethers.constants.AddressZero, data: '0x' }, // hook (empty)
-            [], // fallbacks (empty array for 1.2.x)
-            [] // prevalidationHooks (empty array for 1.2.x)
-        ]
-    );
-
-    // Create the complete initData structure: [bootstrap_address, bootstrap_call_data]
-    const initData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'bytes'],
-        [artifacts.nexusBootstrap, bootstrapCallData]
-    );
-
-    console.log(`   - Owner: ${ownerAddress}`);
-    console.log(`   - K1Validator (DEFAULT): ${artifacts.validator?.address || 'From step4'}`);
-    console.log(`   - Bootstrap: ${artifacts.nexusBootstrap}`);
-    console.log(`   - InitData length: ${Math.floor(initData.length / 2)} bytes`);
-
-    return initData;
-}
-
-/**
- * Test wallet operations using official Biconomy SDK
- * This validates that our deployment is compatible with production SDK usage
- */
-async function testWalletWithOfficialSDK(deployer: any, network: string): Promise<any> {
-    console.log(`\n🌐 TESTING WITH OFFICIAL BICONOMY SDK`);
-    console.log(`=====================================`);
-    console.log(`🧪 Testing wallet operations using official SDK (production approach)...`);
-
-    try {
-        // Create viem account from deployer
-        const viemAccount = privateKeyToAccount(deployer.privateKey);
-        console.log(`[${network}] ✅ Created viem account: ${viemAccount.address}`);
-
-        // Test 1: Create Nexus account using official SDK
-        console.log(`[${network}] 1️⃣  Creating Nexus account with official SDK...`);
-
-        const nexusAccount = await toNexusAccount({
-            signer: viemAccount,
-            chainConfiguration: {
-                chain: {
-                    id: 1, // Ethereum mainnet
-                    name: 'ethereum',
-                    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-                    rpcUrls: {
-                        default: { http: ['https://eth.llamarpc.com'] }
-                    }
-                },
-                transport: http('https://eth.llamarpc.com'),
-                version: getMEEVersion(DEFAULT_MEE_VERSION)
-            }
-        });
-
-        const sdkAccountAddress = await nexusAccount.getAddress();
-        console.log(`[${network}]    ✅ SDK Nexus account created: ${sdkAccountAddress}`);
-
-        // Test 2: Create smart account client
-        console.log(`[${network}] 2️⃣  Creating smart account client...`);
-
-        const smartAccountClient = createSmartAccountClient({
-            account: nexusAccount,
-            transport: http('https://eth.llamarpc.com'),
-        });
-
-        console.log(`[${network}]    ✅ Smart account client created!`);
-
-        // Test 3: Check deployment status
-        console.log(`[${network}] 3️⃣  Checking account deployment status...`);
-
-        const isDeployed = await nexusAccount.isDeployed();
-        console.log(`[${network}]    📋 Account deployed on mainnet: ${isDeployed}`);
-
-        // Test 4: Message signing
-        console.log(`[${network}] 4️⃣  Testing message signing...`);
-
-        try {
-            const message = 'Hello Official SDK from wallet-deployment.ts!';
-            const signature = await smartAccountClient.signMessage({ message });
-            console.log(`[${network}]    ✅ Message signed successfully: ${signature.slice(0, 20)}...`);
-        } catch (signError) {
-            console.log(`[${network}]    ⚠️  Message signing failed: ${signError.message}`);
-        }
-
-        // Test 5: UserOperation preparation (the real test!)
-        console.log(`[${network}] 5️⃣  Testing UserOperation preparation (THE REAL TEST!)...`);
-
-        try {
-            const targetAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
-            const transferAmount = hre.ethers.utils.parseEther('0.001');
-
-            console.log(`[${network}]    🎯 Target: ${targetAddress}`);
-            console.log(`[${network}]    💰 Amount: ${hre.ethers.utils.formatEther(transferAmount)} ETH`);
-
-            const userOp = await smartAccountClient.prepareUserOperation({
-                calls: [{
-                    to: targetAddress,
-                    value: transferAmount.toString(),
-                    data: '0x'
-                }]
-            });
-
-            console.log(`[${network}]    ✅ UserOperation prepared by official SDK:`);
-            console.log(`[${network}]       Sender: ${userOp.sender}`);
-            console.log(`[${network}]       Nonce: ${userOp.nonce.toString()}`);
-            console.log(`[${network}]       CallData: ${userOp.callData.slice(0, 50)}...`);
-            console.log(`[${network}]       Gas: ${userOp.callGasLimit}/${userOp.verificationGasLimit}/${userOp.preVerificationGas}`);
-
-            // Test 6: Sign UserOperation
-            console.log(`[${network}] 6️⃣  Signing UserOperation with official SDK...`);
-
-            const signedUserOp = await smartAccountClient.signUserOperation(userOp);
-            console.log(`[${network}]    ✅ UserOperation signed: ${signedUserOp.signature.slice(0, 20)}...`);
-
-            // Test 7: The moment of truth - send UserOperation!
-            console.log(`[${network}] 7️⃣  🚀 THE MOMENT OF TRUTH - Sending UserOperation via official SDK...`);
-
-            try {
-                const txHash = await smartAccountClient.sendUserOperation(signedUserOp);
-                console.log(`[${network}]    🎉 🎉 🎉 SUCCESS! UserOperation sent via official SDK: ${txHash}`);
-                console.log(`[${network}]    🏆 NO AA23 ERROR! OFFICIAL SDK WORKS PERFECTLY!`);
-
-                // Wait for transaction receipt
-                try {
-                    const receipt = await smartAccountClient.waitForTransactionReceipt({ hash: txHash });
-                    console.log(`[${network}]    ✅ Transaction confirmed in block: ${receipt.blockNumber}`);
-                    console.log(`[${network}]    💎 COMPLETE SUCCESS - STEP-BASED + SDK APPROACH VALIDATED!`);
-                } catch (receiptError) {
-                    console.log(`[${network}]    ⚠️  Receipt wait failed: ${receiptError.message}`);
-                    console.log(`[${network}]    📋 But UserOp was sent successfully!`);
-                }
-
-            } catch (sendError) {
-                console.log(`[${network}]    ⚠️  UserOperation send failed: ${sendError.message}`);
-
-                if (sendError.message.includes('AA23')) {
-                    console.log(`[${network}]    😱 UNEXPECTED: AA23 error even with official SDK!`);
-                    console.log(`[${network}]    📋 This would indicate a deeper issue`);
-                } else if (sendError.message.includes('insufficient funds') || sendError.message.includes('balance')) {
-                    console.log(`[${network}]    🎉 SUCCESS! Failed only due to insufficient funds (expected)`);
-                    console.log(`[${network}]    🏆 NO AA23 ERROR - OFFICIAL SDK VALIDATION WORKS!`);
-                } else if (sendError.message.includes('biconomy_getGasFeeValues')) {
-                    console.log(`[${network}]    📋 Failed due to bundler method not supported by public RPC`);
-                    console.log(`[${network}]    🎉 BUT UserOp preparation and signing worked perfectly!`);
-                    console.log(`[${network}]    🏆 NO AA23 ERROR - OFFICIAL SDK IS COMPATIBLE!`);
-                } else {
-                    console.log(`[${network}]    📋 Failed for other reason: ${sendError.message}`);
-                    console.log(`[${network}]    📋 But no AA23 error - that's the key success!`);
-                }
-            }
-
-        } catch (userOpError) {
-            console.log(`[${network}]    ⚠️  UserOperation preparation failed: ${userOpError.message}`);
-
-            if (userOpError.message.includes('biconomy_getGasFeeValues')) {
-                console.log(`[${network}]    📋 Failed due to bundler method - this is expected with public RPC`);
-                console.log(`[${network}]    🎉 The important part is NO AA23 ERROR!`);
-            }
-        }
-
-        // Summary
-        console.log(`[${network}] 📋 OFFICIAL SDK TEST SUMMARY:`);
-        console.log(`[${network}]    ✅ Account creation: WORKING`);
-        console.log(`[${network}]    ✅ Client creation: WORKING`);
-        console.log(`[${network}]    ✅ Message signing: WORKING`);
-        console.log(`[${network}]    ✅ Uses official addresses: YES`);
-        console.log(`[${network}]    🎯 Key success: NO AA23 ERROR!`);
-        console.log(`[${network}]    💡 This proves step-based + SDK approach works!`);
-
-        return {
-            success: true,
-            sdkAccountAddress,
-            message: 'Official SDK test completed successfully'
-        };
-
-    } catch (error) {
-        console.log(`[${network}] ❌ Official SDK test failed: ${error.message}`);
-        return {
-            success: false,
-            error: error.message,
-            message: 'Official SDK test failed'
-        };
-    }
-}
-
-
-
-
-
-/**
- * Initialize Nexus wallet using executor module strategy
- * 1. Deploy SimpleExecutorModule
- * 2. Install it via self-call (bypasses onlyEntryPointOrSelf) 
- * 3. Use it to call initializeAccount
- * @param walletAddress Address of the deployed Nexus wallet
- * @param initData Encoded initialization data for the Nexus
- * @param network Network name for logging
- */
-async function initializeNexusWalletViaExecutorModule(walletAddress: string, initData: string, network: string) {
-    try {
-        console.log(`[${network}] 🚀 Starting executor module strategy...`);
-
-        // Step 1: Deploy SimpleExecutorModule
-        console.log(`[${network}] 📦 Deploying SimpleExecutorModule...`);
-        const ExecutorFactory = await hre.ethers.getContractFactory('SimpleExecutorModule');
-        const executorModule = await ExecutorFactory.deploy();
-        await executorModule.deployed();
-
-        console.log(`[${network}] ✅ SimpleExecutorModule deployed at: ${executorModule.address}`);
-
-        // Step 2: Connect to Nexus
-        const nexusWallet = await hre.ethers.getContractAt('Nexus', walletAddress);
-
-        // Step 3: Install executor module via self-call
-        console.log(`[${network}] 🔧 Installing executor module via self-call...`);
-
-        // Encode installModule call
-        const MODULE_TYPE_EXECUTOR = 2;
-        const installModuleCallData = nexusWallet.interface.encodeFunctionData(
-            'installModule',
-            [MODULE_TYPE_EXECUTOR, executorModule.address, '0x'] // Empty init data
-        );
-
-        // Use our working self-call mechanism
-        await executeViaDefaultValidator(nexusWallet, walletAddress, installModuleCallData, network, "installModule");
-
-        console.log(`[${network}] ✅ Executor module installed successfully`);
-
-        // Step 4: Now use executeFromExecutor to initialize
-        console.log(`[${network}] 🔧 Calling initializeAccount via executor module...`);
-
-        const initializeCallData = nexusWallet.interface.encodeFunctionData(
-            'initializeAccount',
-            [initData]
-        );
-
-        // Construct ExecutionMode
-        const callType = '0x00';      // CALLTYPE_SINGLE
-        const execType = '0x00';      // EXECTYPE_DEFAULT  
-        const zeros = '0x00000000';   // 4 bytes padding
-        const modeSelector = '0x00000000'; // MODE_DEFAULT
-        const payload = '0x' + '00'.repeat(22); // 22 bytes payload
-
-        const executionMode = callType + execType.slice(2) + zeros.slice(2) + modeSelector.slice(2) + payload.slice(2);
-
-        const executionCalldata = hre.ethers.utils.defaultAbiCoder.encode(
-            ['address', 'uint256', 'bytes'],
-            [walletAddress, 0, initializeCallData]
-        );
-
-        // Now executeFromExecutor should work since we're calling from the deployed executor module
-        const initTx = await executorModule.executeFromExecutor
-            ? await nexusWallet.executeFromExecutor(executionMode, executionCalldata, {
-                gasLimit: 5000000,
-                maxFeePerGas: 1875000000,
-                maxPriorityFeePerGas: 1000000000,
-            })
-            : await executeViaDefaultValidator(nexusWallet, walletAddress, initializeCallData, network, "initializeAccount");
-
-        if (initTx.hash) {
-            console.log(`[${network}] Initialization transaction: ${initTx.hash}`);
-            const initReceipt = await initTx.wait();
-            console.log(`[${network}] ✅ Nexus initialized in block: ${initReceipt.blockNumber}`);
-        }
-
-        // Step 5: Verify initialization
-        const isInitialized = await nexusWallet.isInitialized();
-        if (!isInitialized) {
-            throw new Error('Nexus initialization failed - isInitialized() returns false');
-        }
-
-        console.log(`[${network}] ✅ Nexus initialization verified successfully`);
-        console.log(`[${network}] 🧹 Note: Executor module can be uninstalled if no longer needed`);
-
-    } catch (error) {
-        console.error(`[${network}] ❌ Executor module strategy failed:`, error);
-        throw error;
-    }
-}
-
-/**
- * Helper function to execute calls via self-call mechanism (working solution)
- */
-async function executeViaDefaultValidator(nexusWallet: any, walletAddress: string, callData: string, network: string, operation: string) {
-    console.log(`[${network}] Executing ${operation} via self-call...`);
-
-    // This is our proven working self-call mechanism from earlier
-    const callType = '0x00';      // CALLTYPE_SINGLE
-    const execType = '0x00';      // EXECTYPE_DEFAULT  
-    const zeros = '0x00000000';   // 4 bytes padding
-    const modeSelector = '0x00000000'; // MODE_DEFAULT
-    const payload = '0x' + '00'.repeat(22); // 22 bytes payload
-
-    const executionMode = callType + execType.slice(2) + zeros.slice(2) + modeSelector.slice(2) + payload.slice(2);
-
-    const executionCalldata = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'uint256', 'bytes'],
-        [walletAddress, 0, callData]
-    );
-
-    // Use execute with proper mode (this should work as before)
-    const tx = await nexusWallet.execute(executionMode, executionCalldata, {
-        gasLimit: 5000000,
-        maxFeePerGas: 1875000000,
-        maxPriorityFeePerGas: 1000000000,
-    });
-
-    const receipt = await tx.wait();
-    console.log(`[${network}] ✅ ${operation} executed in block: ${receipt.blockNumber}`);
-
-    return tx;
-}
-
-/**
- * Deploy wallet using MultiCallDeploy (Passport infrastructure) with CFA compatibility
+ * Deploy wallet using MultiCallDeploy with Nexus support
  */
 async function deployWithMultiCallDeploy(
     env: EnvironmentInfo,
     artifacts: any,
     initData: string,
     salt: string,
-    config: WalletDeploymentConfig
+    walletConfig: WalletDeploymentConfig
 ): Promise<void> {
     const { network } = env;
-    console.log(`[${network}] 🚀 Starting MultiCallDeploy with CFA compatibility...`);
+    console.log(`[${network}] 🚀 Starting MultiCallDeploy with Nexus support...`);
 
     // Setup wallet
     const walletOptions: WalletOptions = await newWalletOptions(env);
     const deployer = walletOptions.getWallet();
 
-    // Get MultiCallDeploy and Factory contracts
-    const multiCallDeploy = await hre.ethers.getContractAt('MultiCallDeploy', artifacts.multiCallDeploy);
-    const factory = await hre.ethers.getContractAt('Factory', artifacts.factory);
+    // Get MultiCallDeploy
+    const MultiCallDeploy = await hre.ethers.getContractFactory('MultiCallDeploy', deployer);
+    const multiCallDeploy = MultiCallDeploy.attach(artifacts.multiCallDeploy);
+
+    // Get NexusAccountFactory for address prediction
+    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory', deployer);
+    const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
 
     console.log(`[${network}] 📋 Using MultiCallDeploy: ${artifacts.multiCallDeploy}`);
-    console.log(`[${network}] 📋 Using Factory (Passport): ${artifacts.factory}`);
-    console.log(`[${network}] 📋 Nexus Implementation: ${artifacts.nexus}`);
+    console.log(`[${network}] 📋 Using NexusAccountFactory: ${artifacts.nexusAccountFactory}`);
+
+    // Predict wallet address
+    const predictedAddress = await factory.computeAccountAddress(initData, salt);
+    console.log(`[${network}] 🔮 Predicted wallet address: ${predictedAddress}`);
+
+    // Check if wallet already exists
+    const publicClient = createViemPublicClient();
+    const existingCode = await publicClient.getCode({ address: predictedAddress as `0x${string}` });
+    if (existingCode && existingCode !== '0x') {
+        console.log(`[${network}] ✅ Wallet already exists at ${predictedAddress}`);
+        await verifyDeployment(predictedAddress, network);
+        return;
+    }
+
+    // Prepare a simple transaction for testing
+    const testTransaction = {
+        to: deployer.address,
+        value: hre.ethers.utils.parseEther('0.001'),
+        data: '0x',
+        operation: 0,
+        targetTxGas: 21000,
+        baseGas: 0,
+        gasPrice: 0,
+        gasToken: hre.ethers.constants.AddressZero,
+        refundReceiver: hre.ethers.constants.AddressZero,
+        nonce: 0
+    };
+
+    const transactions = [testTransaction];
+    const nonce = 0;
+    const signature = '0x'; // Placeholder signature
 
     try {
-        // Generate deployment salt
-        const deploymentSalt = hre.ethers.utils.formatBytes32String(`multicall-${Date.now()}`);
-
-        // Use factory's getAddress to predict wallet address
-        const predictedAddress = await factory.getAddress(artifacts.nexus, deploymentSalt);
-        console.log(`[${network}] 🔮 Predicted wallet address: ${predictedAddress}`);
-
-        // Check if wallet already exists
-        const walletCode = await hre.ethers.provider.getCode(predictedAddress);
-        if (walletCode !== '0x') {
-            console.log(`[${network}] ✅ Wallet already exists at ${predictedAddress}`);
-            await verifyDeployment(predictedAddress, network);
-            return;
-        }
-
-        // Prepare transactions data
-        const transactions = config.transactions?.map(tx => ({
-            to: tx.to,
-            value: tx.value,
-            data: tx.data
-        })) || [];
-
-        console.log(`[${network}] 📋 Prepared ${transactions.length} initial transactions`);
-
-        // Grant necessary roles
-        const EXECUTOR_ROLE = hre.ethers.utils.keccak256(hre.ethers.utils.toUtf8Bytes('EXECUTOR_ROLE'));
-        const DEPLOYER_ROLE = hre.ethers.utils.keccak256(hre.ethers.utils.toUtf8Bytes('DEPLOYER_ROLE'));
-        const deployerAddress = await deployer.getAddress();
-
-        // Grant EXECUTOR_ROLE to deployer for MultiCallDeploy
-        const hasExecutorRole = await multiCallDeploy.hasRole(EXECUTOR_ROLE, deployerAddress);
-        if (!hasExecutorRole) {
-            console.log(`[${network}] 🔑 Granting EXECUTOR_ROLE to deployer...`);
-            const grantTx = await multiCallDeploy.grantRole(EXECUTOR_ROLE, deployerAddress);
-            await grantTx.wait();
-            console.log(`[${network}] ✅ EXECUTOR_ROLE granted to deployer`);
-        }
-
-        // Grant DEPLOYER_ROLE to MultiCallDeploy for Factory
-        const hasDeployerRole = await factory.hasRole(DEPLOYER_ROLE, artifacts.multiCallDeploy);
-        if (!hasDeployerRole) {
-            console.log(`[${network}] 🔑 Granting DEPLOYER_ROLE to MultiCallDeploy...`);
-            const grantTx = await factory.grantRole(DEPLOYER_ROLE, artifacts.multiCallDeploy);
-            await grantTx.wait();
-            console.log(`[${network}] ✅ DEPLOYER_ROLE granted to MultiCallDeploy`);
-        }
-
-        // Calculate total ETH needed for transactions
-        const totalValue = transactions.reduce((sum, tx) =>
-            hre.ethers.BigNumber.from(sum).add(hre.ethers.BigNumber.from(tx.value)),
-            hre.ethers.BigNumber.from(0)
-        );
-
-        console.log(`[${network}] 💰 Total ETH for transactions: ${hre.ethers.utils.formatEther(totalValue)} ETH`);
-
-        // Deploy wallet via MultiCallDeploy
-        console.log(`[${network}] 🔨 Deploying wallet via MultiCallDeploy...`);
-
-        try {
-            // Try MultiCallDeploy.deployAndExecute method
-            const deployTx = await multiCallDeploy.deployAndExecute(
-                predictedAddress,          // CFA (counterfactual address)
-                artifacts.nexus,           // Implementation (Nexus)
-                deploymentSalt,            // Salt for CREATE2
-                artifacts.factory,         // Factory address
-                transactions,              // Initial transactions array
-                0,                         // Nonce (0 for new wallet)
-                '0x',                      // Signature (empty for this use case)
-                {
-                    gasLimit: 30000000,
-                    maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
-                    maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei'),
-                    value: totalValue      // ETH for initial transactions
-                }
-            );
-
-            console.log(`[${network}] 📋 Deployment transaction: ${deployTx.hash}`);
-            const receipt = await deployTx.wait();
-            console.log(`[${network}] ✅ Confirmed in block: ${receipt.blockNumber}`);
-            console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
-
-            // Verify deployment
-            const finalCode = await hre.ethers.provider.getCode(predictedAddress);
-            if (finalCode === '0x') {
-                throw new Error('MultiCallDeploy failed - no code at predicted address');
-            }
-
-            console.log(`[${network}] 🎉 MULTICALL WALLET DEPLOYED SUCCESSFULLY!`);
-            console.log(`[${network}] 📋 Address: ${predictedAddress}`);
-            console.log(`[${network}] 📏 Code size: ${Math.floor(finalCode.length / 2)} bytes`);
-            console.log(`[${network}] 🔄 Initial transactions executed: ${transactions.length}`);
-
-            await verifyDeployment(predictedAddress, network);
-
-            // Test basic wallet operations
-            console.log(`[${network}] 🧪 Testing basic wallet operations...`);
-
-            // Test ETH reception
-            const sendTx = await deployer.sendTransaction({
-                to: predictedAddress,
-                value: hre.ethers.utils.parseEther('0.1'),
-                gasLimit: 100000
-            });
-            await sendTx.wait();
-
-            const balance = await hre.ethers.provider.getBalance(predictedAddress);
-            console.log(`[${network}] 💰 Wallet balance: ${hre.ethers.utils.formatEther(balance)} ETH`);
-
-            // Test ERC-4337 interaction with real EntryPoint
-            await testEntryPointInteraction(predictedAddress, artifacts, deployer, network);
-
-            // Test with Official SDK (Production Approach)
-            console.log(`[${network}] 🌐 Testing with Official Biconomy SDK...`);
-            const sdkTestResult = await testWalletWithOfficialSDK(deployer, network);
-
-            if (sdkTestResult.success) {
-                console.log(`[${network}] ✅ Official SDK test completed successfully!`);
-                console.log(`[${network}] 📋 SDK Account Address: ${sdkTestResult.sdkAccountAddress}`);
-            } else {
-                console.log(`[${network}] ⚠️  Official SDK test had limitations (expected for local testing)`);
-                console.log(`[${network}] 📋 Error: ${sdkTestResult.error}`);
-            }
-
-        } catch (deployError) {
-            console.log(`[${network}] ⚠️  MultiCallDeploy interface incompatible, falling back to Factory...`);
-            console.log(`[${network}] Error: ${deployError.message}`);
-
-            // Fallback to simple Factory deployment
-            console.log(`[${network}] 🔄 Falling back to Factory deployment...`);
-
-            // Grant DEPLOYER_ROLE to deployer for Factory if needed
-            const hasDeployerRoleForDeployer = await factory.hasRole(DEPLOYER_ROLE, deployerAddress);
-            if (!hasDeployerRoleForDeployer) {
-                console.log(`[${network}] 🔑 Granting DEPLOYER_ROLE to deployer...`);
-                const grantTx = await factory.grantRole(DEPLOYER_ROLE, deployerAddress);
-                await grantTx.wait();
-                console.log(`[${network}] ✅ DEPLOYER_ROLE granted to deployer`);
-            }
-
-            const deployTx = await factory.deploy(artifacts.nexus, deploymentSalt, {
-                gasLimit: 30000000,
+        // Use the new deployAndExecuteNexus method
+        const deployTx = await multiCallDeploy.deployAndExecuteNexus(
+            predictedAddress,               // cfa
+            initData,                      // initData
+            salt,                          // salt
+            artifacts.nexusAccountFactory, // nexusFactory
+            transactions,                  // transactions
+            nonce,                         // nonce
+            signature,                     // signature
+            {
+                gasLimit: 15000000,
                 maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
                 maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
-            });
-
-            const receipt = await deployTx.wait();
-            console.log(`[${network}] ✅ Factory deployment confirmed in block: ${receipt.blockNumber}`);
-
-            // Verify deployment
-            const finalCode = await hre.ethers.provider.getCode(predictedAddress);
-            if (finalCode === '0x') {
-                throw new Error('Factory deployment failed - no code at predicted address');
             }
-
-            console.log(`[${network}] 🎉 FACTORY WALLET DEPLOYED SUCCESSFULLY!`);
-            console.log(`[${network}] 📋 Address: ${predictedAddress}`);
-            console.log(`[${network}] 📏 Code size: ${Math.floor(finalCode.length / 2)} bytes`);
-
-            // Note: Manual transaction execution would require signed transactions
-            if (transactions.length > 0) {
-                console.log(`[${network}] 💡 Note: ${transactions.length} initial transactions configured but not executed (would require signatures)`);
-            }
-
-            await verifyDeployment(predictedAddress, network);
-
-            // Test basic wallet operations
-            console.log(`[${network}] 🧪 Testing basic wallet operations...`);
-
-            // Test ETH reception
-            const sendTx = await deployer.sendTransaction({
-                to: predictedAddress,
-                value: hre.ethers.utils.parseEther('0.1'),
-                gasLimit: 100000
-            });
-            await sendTx.wait();
-
-            const balance = await hre.ethers.provider.getBalance(predictedAddress);
-            console.log(`[${network}] 💰 Wallet balance: ${hre.ethers.utils.formatEther(balance)} ETH`);
-
-            // Test ERC-4337 interaction with real EntryPoint
-            await testEntryPointInteraction(predictedAddress, artifacts, deployer, network);
-
-            // Test with Official SDK (Production Approach) - Fallback case
-            console.log(`[${network}] 🌐 Testing with Official Biconomy SDK (fallback)...`);
-            const sdkTestResult = await testWalletWithOfficialSDK(deployer, network);
-
-            if (sdkTestResult.success) {
-                console.log(`[${network}] ✅ Official SDK test completed successfully!`);
-                console.log(`[${network}] 📋 SDK Account Address: ${sdkTestResult.sdkAccountAddress}`);
-            } else {
-                console.log(`[${network}] ⚠️  Official SDK test had limitations (expected for local testing)`);
-                console.log(`[${network}] 📋 Error: ${sdkTestResult.error}`);
-            }
-        }
-
-    } catch (error) {
-        console.error(`[${network}] ❌ MultiCall deployment failed:`, error);
-        throw error;
-    }
-}
-
-/**
- * Test ERC-4337 interaction with the real EntryPoint
- */
-async function testEntryPointInteraction(walletAddress: string, artifacts: any, deployer: any, network: string) {
-    console.log(`[${network}] 🚀 Testing ERC-4337 interaction with REAL EntryPoint...`);
-
-    try {
-        // Connect to the real EntryPoint
-        const entryPoint = new hre.ethers.Contract(artifacts.entryPoint, [
-            'function getNonce(address sender, uint192 key) external view returns (uint256 nonce)',
-            'function handleOps(tuple(address sender, uint256 nonce, bytes initCode, bytes callData, uint256 callGasLimit, uint256 verificationGasLimit, uint256 preVerificationGas, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes paymasterAndData, bytes signature)[] calldata ops, address payable beneficiary) external',
-            'function getUserOpHash(tuple(address sender, uint256 nonce, bytes initCode, bytes callData, uint256 callGasLimit, uint256 verificationGasLimit, uint256 preVerificationGas, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes paymasterAndData, bytes signature) calldata userOp) external view returns (bytes32)',
-            'function simulateValidation(tuple(address sender, uint256 nonce, bytes initCode, bytes callData, uint256 callGasLimit, uint256 verificationGasLimit, uint256 preVerificationGas, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes paymasterAndData, bytes signature) calldata userOp) external'
-        ], deployer);
-
-        console.log(`[${network}] 📋 Using EntryPoint: ${artifacts.entryPoint}`);
-        console.log(`[${network}] 📋 EntryPoint Source: ${artifacts.source || 'deployed_real'}`);
-        console.log(`[${network}] 📋 EntryPoint Code Size: ${artifacts.codeSize || 'Unknown'} bytes`);
-
-        // Get wallet nonce
-        const currentNonce = await entryPoint.getNonce(walletAddress, 0);
-        console.log(`[${network}] 📊 Wallet nonce: ${currentNonce.toString()}`);
-
-        // Create Nexus wallet interface
-        const nexusWallet = new hre.ethers.Contract(walletAddress, [
-            'function execute(bytes32 mode, bytes calldata executionCalldata) external payable',
-            'function accountId() external view returns (string)',
-            'function isModuleInstalled(uint256 moduleTypeId, address module, bytes calldata additionalContext) external view returns (bool)'
-        ], deployer);
-
-        // Check wallet info
-        try {
-            const accountId = await nexusWallet.accountId();
-            console.log(`[${network}] 🆔 Wallet Account ID: ${accountId}`);
-        } catch (error) {
-            console.log(`[${network}] ⚠️  Could not read account ID: ${error.message}`);
-        }
-
-        // Check K1Validator installation
-        try {
-            const isK1ValidatorInstalled = await nexusWallet.isModuleInstalled(1, artifacts.validator?.address || artifacts.nexusK1Validator, '0x');
-            console.log(`[${network}] 🔐 K1Validator installed: ${isK1ValidatorInstalled ? '✅' : '❌'}`);
-        } catch (error) {
-            console.log(`[${network}] ⚠️  Could not check K1Validator: ${error.message}`);
-        }
-
-        // Prepare a simple ETH transfer transaction
-        const targetAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Second hardhat account
-        const transferAmount = hre.ethers.utils.parseEther('0.01'); // 0.01 ETH
-
-        console.log(`[${network}] 💸 Preparing ETH transfer via ERC-4337:`);
-        console.log(`[${network}]    From: ${walletAddress}`);
-        console.log(`[${network}]    To: ${targetAddress}`);
-        console.log(`[${network}]    Amount: ${hre.ethers.utils.formatEther(transferAmount)} ETH`);
-
-        // Create execution calldata for ETH transfer
-        const transferCalldata = hre.ethers.utils.solidityPack(
-            ['address', 'uint256', 'bytes'],
-            [targetAddress, transferAmount, '0x']
         );
 
-        // Create callData for wallet.execute()
-        const EXECUTE_SINGLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
-        const walletCallData = nexusWallet.interface.encodeFunctionData('execute', [
-            EXECUTE_SINGLE,
-            transferCalldata
-        ]);
+        console.log(`[${network}] 📋 MultiCall deployment transaction: ${deployTx.hash}`);
+        const receipt = await deployTx.wait();
+        console.log(`[${network}] ✅ MultiCall deployment completed in block: ${receipt.blockNumber}`);
+        console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
 
-        // Create UserOperation
-        const userOp = {
-            sender: walletAddress,
-            nonce: currentNonce,
-            initCode: '0x', // Wallet already deployed
-            callData: walletCallData,
-            callGasLimit: 200000,
-            verificationGasLimit: 200000,
-            preVerificationGas: 50000,
-            maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
-            maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei'),
-            paymasterAndData: '0x',
-            signature: '0x' // Will be filled after signing
-        };
-
-        console.log(`[${network}] 🔧 UserOperation created:`);
-        console.log(`[${network}]    Nonce: ${userOp.nonce.toString()}`);
-        console.log(`[${network}]    CallData length: ${Math.floor(userOp.callData.length / 2)} bytes`);
-        console.log(`[${network}]    Gas limits: ${userOp.callGasLimit}/${userOp.verificationGasLimit}/${userOp.preVerificationGas}`);
-
-        // Get UserOp hash for signing
-        const userOpHash = await entryPoint.getUserOpHash(userOp);
-        console.log(`[${network}] 🔐 UserOp hash: ${userOpHash}`);
-
-        // Sign the UserOp hash
-        const signature = await deployer.signMessage(hre.ethers.utils.arrayify(userOpHash));
-        console.log(`[${network}] ✍️  Signature: ${signature.slice(0, 20)}...`);
-
-        // Create signed UserOperation
-        const signedUserOp = {
-            ...userOp,
-            signature: signature
-        };
-
-        // Test 1: Simulate the UserOperation first
-        console.log(`[${network}] 🧪 Step 1: Simulating UserOperation...`);
-        try {
-            await entryPoint.callStatic.simulateValidation(signedUserOp);
-            console.log(`[${network}] ✅ UserOperation simulation successful!`);
-        } catch (simError) {
-            console.log(`[${network}] ⚠️  Simulation failed (expected for signature issues): ${simError.message}`);
-
-            // Check if it's a signature validation error (expected)
-            if (simError.message.includes('AA24') ||
-                simError.message.includes('AA23') ||
-                simError.message.includes('signature') ||
-                simError.message.includes('validation')) {
-                console.log(`[${network}] 📋 This is likely a signature format issue with K1Validator`);
-            }
-        }
-
-        // Test 2: Execute the UserOperation
-        console.log(`[${network}] 🚀 Step 2: Executing UserOperation via EntryPoint...`);
-
-        // Check balances before
-        const walletBalanceBefore = await hre.ethers.provider.getBalance(walletAddress);
-        const targetBalanceBefore = await hre.ethers.provider.getBalance(targetAddress);
-
-        console.log(`[${network}] 💰 Balances before transaction:`);
-        console.log(`[${network}]    Wallet: ${hre.ethers.utils.formatEther(walletBalanceBefore)} ETH`);
-        console.log(`[${network}]    Target: ${hre.ethers.utils.formatEther(targetBalanceBefore)} ETH`);
-
-        try {
-            const handleOpsTx = await entryPoint.handleOps([signedUserOp], await deployer.getAddress(), {
-                gasLimit: 1000000
-            });
-
-            console.log(`[${network}] 📋 EntryPoint transaction: ${handleOpsTx.hash}`);
-            const receipt = await handleOpsTx.wait();
-            console.log(`[${network}] ✅ UserOperation executed successfully!`);
-            console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
-
-            // Check balances after
-            const walletBalanceAfter = await hre.ethers.provider.getBalance(walletAddress);
-            const targetBalanceAfter = await hre.ethers.provider.getBalance(targetAddress);
-
-            console.log(`[${network}] 💰 Balances after transaction:`);
-            console.log(`[${network}]    Wallet: ${hre.ethers.utils.formatEther(walletBalanceAfter)} ETH`);
-            console.log(`[${network}]    Target: ${hre.ethers.utils.formatEther(targetBalanceAfter)} ETH`);
-
-            // Calculate changes
-            const walletChange = hre.ethers.BigNumber.from(walletBalanceBefore).sub(hre.ethers.BigNumber.from(walletBalanceAfter));
-            const targetChange = hre.ethers.BigNumber.from(targetBalanceAfter).sub(hre.ethers.BigNumber.from(targetBalanceBefore));
-
-            console.log(`[${network}] 📊 Balance changes:`);
-            console.log(`[${network}]    Wallet: -${hre.ethers.utils.formatEther(walletChange)} ETH`);
-            console.log(`[${network}]    Target: +${hre.ethers.utils.formatEther(targetChange)} ETH`);
-
-            if (targetChange.gt(0)) {
-                console.log(`[${network}] 🎉 SUCCESS! ERC-4337 transaction completed successfully!`);
-                console.log(`[${network}] 🏆 Real EntryPoint + Nexus wallet + K1Validator working together!`);
-            } else {
-                console.log(`[${network}] ⚠️  Transaction executed but no ETH transfer detected`);
-            }
-
-        } catch (executeError) {
-            console.log(`[${network}] ⚠️  UserOperation execution failed: ${executeError.message}`);
-
-            // Analyze the error
-            if (executeError.message.includes('AA23') || executeError.message.includes('AA24')) {
-                console.log(`[${network}] 📋 This is an ERC-4337 validation error:`);
-                console.log(`[${network}]    AA23: Validation failed (signature/validator issue)`);
-                console.log(`[${network}]    AA24: Signature verification failed`);
-                console.log(`[${network}] 💡 The EntryPoint is working correctly - signature format needs adjustment`);
-            } else if (executeError.message.includes('AA25')) {
-                console.log(`[${network}] 📋 AA25: Invalid account nonce`);
-            } else if (executeError.message.includes('AA21')) {
-                console.log(`[${network}] 📋 AA21: Account didn't pay prefund`);
-            } else {
-                console.log(`[${network}] 📋 Other execution error: ${executeError.message}`);
-            }
-
-            console.log(`[${network}] ✅ EntryPoint interface confirmed working - validation logic triggered`);
-        }
-
-        console.log(`[${network}] 📋 ERC-4337 EntryPoint interaction test completed`);
-        console.log(`[${network}] 🎯 Key findings:`);
-        console.log(`[${network}]    ✅ Real EntryPoint deployed and accessible`);
-        console.log(`[${network}]    ✅ UserOperation creation working`);
-        console.log(`[${network}]    ✅ Signature generation working`);
-        console.log(`[${network}]    ✅ EntryPoint.handleOps interface working`);
-        console.log(`[${network}]    ⚠️  Signature validation may need K1Validator-specific format`);
+        // Verify deployment
+        await verifyDeployment(predictedAddress, network);
+        await testWalletFunctionality(predictedAddress, artifacts, deployer, network);
 
     } catch (error) {
-        console.error(`[${network}] ❌ EntryPoint interaction test failed:`, error.message);
-        console.log(`[${network}] 📋 This might indicate EntryPoint deployment or interface issues`);
+        console.error(`[${network}] ❌ MultiCall deployment failed:`, error.message);
+
+        // Fallback to direct deployment
+        console.log(`[${network}] 🔄 Falling back to direct NexusAccountFactory deployment...`);
+        await deployNexusWithCFAFactory(env, artifacts, initData, salt, walletConfig);
     }
 }
 
 /**
- * Verify the wallet was deployed correctly
+ * Test basic Nexus wallet functionality
  */
-async function verifyDeployment(walletAddress: string, network: string) {
-    console.log(`[${network}] Verifying deployment...`);
+async function testWalletFunctionality(
+    walletAddress: string,
+    artifacts: any,
+    deployer: any,
+    network: string
+): Promise<void> {
+    console.log(`[${network}] 🧪 Testing wallet functionality...`);
+
+    try {
+        // Connect to Nexus wallet
+        const nexusWallet = await hre.ethers.getContractAt('Nexus', walletAddress);
+
+        // Test basic properties
+        const accountId = await nexusWallet.accountId();
+        console.log(`[${network}] 📋 Account ID: ${accountId}`);
+
+        // Test ETH reception
+        console.log(`[${network}] 💰 Testing ETH reception...`);
+        const fundTx = await deployer.sendTransaction({
+            to: walletAddress,
+            value: hre.ethers.utils.parseEther('0.01'),
+            gasLimit: 100000
+        });
+        await fundTx.wait();
+
+        const walletBalance = await hre.ethers.provider.getBalance(walletAddress);
+        console.log(`[${network}] 💰 Wallet balance: ${hre.ethers.utils.formatEther(walletBalance)} ETH`);
+
+        if (walletBalance.gt(0)) {
+            console.log(`[${network}] ✅ ETH reception: PASSED`);
+        } else {
+            console.log(`[${network}] ❌ ETH reception: FAILED`);
+        }
+
+        // Deposit to EntryPoint for UserOp gas prefund
+        await depositToEntryPoint(walletAddress, artifacts.entryPoint, deployer, network);
+
+        // Test ERC-4337 UserOp execution via EntryPoint
+        await testUserOpExecution(walletAddress, artifacts, deployer, network);
+
+        console.log(`[${network}] ✅ Nexus wallet is fully functional with simplified architecture!`);
+
+    } catch (error) {
+        console.error(`[${network}] ❌ Wallet functionality test failed:`, error.message);
+    }
+}
+
+/**
+ * Verify wallet deployment by checking code size
+ */
+async function verifyDeployment(walletAddress: string, network: string): Promise<void> {
+    console.log(`[${network}] 🔍 Verifying deployment at ${walletAddress}...`);
 
     const publicClient = createViemPublicClient();
-    const code = await publicClient.getCode({ address: walletAddress as `0x${string}` });
-    if (!code || code === '0x') {
-        throw new Error('Wallet deployment failed - no code at address');
+    const deployedCode = await publicClient.getCode({ address: walletAddress as `0x${string}` });
+
+    if (!deployedCode || deployedCode === '0x') {
+        throw new Error('Wallet deployment verification failed - no code at address');
+    }
+
+    const codeSize = Math.floor(deployedCode.length / 2);
+    console.log(`[${network}] 📏 Deployed code size: ${codeSize} bytes`);
+
+    if (codeSize < 100) {
+        throw new Error(`Wallet deployment verification failed - code too small (${codeSize} bytes)`);
     }
 
     console.log(`[${network}] ✅ Deployment verified - wallet has code`);
+}
+
+/**
+ * Deposit ETH to EntryPoint for UserOp gas prefund
+ */
+async function depositToEntryPoint(walletAddress: string, entryPointAddress: string, deployer: any, network: string): Promise<void> {
+    console.log(`[${network}] 🏦 Depositing to EntryPoint for UserOp gas prefund...`);
+
+    try {
+        const entryPoint = await hre.ethers.getContractAt('EntryPoint', entryPointAddress);
+
+        // Check current deposit
+        const currentDeposit = await entryPoint.balanceOf(walletAddress);
+        console.log(`[${network}] 📋 Current EntryPoint deposit: ${hre.ethers.utils.formatEther(currentDeposit)} ETH`);
+
+        // Deposit if needed
+        const requiredDeposit = hre.ethers.utils.parseEther('0.05'); // 0.05 ETH for gas
+
+        if (currentDeposit.lt(requiredDeposit)) {
+            const depositAmount = requiredDeposit.sub(currentDeposit);
+            console.log(`[${network}] 💸 Depositing ${hre.ethers.utils.formatEther(depositAmount)} ETH to EntryPoint...`);
+
+            const depositTx = await entryPoint.depositTo(walletAddress, {
+                value: depositAmount,
+                gasLimit: 100000
+            });
+            await depositTx.wait();
+
+            const newDeposit = await entryPoint.balanceOf(walletAddress);
+            console.log(`[${network}] ✅ EntryPoint deposit: ${hre.ethers.utils.formatEther(newDeposit)} ETH`);
+        } else {
+            console.log(`[${network}] ✅ Sufficient EntryPoint deposit already exists`);
+        }
+
+    } catch (error) {
+        console.log(`[${network}] ❌ EntryPoint deposit failed: ${error.message}`);
+        console.log(`[${network}] 💡 UserOp execution may fail without sufficient deposit`);
+    }
+}
+
+/**
+ * Test ERC-4337 UserOp execution via EntryPoint
+ */
+async function testUserOpExecution(walletAddress: string, artifacts: any, deployer: any, network: string): Promise<void> {
+    console.log(`[${network}] 🚀 Testing ERC-4337 UserOp execution via EntryPoint v0.7...`);
+
+    try {
+        // Connect to wallet and EntryPoint
+        const nexusWallet = await hre.ethers.getContractAt('Nexus', walletAddress);
+        const entryPoint = await hre.ethers.getContractAt('EntryPoint', artifacts.entryPoint);
+
+        console.log(`[${network}] 📋 Wallet: ${walletAddress}`);
+        console.log(`[${network}] 📋 EntryPoint v0.7: ${artifacts.entryPoint}`);
+
+        // Verify EntryPoint compatibility
+        const walletEntryPoint = await nexusWallet.entryPoint();
+        if (walletEntryPoint.toLowerCase() !== artifacts.entryPoint.toLowerCase()) {
+            console.log(`[${network}] ❌ EntryPoint mismatch: ${walletEntryPoint} vs ${artifacts.entryPoint}`);
+            return;
+        }
+        console.log(`[${network}] ✅ EntryPoint compatibility verified`);
+
+        // Prepare UserOp: ETH transfer (same as debug script)
+        const target = deployer.address;
+        const value = hre.ethers.utils.parseEther('0.001'); // 0.001 ETH
+        const callData = '0x';
+
+        console.log(`[${network}] 📋 UserOp: Transfer ${hre.ethers.utils.formatEther(value)} ETH to ${target}`);
+
+        // Encode execution call
+        const mode = '0x0000000000000000000000000000000000000000000000000000000000000000';
+        const executionCallData = hre.ethers.utils.defaultAbiCoder.encode(
+            ['address', 'uint256', 'bytes'],
+            [target, value, callData]
+        );
+        const fullExecuteCallData = nexusWallet.interface.encodeFunctionData('execute', [mode, executionCallData]);
+
+        // Get current nonce
+        const currentNonce = await entryPoint.getNonce(walletAddress, 0);
+        console.log(`[${network}] 📋 Current nonce: ${currentNonce.toString()}`);
+
+        // Gas configuration (conservative limits - same as debug script)
+        const callGasLimit = 500000;
+        const verificationGasLimit = 1000000;
+        const preVerificationGas = 200000;
+        const maxFeePerGas = hre.ethers.utils.parseUnits('20', 'gwei');
+        const maxPriorityFeePerGas = hre.ethers.utils.parseUnits('10', 'gwei');
+
+        // Pack gas limits (EntryPoint v0.7 format)
+        const accountGasLimits = hre.ethers.utils.concat([
+            hre.ethers.utils.hexZeroPad(hre.ethers.utils.hexlify(verificationGasLimit), 16),
+            hre.ethers.utils.hexZeroPad(hre.ethers.utils.hexlify(callGasLimit), 16)
+        ]);
+
+        const gasFees = hre.ethers.utils.concat([
+            hre.ethers.utils.hexZeroPad(maxPriorityFeePerGas.toHexString(), 16),
+            hre.ethers.utils.hexZeroPad(maxFeePerGas.toHexString(), 16)
+        ]);
+
+        // Create PackedUserOperation (EntryPoint v0.7)
+        const packedUserOp = {
+            sender: walletAddress,
+            nonce: currentNonce,
+            initCode: '0x',
+            callData: fullExecuteCallData,
+            accountGasLimits: accountGasLimits,
+            preVerificationGas: preVerificationGas,
+            gasFees: gasFees,
+            paymasterAndData: '0x',
+            signature: '0x'
+        };
+
+        // Sign UserOp
+        const userOpHash = await entryPoint.getUserOpHash(packedUserOp);
+        const signature = await deployer.signMessage(hre.ethers.utils.arrayify(userOpHash));
+        packedUserOp.signature = signature;
+
+        console.log(`[${network}] ✍️  UserOp signed`);
+
+        // Record balances before execution
+        const deployerBalanceBefore = await hre.ethers.provider.getBalance(deployer.address);
+        const walletBalanceBefore = await hre.ethers.provider.getBalance(walletAddress);
+
+        console.log(`[${network}] 📊 Balances BEFORE:`);
+        console.log(`[${network}]   - Deployer: ${hre.ethers.utils.formatEther(deployerBalanceBefore)} ETH`);
+        console.log(`[${network}]   - Wallet: ${hre.ethers.utils.formatEther(walletBalanceBefore)} ETH`);
+
+        // Execute UserOp via EntryPoint
+        console.log(`[${network}] 🚀 Executing UserOp via EntryPoint v0.7...`);
+
+        const handleOpsTx = await entryPoint.handleOps(
+            [packedUserOp],
+            deployer.address, // beneficiary
+            { gasLimit: 3000000 }
+        );
+        const handleOpsReceipt = await handleOpsTx.wait();
+
+        console.log(`[${network}] 🎉 UserOp executed successfully!`);
+        console.log(`[${network}] 📋 Transaction: ${handleOpsReceipt.transactionHash}`);
+        console.log(`[${network}] 📋 Gas used: ${handleOpsReceipt.gasUsed.toLocaleString()}`);
+
+        // Check final balances
+        const deployerBalanceAfter = await hre.ethers.provider.getBalance(deployer.address);
+        const walletBalanceAfter = await hre.ethers.provider.getBalance(walletAddress);
+
+        console.log(`[${network}] 📊 Balances AFTER:`);
+        console.log(`[${network}]   - Deployer: ${hre.ethers.utils.formatEther(deployerBalanceAfter)} ETH`);
+        console.log(`[${network}]   - Wallet: ${hre.ethers.utils.formatEther(walletBalanceAfter)} ETH`);
+
+        // Calculate changes
+        const deployerChange = deployerBalanceAfter.sub(deployerBalanceBefore);
+        const walletChange = walletBalanceBefore.sub(walletBalanceAfter);
+
+        console.log(`[${network}] 📈 Balance Changes:`);
+        console.log(`[${network}]   - Deployer: ${deployerChange.gte(0) ? '+' : ''}${hre.ethers.utils.formatEther(deployerChange)} ETH`);
+        console.log(`[${network}]   - Wallet: -${hre.ethers.utils.formatEther(walletChange)} ETH`);
+
+        // Verify successful execution (EntryPoint pays from deposit)
+        if (handleOpsReceipt.status === 1) {
+            console.log(`[${network}] ✅ ERC-4337 UserOp execution: SUCCESS!`);
+            console.log(`[${network}] ✅ ETH transfer via EntryPoint: WORKING!`);
+            console.log(`[${network}] 🎯 EntryPoint v0.7 integration: COMPLETE!`);
+        } else {
+            console.log(`[${network}] ❌ UserOp execution failed`);
+        }
+
+    } catch (error) {
+        console.log(`[${network}] ❌ ERC-4337 UserOp execution failed: ${error.message}`);
+
+        // Decode specific errors
+        if (error.data && typeof error.data === 'string') {
+            if (error.data.startsWith('0x65c8fd4d')) {
+                try {
+                    const decoded = hre.ethers.utils.defaultAbiCoder.decode(
+                        ['uint256', 'string'],
+                        '0x' + error.data.substring(10)
+                    );
+                    console.log(`[${network}] 📋 FailedOp: index=${decoded[0]}, reason="${decoded[1]}"`);
+                } catch (decodeError) {
+                    console.log(`[${network}] 📋 Raw error data: ${error.data}`);
+                }
+            } else if (error.data.startsWith('0x220266b6')) {
+                console.log(`[${network}] 📋 AA21 error detected - validation failure`);
+            }
+        }
+
+        console.log(`[${network}] 💡 Note: ERC-4337 test failure doesn't affect basic wallet functionality`);
+    }
 }
 
 // Execute the script

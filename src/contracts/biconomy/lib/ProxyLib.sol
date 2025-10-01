@@ -59,30 +59,4 @@ library ProxyLib {
       address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash)))))
     );
   }
-
-  /// @notice Predicts the address of a NexusProxy contract using a specific factory address for CFA compatibility.
-  /// @param implementation The address of the implementation contract.
-  /// @param salt The salt used for the contract creation.
-  /// @param initData The initialization data for the implementation contract.
-  /// @param factoryAddress The factory address to use for CFA calculation (for Passport compatibility).
-  /// @return predictedAddress The predicted address of the new contract.
-  function predictProxyAddressWithFactory(
-    address implementation,
-    bytes32 salt,
-    bytes memory initData,
-    address factoryAddress
-  ) internal pure returns (address payable predictedAddress) {
-    // Get the init code hash
-    bytes32 initCodeHash = keccak256(
-      abi.encodePacked(
-        type(NexusProxy).creationCode,
-        abi.encode(implementation, abi.encodeCall(INexus.initializeAccount, initData))
-      )
-    );
-
-    // Compute the predicted address using the specified factory address
-    predictedAddress = payable(
-      address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), factoryAddress, salt, initCodeHash)))))
-    );
-  }
 }

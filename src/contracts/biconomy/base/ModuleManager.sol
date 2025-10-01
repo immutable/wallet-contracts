@@ -52,10 +52,9 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   address internal immutable _DEFAULT_VALIDATOR;
 
   /// @dev initData should block the implementation from being used as a Smart Account
-  constructor(address _defaultValidator, bytes memory /* _initData */) {
+  constructor(address _defaultValidator, bytes memory _initData) {
     if (!IValidator(_defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) revert MismatchModuleTypeId();
-    // Don't call onInstall in the constructor to avoid initialization issues
-    // The validator will be initialized later via initNexusWithDefaultValidator
+    IValidator(_defaultValidator).onInstall(_initData);
     _DEFAULT_VALIDATOR = _defaultValidator;
   }
 
@@ -610,6 +609,10 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   /// @param validator The address of the validator to check.
   /// @return True if the validator is installed, otherwise false.
   function _isValidatorInstalled(address validator) internal view virtual returns (bool) {
+    // DEFAULT_VALIDATOR is always considered "installed" once the account is initialized
+    if (validator == _DEFAULT_VALIDATOR) {
+      return true;
+    }
     return _getAccountStorage().validators.contains(validator);
   }
 

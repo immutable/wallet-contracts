@@ -23,8 +23,20 @@ async function step4(): Promise<EnvironmentInfo> {
     const step3Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step3.json', 'utf8'));
     const startupWalletImplAddress = step3Data.startupWalletImpl;
 
-    // Get entry point address from env
-    const entryPointAddress = process.env.ENTRY_POINT_ADDRESS;
+    // Get entry point address from step8 (EntryPoint v0.7) or env fallback
+    let entryPointAddress = process.env.ENTRY_POINT_ADDRESS;
+
+    // Try to load EntryPoint v0.7 from step8.json
+    try {
+        const step8Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step8.json', 'utf8'));
+        if (step8Data.entryPoint) {
+            entryPointAddress = step8Data.entryPoint;
+            console.log(`[${network}] 📋 Using EntryPoint v0.7 from step8: ${entryPointAddress}`);
+        }
+    } catch (step8Error) {
+        console.log(`[${network}] ⚠️  Could not load step8.json, using env: ${entryPointAddress}`);
+    }
+
     const defaultValidatorAddress = process.env.DEFAULT_VALIDATOR_ADDRESS;
 
     console.log(`[${network}] Starting Biconomy deployment step 4...`);
@@ -65,12 +77,15 @@ async function step4(): Promise<EnvironmentInfo> {
     // Deploy Nexus (core smart account implementation) via CREATE2
     let nexus;
     try {
+        // K1Validator.onInstall expects the address as hex bytes (like SDK does)
+        const initData = hre.ethers.utils.hexlify(hre.ethers.utils.getAddress(deployerAddress));
+
         nexus = await deployContractViaCREATE2(env, wallets, 'Nexus', [
             entryPointAddress,      // EntryPoint for Account Abstraction
             validator.address,      // Use K1Validator as the default implementation
-            '0x'                    // Empty initData for implementation deployment
+            initData                // Valid initData with deployer address for K1Validator
         ]);
-        console.log(`[${network}] ✅ Nexus implementation deployed at: ${nexus.address}`);
+        console.log(`[${network}] ✅ Nexus implementation (v0.7 compatible) deployed at: ${nexus.address}`);
     } catch (error) {
         console.error('❌ Error deploying Nexus via CREATE2:', error);
         throw error;

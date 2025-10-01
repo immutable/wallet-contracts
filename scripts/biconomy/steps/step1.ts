@@ -29,7 +29,7 @@ async function step1(): Promise<EnvironmentInfo> {
         throw new Error('Required environment variables not set');
     }
 
-    await waitForInput();
+    // await waitForInput(); // Commented out for automated deployment
 
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
@@ -41,24 +41,21 @@ async function step1(): Promise<EnvironmentInfo> {
         submitterAddress
     ]);
 
-    // Deploy Passport Factory (proven working)
-    console.log(`[${network}] Deploying Factory (Passport)...`);
-    const factory = await deployContract(env, wallets, 'Factory', [
-        factoryAdminPubKey,
-        multiCallDeploy.address
-    ]);
+    // NOTE: Factory deployment removed - using new simplified architecture
+    // MultiCallDeploy will work directly with NexusAccountFactory (deployed in step9)
+    console.log(`[${network}] ✅ Factory deployment skipped - using simplified architecture`);
 
     // Save deployment information
     fs.writeFileSync('scripts/biconomy/steps/step1.json', JSON.stringify({
         multiCallAdminPubKey,
         factoryAdminPubKey,
         multiCallDeploy: multiCallDeploy.address,
-        factory: factory.address,
+        // factory: removed - not needed anymore
     }, null, 1));
 
     console.log(`[${network}] Step 1 deployment completed`);
     console.log(`[${network}] MultiCallDeploy (Passport) deployed at: ${multiCallDeploy.address}`);
-    console.log(`[${network}] Factory (Passport) deployed at: ${factory.address}`);
+    console.log(`[${network}] ✅ Factory deployment skipped - using simplified architecture`);
 
     return env;
 }

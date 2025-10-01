@@ -25,7 +25,7 @@ async function step2(): Promise<EnvironmentInfo> {
         throw new Error('Required environment variables not set');
     }
 
-    await waitForInput();
+    // await waitForInput(); // Commented out for automated deployment
 
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);

@@ -25,7 +25,7 @@ async function step3(): Promise<EnvironmentInfo> {
         throw new Error('WalletImplLocator address not found in step2.json');
     }
 
-    await waitForInput();
+    // await waitForInput(); // Commented out for automated deployment
 
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);

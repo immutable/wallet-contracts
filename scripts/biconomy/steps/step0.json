@@ -1,7 +1,7 @@
 {
-  "create2DeployerAddress": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
+  "create2DeployerAddress": "0x05bB67cB592C1753425192bF8f34b95ca8649f09",
   "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "network": "localhost",
-  "deployedAt": "2025-10-01T00:59:54.768Z",
+  "deployedAt": "2025-10-01T12:23:41.524Z",
   "codeSize": 3125
 }
