@@ -6,12 +6,32 @@ import { ethers } from 'ethers';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
 
+// Import viem for utilities and SDK compatibility
+import {
+    createPublicClient,
+    http,
+    parseEther,
+    formatEther,
+    zeroAddress,
+    encodeAbiParameters,
+    parseAbiParameters,
+    concat
+} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+
 // Import Biconomy SDK for production testing
 const { createSmartAccountClient } = require('@biconomy/abstractjs');
 const { toNexusAccount } = require('@biconomy/abstractjs');
 const { getMEEVersion, DEFAULT_MEE_VERSION } = require('@biconomy/abstractjs');
-const { http } = require('viem');
-const { privateKeyToAccount } = require('viem/accounts');
+
+// Create viem public client helper
+function createViemPublicClient() {
+    const networkConfig = hre.network.config as any;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    return createPublicClient({
+        transport: http(rpcUrl)
+    });
+}
 
 /**
  * Configuration for wallet deployment
@@ -122,13 +142,13 @@ async function deployWallet(): Promise<void> {
             // Example: Send 0.1 ETH to another address (to force MultiCallDeploy)
             {
                 to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-                value: ethers.utils.parseEther("0.1"),
+                value: parseEther("0.1"),
                 data: '0x'
             },
             // Another example transaction
             {
                 to: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-                value: ethers.utils.parseEther("0.05"),
+                value: parseEther("0.05"),
                 data: '0x'
             }
         ]
@@ -144,19 +164,19 @@ async function deployWallet(): Promise<void> {
 
     if (forceNewWallet) {
         // Generate random salt for new wallet
-        salt = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
-                ['address', 'uint256'],
-                [walletConfig.owner, Date.now()]
+        salt = hre.ethers.utils.keccak256(
+            encodeAbiParameters(
+                parseAbiParameters('address, uint256'),
+                [walletConfig.owner as `0x${string}`, Date.now()]
             )
         );
         console.log(`[${network}] 🔄 FORCING NEW WALLET with random salt`);
     } else {
         // Use deterministic salt
-        salt = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
-                ['address'],
-                [walletConfig.owner]
+        salt = hre.ethers.utils.keccak256(
+            encodeAbiParameters(
+                parseAbiParameters('address'),
+                [walletConfig.owner as `0x${string}`]
             )
         );
     }
@@ -228,8 +248,9 @@ async function deployNexusWithCFAFactory(
     console.log(`[${network}] 🔮 Predicted CFA-compatible address: ${cfaCompatibleAddress}`);
 
     // Check if wallet already exists
-    const existingCode = await hre.ethers.provider.getCode(cfaCompatibleAddress);
-    if (existingCode !== '0x') {
+    const publicClient = createViemPublicClient();
+    const existingCode = await publicClient.getCode({ address: cfaCompatibleAddress as `0x${string}` });
+    if (existingCode && existingCode !== '0x') {
         console.log(`[${network}] ✅ Wallet already exists at ${cfaCompatibleAddress}`);
         await verifyDeployment(cfaCompatibleAddress, network);
         return;
@@ -271,7 +292,7 @@ async function deployNexusWithCFAFactory(
         await sendTx.wait();
 
         const balance = await hre.ethers.provider.getBalance(deployedAddress);
-        console.log(`[${network}] 💰 Wallet balance: ${hre.ethers.utils.formatEther(balance)} ETH`);
+        console.log(`[${network}] 💰 Wallet balance: ${formatEther(balance)} ETH`);
 
         // Test ERC-4337 interaction with real EntryPoint
         await testEntryPointInteraction(deployedAddress, artifacts, deployer, network);
@@ -1071,8 +1092,9 @@ async function testEntryPointInteraction(walletAddress: string, artifacts: any, 
 async function verifyDeployment(walletAddress: string, network: string) {
     console.log(`[${network}] Verifying deployment...`);
 
-    const code = await hre.ethers.provider.getCode(walletAddress);
-    if (code === '0x') {
+    const publicClient = createViemPublicClient();
+    const code = await publicClient.getCode({ address: walletAddress as `0x${string}` });
+    if (!code || code === '0x') {
         throw new Error('Wallet deployment failed - no code at address');
     }
 

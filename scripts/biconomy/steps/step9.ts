@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
+import { createPublicClient, http } from 'viem';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
 import { deployContract } from '../../contract';
@@ -32,22 +33,32 @@ async function step9(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
     const deployer = wallets.getWallet();
+    const deployerAddress = await deployer.getAddress(); // Cache address
 
     // Deploy PassportCompatibleNexusFactory
     console.log(`[${network}] Deploying PassportCompatibleNexusFactory...`);
     console.log(`[${network}] - Nexus Implementation: ${nexusImplementation}`);
     console.log(`[${network}] - Old Passport Factory: ${oldPassportFactory}`);
-    console.log(`[${network}] - Owner: ${await deployer.getAddress()}`);
+    console.log(`[${network}] - Owner: ${deployerAddress}`);
 
     const passportCompatibleNexusFactory = await deployContract(env, wallets, 'PassportCompatibleNexusFactory', [
         nexusImplementation,    // Nexus implementation address
         oldPassportFactory,     // Old Passport factory for CFA compatibility
-        await deployer.getAddress() // Owner
+        deployerAddress         // Owner (cached)
     ]);
 
-    // Verify deployment
-    const deployedCode = await hre.ethers.provider.getCode(passportCompatibleNexusFactory.address);
-    if (deployedCode === '0x') {
+    // Verify deployment using viem public client
+    const networkConfig = hre.network.config as any;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    const publicClient = createPublicClient({
+        transport: http(rpcUrl)
+    });
+
+    const deployedCode = await publicClient.getCode({
+        address: passportCompatibleNexusFactory.address as `0x${string}`
+    });
+
+    if (!deployedCode || deployedCode === '0x') {
         throw new Error('PassportCompatibleNexusFactory deployment verification failed');
     }
 
@@ -85,7 +96,7 @@ async function step9(): Promise<EnvironmentInfo> {
         passportCompatibleNexusFactory: passportCompatibleNexusFactory.address,
         nexusImplementation: nexusImplementation,
         oldPassportFactory: oldPassportFactory,
-        owner: await deployer.getAddress(),
+        owner: deployerAddress, // Use cached address
         network: network,
         deployedAt: new Date().toISOString(),
         codeSize: Math.floor(deployedCode.length / 2),

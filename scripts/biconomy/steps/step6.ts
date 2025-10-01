@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { Contract, ContractFactory } from 'ethers';
+import { parseGwei } from 'viem';
 import { newContractFactory, waitForInput } from '../../helper-functions';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
@@ -43,12 +44,25 @@ async function step6(): Promise<EnvironmentInfo> {
     const walletImplLocator: Contract = contractFactory.attach(walletImplLocatorContractAddress);
 
     console.log(`[${network}] Updating LatestWalletImplLocator to point to Nexus implementation...`);
+
+    // Use viem for gas configuration with reasonable defaults for localhost
+    const gasLimit = process.env.GAS_LIMIT ? parseInt(process.env.GAS_LIMIT) : 500000;
+
+    // For localhost, use simple values. parseGwei('20') = 20 * 10^9 wei
+    const maxFeePerGas = parseGwei('20'); // 20 gwei
+    const maxPriorityFeePerGas = parseGwei('2'); // 2 gwei
+
+    console.log(`[${network}] Gas configuration:`);
+    console.log(`[${network}]   gasLimit: ${gasLimit}`);
+    console.log(`[${network}]   maxFeePerGas: ${maxFeePerGas} wei (20 gwei)`);
+    console.log(`[${network}]   maxPriorityFeePerGas: ${maxPriorityFeePerGas} wei (2 gwei)`);
+
     const tx = await walletImplLocator
         .connect(wallets.getWallet())
         .changeWalletImplementation(nexusImplAddress, {
-            gasLimit: process.env.GAS_LIMIT,
-            maxFeePerGas: process.env.MAX_FEE_PER_GAS,
-            maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
+            gasLimit,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
         });
 
     await tx.wait();

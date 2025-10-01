@@ -4,14 +4,32 @@ const { newWalletOptions } = require('../wallet-options');
 const { loadEnvironmentInfo } = require('../environment');
 const fs = require('fs');
 
-// Import viem for signature (following Biconomy SDK pattern)
+// Import viem for signature and utilities (following Biconomy SDK pattern)
 const { privateKeyToAccount } = require('viem/accounts');
+const {
+    createPublicClient,
+    http,
+    parseEther,
+    formatEther,
+    zeroAddress,
+    encodeAbiParameters,
+    parseAbiParameters,
+    concat
+} = require('viem');
 
 // Import Biconomy SDK for production testing
 const { createSmartAccountClient } = require('@biconomy/abstractjs');
 const { toNexusAccount } = require('@biconomy/abstractjs');
 const { getMEEVersion, DEFAULT_MEE_VERSION } = require('@biconomy/abstractjs');
-const { http } = require('viem');
+
+// Create viem public client helper
+function createViemPublicClient(network) {
+    const networkConfig = hre.network.config;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    return createPublicClient({
+        transport: http(rpcUrl)
+    });
+}
 
 // Generate working initData for Nexus deployment
 async function generateWorkingInitData(signerAddress, bootstrapAddress, k1ValidatorAddress) {
@@ -36,15 +54,15 @@ async function generateWorkingInitData(signerAddress, bootstrapAddress, k1Valida
             signerAddress, // defaultValidatorInitData (signer address for K1Validator)
             [], // validators - EMPTY because K1Validator is already the DEFAULT_VALIDATOR
             [], // executors (empty array for 1.2.x)
-            { module: hre.ethers.constants.AddressZero, data: '0x' }, // hook (empty)
+            { module: zeroAddress, data: '0x' }, // hook (empty)
             [], // fallbacks (empty array for 1.2.x)
             [] // prevalidationHooks (empty array for 1.2.x)
         ]
     );
 
     // Create the complete initData structure: [bootstrap_address, bootstrap_call_data]
-    const initData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'bytes'],
+    const initData = encodeAbiParameters(
+        parseAbiParameters('address, bytes'),
         [bootstrapAddress, bootstrapCallData]
     );
 
@@ -116,10 +134,10 @@ async function testWalletWithOfficialSDK(deployer, network) {
 
         try {
             const targetAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
-            const transferAmount = hre.ethers.utils.parseEther('0.001');
+            const transferAmount = parseEther('0.001');
 
             console.log(`[${network}]    🎯 Target: ${targetAddress}`);
-            console.log(`[${network}]    💰 Amount: ${hre.ethers.utils.formatEther(transferAmount)} ETH`);
+            console.log(`[${network}]    💰 Amount: ${formatEther(transferAmount)} ETH`);
 
             const userOp = await smartAccountClient.prepareUserOperation({
                 calls: [{
@@ -226,16 +244,19 @@ async function deployInfrastructureAndWalletWithCFA() {
 
     console.log('Deployer:', await deployer.getAddress());
     console.log('Network:', network);
-    console.log('Balance:', hre.ethers.utils.formatEther(await deployer.getBalance()), 'ETH');
+    console.log('Balance:', formatEther(await deployer.getBalance()), 'ETH');
     console.log('🎯 Deployment Method:', deploymentMethod);
     console.log('🔄 CFA Compatibility: ENABLED');
     console.log('');
+
+    // Initialize viem public client for code verification
+    const publicClient = createViemPublicClient(network);
 
     // PHASE 1: Deploy Infrastructure
     console.log('🏗️  PHASE 1: DEPLOYING INFRASTRUCTURE WITH CFA COMPATIBILITY');
     console.log('===========================================================');
 
-    const infrastructure = await deployInfrastructureWithCFA(deployer, network);
+    const infrastructure = await deployInfrastructureWithCFA(deployer, network, publicClient);
 
     // PHASE 2: Deploy Wallet
     console.log('\n🎯 PHASE 2: DEPLOYING WALLET WITH CFA COMPATIBILITY');
@@ -314,7 +335,7 @@ async function deployInfrastructureAndWalletWithCFA() {
     console.log('📁 Complete results saved to complete-deployment-cfa-success.json');
 }
 
-async function deployInfrastructureWithCFA(deployer, network) {
+async function deployInfrastructureWithCFA(deployer, network, publicClient) {
     console.log('📦 Deploying infrastructure components with CFA compatibility...\n');
 
     // Load EntryPoint artifact once for reuse throughout the function
@@ -345,8 +366,8 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
     // Wait and verify
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const factoryCode = await hre.ethers.provider.getCode(factory.address);
-    if (factoryCode === '0x') throw new Error('Factory deployment verification failed');
+    const factoryCode = await publicClient.getCode({ address: factory.address });
+    if (!factoryCode || factoryCode === '0x') throw new Error('Factory deployment verification failed');
     console.log('✅ Old Factory verified with', Math.floor(factoryCode.length / 2), 'bytes');
 
     // 3. Deploy LatestWalletImplLocator (Step 2)
@@ -361,8 +382,8 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
     // Wait and verify
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const locatorCode = await hre.ethers.provider.getCode(latestWalletImplLocator.address);
-    if (locatorCode === '0x') throw new Error('LatestWalletImplLocator deployment verification failed');
+    const locatorCode = await publicClient.getCode({ address: latestWalletImplLocator.address });
+    if (!locatorCode || locatorCode === '0x') throw new Error('LatestWalletImplLocator deployment verification failed');
     console.log('✅ LatestWalletImplLocator verified with', Math.floor(locatorCode.length / 2), 'bytes');
 
     // 4. Deploy StartupWalletImpl (Step 3)
@@ -376,8 +397,8 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
     // Wait and verify
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const startupCode = await hre.ethers.provider.getCode(startupWalletImpl.address);
-    if (startupCode === '0x') throw new Error('StartupWalletImpl deployment verification failed');
+    const startupCode = await publicClient.getCode({ address: startupWalletImpl.address });
+    if (!startupCode || startupCode === '0x') throw new Error('StartupWalletImpl deployment verification failed');
     console.log('✅ StartupWalletImpl verified with', Math.floor(startupCode.length / 2), 'bytes');
 
     // 5. Deploy K1Validator (Nexus Core - Step 4)
@@ -389,15 +410,15 @@ async function deployInfrastructureWithCFA(deployer, network) {
 
     // Wait and verify
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const validatorCode = await hre.ethers.provider.getCode(k1Validator.address);
-    if (validatorCode === '0x') throw new Error('K1Validator deployment verification failed');
+    const validatorCode = await publicClient.getCode({ address: k1Validator.address });
+    if (!validatorCode || validatorCode === '0x') throw new Error('K1Validator deployment verification failed');
     console.log('✅ K1Validator verified with', Math.floor(validatorCode.length / 2), 'bytes');
 
     // 6. Deploy Nexus Implementation (Step 4)
     console.log('\n6️⃣  Deploying Nexus Implementation (Step 4)...');
     const NexusFactory = await hre.ethers.getContractFactory('Nexus', deployer);
     const testEntryPoint = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Test EntryPoint
-    const initData = hre.ethers.utils.hexConcat([await deployer.getAddress()]);
+    const initData = concat([await deployer.getAddress()]);
 
     const nexus = await NexusFactory.deploy(
         testEntryPoint,       // entryPoint
@@ -459,7 +480,7 @@ async function deployInfrastructureWithCFA(deployer, network) {
         await deployer.getAddress(), // factoryOwner
         k1Validator.address,        // K1_VALIDATOR
         nexusBootstrap.address,     // BOOTSTRAPPER
-        hre.ethers.constants.AddressZero  // REGISTRY (minimal for now)
+        zeroAddress  // REGISTRY (minimal for now)
     );
     await k1ValidatorFactory.deployed();
     console.log('✅ K1ValidatorFactory:', k1ValidatorFactory.address);
@@ -776,18 +797,18 @@ async function testWalletOperations(infrastructure, walletAddress, deployer, net
         console.log('1️⃣  Testing ETH reception...');
 
         const initialBalance = await hre.ethers.provider.getBalance(walletAddress);
-        console.log(`   Initial wallet balance: ${hre.ethers.utils.formatEther(initialBalance)} ETH`);
+        console.log(`   Initial wallet balance: ${formatEther(initialBalance)} ETH`);
 
         // Send some ETH to the wallet
         const sendTx = await deployer.sendTransaction({
             to: walletAddress,
-            value: hre.ethers.utils.parseEther('0.1'),
+            value: parseEther('0.1'),
             gasLimit: 100000
         });
         await sendTx.wait();
 
         const newBalance = await hre.ethers.provider.getBalance(walletAddress);
-        console.log(`   ✅ ETH sent successfully! New balance: ${hre.ethers.utils.formatEther(newBalance)} ETH`);
+        console.log(`   ✅ ETH sent successfully! New balance: ${formatEther(newBalance)} ETH`);
 
         // Test 2: Check wallet code and type
         console.log('\n2️⃣  Analyzing wallet structure...');

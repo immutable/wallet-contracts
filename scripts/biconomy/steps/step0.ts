@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
+import { createPublicClient, http } from 'viem';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
 import { deployContract } from '../../contract';
@@ -22,16 +23,26 @@ async function step0(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
     const deployer = wallets.getWallet();
+    const deployerAddress = await deployer.getAddress(); // Get address using ethers method
 
     // Deploy OwnableCreate2Deployer
     console.log(`[${network}] Deploying OwnableCreate2Deployer...`);
     const create2Deployer = await deployContract(env, wallets, 'OwnableCreate2Deployer', [
-        await deployer.getAddress() // Owner of the deployer (use deployer as owner)
+        deployerAddress // Owner of the deployer (use deployer as owner)
     ]);
 
-    // Verify deployment
-    const deployedCode = await hre.ethers.provider.getCode(create2Deployer.address);
-    if (deployedCode === '0x') {
+    // Verify deployment using viem public client
+    const networkConfig = hre.network.config as any;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    const publicClient = createPublicClient({
+        transport: http(rpcUrl)
+    });
+
+    const deployedCode = await publicClient.getCode({
+        address: create2Deployer.address as `0x${string}`
+    });
+
+    if (!deployedCode || deployedCode === '0x') {
         throw new Error('OwnableCreate2Deployer deployment verification failed');
     }
 
@@ -41,7 +52,7 @@ async function step0(): Promise<EnvironmentInfo> {
     // Save deployment information
     const deploymentData = {
         create2DeployerAddress: create2Deployer.address,
-        owner: await deployer.getAddress(),
+        owner: deployerAddress, // Use cached address
         network: network,
         deployedAt: new Date().toISOString(),
         codeSize: Math.floor(deployedCode.length / 2)
@@ -51,7 +62,7 @@ async function step0(): Promise<EnvironmentInfo> {
 
     console.log(`[${network}] Step 0 deployment completed`);
     console.log(`[${network}] OwnableCreate2Deployer deployed at: ${create2Deployer.address}`);
-    console.log(`[${network}] Owner: ${await deployer.getAddress()}`);
+    console.log(`[${network}] Owner: ${deployerAddress}`); // Use cached address
     console.log(`[${network}] 📋 IMPORTANT: Update DEPLOYER_CONTRACT_ADDRESS in .env to: ${create2Deployer.address}`);
     console.log(`[${network}] 📋 This deployer will be used for deterministic CREATE2 deployments in subsequent steps`);
 

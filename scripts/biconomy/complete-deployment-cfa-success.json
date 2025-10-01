@@ -1,23 +1,23 @@
 {
-  "timestamp": "2025-09-30T23:11:33.217Z",
+  "timestamp": "2025-10-01T01:09:55.814Z",
   "status": "COMPLETE_SUCCESS_WITH_CFA_AND_SDK",
   "network": "localhost",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "infrastructure": {
-    "passportMultiCallDeploy": "0x172076E0166D1F9Cc711C77Adf8488051744980C",
-    "passportFactory": "0x4EE6eCAD1c2Dae9f525404De8555724e3c35d07B",
-    "latestWalletImplLocator": "0xBEc49fA140aCaA83533fB00A2BB19bDdd0290f25",
-    "startupWalletImpl": "0xD84379CEae14AA33C123Af12424A37803F885889",
-    "nexusK1Validator": "0x2B0d36FACD61B71CC05ab8F3D2355ec3631C0dd5",
-    "nexusImplementation": "0xfbC22278A96299D91d41C453234d97b4F5Eb9B2d",
-    "immutableSigner": "0x46b142DD1E924FAb83eCc3c08e4D46E82f005e0E",
+    "passportMultiCallDeploy": "0x1f10F3Ba7ACB61b2F50B9d6DdCf91a6f787C0E82",
+    "passportFactory": "0x457cCf29090fe5A24c19c1bc95F492168C0EaFdb",
+    "latestWalletImplLocator": "0x525C7063E7C20997BaaE9bDa922159152D0e8417",
+    "startupWalletImpl": "0x38a024C0b412B9d1db8BC398140D00F5Af3093D4",
+    "nexusK1Validator": "0x5fc748f1FEb28d7b76fa1c6B07D8ba2d5535177c",
+    "nexusImplementation": "0xB82008565FdC7e44609fA118A4a681E92581e680",
+    "immutableSigner": "0x2a810409872AfC346F9B5b26571Fd6eC42EA4849",
     "locatorToNexusConfigured": true,
-    "configurationTxHash": "0xaf6de818cd1c54e2fc012bb0fcdf03a7f54dd595020bb294b1306ab15b5fa782",
-    "nexusBootstrap": "0x1c85638e118b37167e9298c2268758e058DdfDA0",
-    "k1ValidatorFactory": "0x367761085BF3C12e5DA2Df99AC6E1a824612b8fb",
-    "entryPoint": "0x4C2F7092C2aE51D986bEFEe378e50BD4dB99C901",
+    "configurationTxHash": "0x215f65194b0ae70c29f8ffb38c0a4c9f3de017b010b6af2993ea7093f997aaab",
+    "nexusBootstrap": "0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8",
+    "k1ValidatorFactory": "0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849",
+    "entryPoint": "0xF32D39ff9f6Aa7a7A64d7a4F00a54826Ef791a55",
     "entryPointSource": "deployed_real",
-    "passportCompatibleNexusFactory": "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9",
+    "passportCompatibleNexusFactory": "0xd6e1afe5cA8D00A2EFC01B89997abE2De47fdfAf",
     "cfaCompatibilityEnabled": true,
     "entryPointArtifact": {
       "address": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
@@ -1339,14 +1339,14 @@
     }
   },
   "wallet": {
-    "address": "0x02b835368996B680b85297C603a216C05dA38DC3",
+    "address": "0x6f5353D9DaD006AAa4D1A91DA675Fd6A75DcdDa7",
     "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "nexusImplementation": "0xfbC22278A96299D91d41C453234d97b4F5Eb9B2d",
+    "nexusImplementation": "0xB82008565FdC7e44609fA118A4a681E92581e680",
     "cfaCompatible": true
   },
   "cfaCompatibility": {
-    "oldFactoryAddress": "0x4EE6eCAD1c2Dae9f525404De8555724e3c35d07B",
-    "newFactoryAddress": "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9",
+    "oldFactoryAddress": "0x457cCf29090fe5A24c19c1bc95F492168C0EaFdb",
+    "newFactoryAddress": "0xd6e1afe5cA8D00A2EFC01B89997abE2De47fdfAf",
     "cfaPreserved": true
   },
   "sdkTesting": {

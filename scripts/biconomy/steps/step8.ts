@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
+import { createPublicClient, http, parseGwei } from 'viem';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
 import { deployContract } from '../../contract';
@@ -17,15 +18,25 @@ async function step8(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
+    // Setup viem public client for code verification
+    const networkConfig = hre.network.config as any;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    const publicClient = createPublicClient({
+        transport: http(rpcUrl)
+    });
+
     // Check if we already have an EntryPoint from environment
     const existingEntryPoint = process.env.ENTRY_POINT_ADDRESS;
 
     if (existingEntryPoint && existingEntryPoint !== '0x0000000000000000000000000000000000000000') {
         console.log(`[${network}] Using existing EntryPoint from environment: ${existingEntryPoint}`);
 
-        // Verify it has code
-        const code = await hre.ethers.provider.getCode(existingEntryPoint);
-        if (code !== '0x') {
+        // Verify it has code using viem
+        const code = await publicClient.getCode({
+            address: existingEntryPoint as `0x${string}`
+        });
+
+        if (code && code !== '0x') {
             console.log(`[${network}] ✅ EntryPoint verified with ${Math.floor(code.length / 2)} bytes of code`);
 
             // Save to step8.json
@@ -60,18 +71,23 @@ async function step8(): Promise<EnvironmentInfo> {
             );
 
             const entryPoint = await EntryPointFactory.deploy({
-                gasLimit: 30000000
+                gasLimit: 30000000 // Keep as number for gas limit
             });
             await entryPoint.deployed();
 
             console.log(`[${network}] ✅ REAL EntryPoint deployed at: ${entryPoint.address}`);
-            console.log(`[${network}] 📏 Code size: ${Math.floor((await hre.ethers.provider.getCode(entryPoint.address)).length / 2)} bytes`);
+
+            // Get code size using viem
+            const entryPointCode = await publicClient.getCode({
+                address: entryPoint.address as `0x${string}`
+            });
+            console.log(`[${network}] 📏 Code size: ${Math.floor((entryPointCode?.length || 0) / 2)} bytes`);
 
             // Save deployment information
             fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
                 entryPoint: entryPoint.address,
                 source: 'deployed_real',
-                codeSize: Math.floor((await hre.ethers.provider.getCode(entryPoint.address)).length / 2)
+                codeSize: Math.floor((entryPointCode?.length || 0) / 2)
             }, null, 2));
 
             console.log(`[${network}] Step 8 (REAL EntryPoint) deployment completed`);

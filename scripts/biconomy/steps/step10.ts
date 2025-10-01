@@ -1,6 +1,7 @@
 // Step 10: Deploy K1ValidatorFactory (Complete Factory)
 import * as hre from 'hardhat';
 import * as fs from 'fs';
+import { createPublicClient, http, zeroAddress } from 'viem';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions } from '../../wallet-options';
 
@@ -17,6 +18,13 @@ async function deployK1ValidatorFactory() {
     const walletOptions = await newWalletOptions(env);
     const deployer = walletOptions.getWallet();
     const deployerAddress = await deployer.getAddress();
+
+    // Setup viem public client for code verification
+    const networkConfig = hre.network.config as any;
+    const rpcUrl = networkConfig.url || 'http://localhost:8545';
+    const publicClient = createPublicClient({
+        transport: http(rpcUrl)
+    });
 
     console.log(`[${network}] Deployer: ${deployerAddress}`);
 
@@ -43,16 +51,19 @@ async function deployK1ValidatorFactory() {
             deployerAddress,            // factoryOwner
             k1Validator,               // K1_VALIDATOR
             nexusBootstrap,            // BOOTSTRAPPER
-            hre.ethers.constants.AddressZero  // REGISTRY (minimal for now)
+            zeroAddress                 // REGISTRY (minimal for now) - using viem zeroAddress
         );
         await k1ValidatorFactory.deployed();
 
         console.log(`[${network}] ✅ K1ValidatorFactory deployed at: ${k1ValidatorFactory.address}`);
 
-        // Verify deployment
+        // Verify deployment using viem
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const k1FactoryCode = await hre.ethers.provider.getCode(k1ValidatorFactory.address);
-        if (k1FactoryCode === '0x') {
+        const k1FactoryCode = await publicClient.getCode({
+            address: k1ValidatorFactory.address as `0x${string}`
+        });
+
+        if (!k1FactoryCode || k1FactoryCode === '0x') {
             throw new Error('K1ValidatorFactory deployment verification failed');
         }
         console.log(`[${network}] ✅ K1ValidatorFactory verified with ${Math.floor(k1FactoryCode.length / 2)} bytes`);
@@ -103,7 +114,7 @@ async function deployK1ValidatorFactory() {
             accountImplementation: nexusImplementation,
             k1ValidatorModule: k1Validator,
             bootstrapper: nexusBootstrap,
-            registry: hre.ethers.constants.AddressZero,
+            registry: zeroAddress, // Use viem zeroAddress
 
             // Verification
             codeSize: Math.floor(k1FactoryCode.length / 2),
