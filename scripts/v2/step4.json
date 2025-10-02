@@ -1,6 +1,6 @@
 {
- "factoryAddress": "0xD70C6386Ca012CDeb249B4E46C53d3507D9CBB87",
- "startupWalletImplAddress": "0x0d1Bf2f4Ab334324665aeb8d481fF92CdE289439",
- "entryPointAddress": "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108",
- "mainModuleDynamicAuthV2": "0xd3d2aB942C97c2A59F7466f797742a51FefD3121"
+ "factoryAddress": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+ "startupWalletImplAddress": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+ "entryPointAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+ "mainModuleDynamicAuthV2": "0xb4d5d2504b3Bc4a31Ac0f9Fe551d09428Cf9f9d2"
 }

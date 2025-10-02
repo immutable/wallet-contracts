@@ -1,6 +1,8 @@
 {
- "multiCallAdminPubKey": "0xccBd3382EA55CF431126Ac5c4E289E100040aa2B",
- "factoryAdminPubKey": "0xccBd3382EA55CF431126Ac5c4E289E100040aa2B",
- "multiCallDeploy": "0x4e3b8db789d903776Fd444d84246A3bafAE59e96",
- "factory": "0xD70C6386Ca012CDeb249B4E46C53d3507D9CBB87"
+ "multiCallAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+ "factoryAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+ "signerAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+ "multiCallDeploy": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+ "signedMultiCallDeploy": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+ "factory": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
 }

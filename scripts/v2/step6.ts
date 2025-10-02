@@ -1,48 +1,36 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { Contract, ContractFactory, utils } from 'ethers';
-import { newContractFactory } from '../helper-functions';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
+import { deployContract } from '../contract';
 
 /**
- * Step 6 - V2 Deployment
+ * Step 6 - V2 Deployment.
+ * Deploy NexusBootstrap contract
  **/
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network, signerAddress, } = env;
+  const { network } = env;
 
-  // Read addresses from previous deployment steps
-  const step4Data = JSON.parse(fs.readFileSync('scripts/v2/step4.json', 'utf8'));
-  const step2Data = JSON.parse(fs.readFileSync('scripts/v2/step2.json', 'utf8'));
-  
-  const mainModuleDynamicAuthV2Address = step4Data.mainModuleDynamicAuthV2;
-  const walletImplLocatorContractAddress = step2Data.latestWalletImplLocator;
-
-  console.log(`[${network}] Starting V2 deployment...`);
-  console.log(`[${network}] mainModuleDynamicAuthV2 address ${mainModuleDynamicAuthV2Address}`);
-  console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
-  console.log(`[${network}] Signer address ${signerAddress}`);
+  console.log(`[${network}] Starting V2 deployment - Step 6...`);
+  console.log(`[${network}] Deploying NexusBootstrap contract`);
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
-  console.log(
-    `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWallet().getAddress()}`
-  );
+  console.log(`[${network}] Deployer address: ${await wallets.getWallet().getAddress()}`);
 
-  // --- Step 6: Deployed using alternate wallet
-  // Set implementation address on impl locator to dynamic module auth V2 addr
-  const contractFactory: ContractFactory = await newContractFactory(wallets.getWallet(), 'LatestWalletImplLocator');
-  const walletImplLocator: Contract = contractFactory.attach(walletImplLocatorContractAddress);
-  const tx = await walletImplLocator
-    .connect(wallets.getWallet())
-    .changeWalletImplementation(mainModuleDynamicAuthV2Address, {
-      gasLimit: process.env.GAS_LIMIT,
-      maxFeePerGas: process.env.MAX_FEE_PER_GAS,
-      maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
-    });
-  await tx.wait();
-  console.log(`[${network}] Wallet Impl Locator implementation changed to V2: ${mainModuleDynamicAuthV2Address}`);
+  // --- Step 6: Deploy NexusBootstrap contract.
+  // NexusBootstrap doesn't require constructor parameters
+  const nexusBootstrap = await deployContract(env, wallets, 'NexusBootstrap', []);
+
+  console.log(`[${network}] NexusBootstrap deployed to: ${nexusBootstrap.address}`);
+
+  // Write deployment data to step6.json
+  fs.writeFileSync('scripts/v2/step6.json', JSON.stringify({
+    nexusBootstrap: nexusBootstrap.address,
+  }, null, 1));
+
+  console.log(`[${network}] Step 6 deployment completed successfully`);
 
   return env;
 }
@@ -50,7 +38,7 @@ async function step6(): Promise<EnvironmentInfo> {
 // Call primary function
 step6()
   .then((env: EnvironmentInfo) => {
-    console.log(`[${env.network}] V2 Contracts deployment successful...`);
+    console.log(`[${env.network}] V2 Step 6 deployment successful...`);
     process.exit(0);
   })
   .catch(err => {

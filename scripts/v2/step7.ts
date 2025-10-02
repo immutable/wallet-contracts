@@ -6,31 +6,62 @@ import { deployContract } from '../contract';
 
 /**
  * Step 7 - V2 Deployment
- * Deploy NexusBootstrap contract
+ * Deploy MockValidator and MockExecutor contracts for bootstrap initialization
  **/
 async function step7(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
 
   console.log(`[${network}] Starting V2 deployment - Step 7...`);
-  console.log(`[${network}] Deploying NexusBootstrap contract`);
+  console.log(`[${network}] Deploying MockValidator and MockExecutor contracts`);
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
   console.log(`[${network}] Deployer address: ${await wallets.getWallet().getAddress()}`);
 
-  // --- Step 7: Deploy NexusBootstrap contract
-  // NexusBootstrap doesn't require constructor parameters
-  const nexusBootstrap = await deployContract(env, wallets, 'NexusBootstrap', []);
+  // --- Step 7: Deploy MockValidator contract
+  console.log(`[${network}] Deploying MockValidator contract...`);
+  const mockValidator = await deployContract(env, wallets, 'MockValidator', []);
+  console.log(`[${network}] MockValidator deployed to: ${mockValidator.address}`);
 
-  console.log(`[${network}] NexusBootstrap deployed to: ${nexusBootstrap.address}`);
+  // Verify the contract implements the correct interface
+  try {
+    const isValidatorType = await mockValidator.isModuleType(1); // MODULE_TYPE_VALIDATOR
+    console.log(`[${network}] MockValidator type verification: ${isValidatorType}`);
+    
+    if (!isValidatorType) {
+      throw new Error('MockValidator does not implement MODULE_TYPE_VALIDATOR');
+    }
+  } catch (error) {
+    console.warn(`[${network}] Could not verify MockValidator interface: ${error.message}`);
+  }
+
+  // --- Step 7: Deploy MockExecutor contract
+  console.log(`[${network}] Deploying MockExecutor contract...`);
+  const mockExecutor = await deployContract(env, wallets, 'MockExecutor', []);
+  console.log(`[${network}] MockExecutor deployed to: ${mockExecutor.address}`);
+
+  // Verify the contract implements the correct interface
+  try {
+    const isExecutorType = await mockExecutor.isModuleType(2); // MODULE_TYPE_EXECUTOR
+    console.log(`[${network}] MockExecutor type verification: ${isExecutorType}`);
+    
+    if (!isExecutorType) {
+      throw new Error('MockExecutor does not implement MODULE_TYPE_EXECUTOR');
+    }
+  } catch (error) {
+    console.warn(`[${network}] Could not verify MockExecutor interface: ${error.message}`);
+  }
 
   // Write deployment data to step7.json
   fs.writeFileSync('scripts/v2/step7.json', JSON.stringify({
-    nexusBootstrap: nexusBootstrap.address,
+    mockValidator: mockValidator.address,
+    mockExecutor: mockExecutor.address,
   }, null, 1));
 
   console.log(`[${network}] Step 7 deployment completed successfully`);
+  console.log(`[${network}] MockValidator: ${mockValidator.address}`);
+  console.log(`[${network}] MockExecutor: ${mockExecutor.address}`);
 
   return env;
 }

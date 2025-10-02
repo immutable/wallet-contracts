@@ -33,7 +33,7 @@ async function main(): Promise<EnvironmentInfo> {
   console.log(`[${network}] Deploying contracts...`);
 
   // Key for the salt, use this to change the address of the contract
-  let key: string = 'relayer-deployer-key-1';
+  let key: string = 'relayer-deployer-key-4';
 
   // --- STEP 1: Deployed using Passport Nonce Reserver.
   // 1. Deploy multi call deploy (PNR)

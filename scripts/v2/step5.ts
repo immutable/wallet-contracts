@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as hre from 'hardhat';
+import { Contract, ContractFactory, utils } from 'ethers';
+import { newContractFactory } from '../helper-functions';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../environment';
 import { newWalletOptions, WalletOptions } from '../wallet-options';
-import { deployContract } from '../contract';
-
 
 /**
  * Step 5 - V2 Deployment
@@ -11,27 +11,38 @@ import { deployContract } from '../contract';
 async function step5(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const signerRootAdminPubKey = process.env.SIGNER_ROOT_ADMIN_PUB_KEY;
-  const signerAdminPubKey = process.env.SIGNER_ADMIN_PUB_KEY;
+
+  // Read addresses from previous deployment steps
+  const step4Data = JSON.parse(fs.readFileSync('scripts/v2/step4.json', 'utf8'));
+  const step2Data = JSON.parse(fs.readFileSync('scripts/v2/step2.json', 'utf8'));
+  
+  const mainModuleDynamicAuthV2Address = step4Data.mainModuleDynamicAuthV2;
+  const walletImplLocatorContractAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting V2 deployment...`);
-  console.log(`[${network}] SignerRootAdmin address ${signerRootAdminPubKey}`);
-  console.log(`[${network}] SignerAdmin address ${signerAdminPubKey}`);
+  console.log(`[${network}] mainModuleDynamicAuthV2 address ${mainModuleDynamicAuthV2Address}`);
+  console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
+  console.log(
+    `[${network}] Wallet Impl Locator Changer Address: ${await wallets.getWallet().getAddress()}`
+  );
 
-  // --- Step 5: Deployed using Passport Nonce Reserver.
-  // Deploy immutable signer (PNR)
-  const immutableSigner = await deployContract(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
-
-  fs.writeFileSync('scripts/v2/step5.json', JSON.stringify({
-    signerRootAdminPubKey: signerRootAdminPubKey,
-    signerAdminPubKey: signerAdminPubKey,
-    signerAddress: signerAddress,
-    immutableSigner: immutableSigner.address,
-  }, null, 1));
+  // --- Step 5: Deployed using alternate wallet
+  // Set implementation address on impl locator to dynamic module auth V2 addr
+  const contractFactory: ContractFactory = await newContractFactory(wallets.getWallet(), 'LatestWalletImplLocator');
+  const walletImplLocator: Contract = contractFactory.attach(walletImplLocatorContractAddress);
+  const tx = await walletImplLocator
+    .connect(wallets.getWallet())
+    .changeWalletImplementation(mainModuleDynamicAuthV2Address, {
+      gasLimit: process.env.GAS_LIMIT,
+      maxFeePerGas: process.env.MAX_FEE_PER_GAS,
+      maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
+    });
+  await tx.wait();
+  console.log(`[${network}] Wallet Impl Locator implementation changed to V2: ${mainModuleDynamicAuthV2Address}`);
 
   return env;
 }

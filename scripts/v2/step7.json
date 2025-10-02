@@ -1,3 +1,4 @@
 {
- "nexusBootstrap": "0x9bDcDB6ffC23DD8001416e5097B693d0B83D3FF1"
+ "mockValidator": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+ "mockExecutor": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0"
 }
