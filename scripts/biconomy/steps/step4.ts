@@ -19,22 +19,22 @@ async function step4(): Promise<EnvironmentInfo> {
     const step1Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step1.json', 'utf8'));
     const factoryAddress = step1Data.factory;
 
-    // Load step3 data for startup wallet impl address
-    const step3Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step3.json', 'utf8'));
-    const startupWalletImplAddress = step3Data.startupWalletImpl;
+    // Load step2 data for startup wallet impl address
+    const step2Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step2.json', 'utf8'));
+    const startupWalletImplAddress = step2Data.startupWalletImpl;
 
-    // Get entry point address from step8 (EntryPoint v0.7) or env fallback
+    // Get entry point address from step3 (EntryPoint v0.7) or env fallback
     let entryPointAddress = process.env.ENTRY_POINT_ADDRESS;
 
-    // Try to load EntryPoint v0.7 from step8.json
+    // Try to load EntryPoint v0.7 from step3.json
     try {
-        const step8Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step8.json', 'utf8'));
-        if (step8Data.entryPoint) {
-            entryPointAddress = step8Data.entryPoint;
-            console.log(`[${network}] 📋 Using EntryPoint v0.7 from step8: ${entryPointAddress}`);
+        const step3Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step3.json', 'utf8'));
+        if (step3Data.entryPoint) {
+            entryPointAddress = step3Data.entryPoint;
+            console.log(`[${network}] 📋 Using EntryPoint v0.7 from step3: ${entryPointAddress}`);
         }
-    } catch (step8Error) {
-        console.log(`[${network}] ⚠️  Could not load step8.json, using env: ${entryPointAddress}`);
+    } catch (step3Error) {
+        console.log(`[${network}] ⚠️  Could not load step3.json, using env: ${entryPointAddress}`);
     }
 
     const defaultValidatorAddress = process.env.DEFAULT_VALIDATOR_ADDRESS;
@@ -77,13 +77,14 @@ async function step4(): Promise<EnvironmentInfo> {
     // Deploy Nexus (core smart account implementation) via CREATE2
     let nexus;
     try {
-        // K1Validator.onInstall expects the address as hex bytes (like SDK does)
-        const initData = hre.ethers.utils.hexlify(hre.ethers.utils.getAddress(deployerAddress));
+        // Use empty initData for Nexus implementation to prevent K1Validator initialization
+        // Each individual wallet will initialize its own K1Validator instance
+        const initData = '0x';
 
         nexus = await deployContractViaCREATE2(env, wallets, 'Nexus', [
             entryPointAddress,      // EntryPoint for Account Abstraction
-            validator.address,      // Use K1Validator as the default implementation
-            initData                // Valid initData with deployer address for K1Validator
+            validator.address,      // Use K1Validator as the default validator
+            initData                // Empty initData - allows per-wallet initialization
         ]);
         console.log(`[${network}] ✅ Nexus implementation (v0.7 compatible) deployed at: ${nexus.address}`);
     } catch (error) {

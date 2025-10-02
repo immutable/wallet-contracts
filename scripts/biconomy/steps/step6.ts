@@ -16,11 +16,11 @@ async function step6(): Promise<EnvironmentInfo> {
     const { network, signerAddress } = env;
 
     // Read addresses from previous deployment steps
-    const step2Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step2.json', 'utf8'));
+    const step1Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step1.json', 'utf8'));
     const step4Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step4.json', 'utf8'));
 
     const nexusImplAddress = step4Data.nexus;
-    const walletImplLocatorContractAddress = step2Data.latestWalletImplLocator;
+    const walletImplLocatorContractAddress = step1Data.latestWalletImplLocator;
 
     console.log(`[${network}] Starting Biconomy deployment step 6...`);
     console.log(`[${network}] Nexus implementation address ${nexusImplAddress}`);

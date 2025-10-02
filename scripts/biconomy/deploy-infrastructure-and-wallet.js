@@ -33,23 +33,45 @@ function createViemPublicClient(network) {
 }
 
 /**
+ * Fix environment variables before deployment
+ */
+async function fixEnvironmentVariables() {
+    console.log(`[${hre.network.name}] 🔧 Fixing environment variables...`);
+
+    // Check if we have the correct CREATE2 deployer address
+    const fs = require('fs');
+    try {
+        const step0Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step0.json', 'utf8'));
+        const correctAddress = step0Data.create2DeployerAddress;
+
+        // Set the environment variable for this session
+        process.env.DEPLOYER_CONTRACT_ADDRESS = correctAddress;
+        console.log(`[${hre.network.name}] ✅ DEPLOYER_CONTRACT_ADDRESS set to: ${correctAddress}`);
+
+    } catch (error) {
+        console.log(`[${hre.network.name}] ⚠️ Could not load step0.json, CREATE2 may not work properly`);
+    }
+}
+
+/**
  * Deploy complete infrastructure using step-based approach (Simplified Architecture)
  */
 async function deployInfrastructure(network) {
     console.log(`[${network}] 🚀 Deploying complete infrastructure (Simplified Architecture)...`);
 
+    // Fix environment variables first
+    await fixEnvironmentVariables();
+
     const stepScripts = [
-        'scripts/biconomy/steps/step0.ts',  // OwnableCreate2Deployer
-        'scripts/biconomy/steps/step1.ts',  // MultiCallDeploy (no Factory)
-        'scripts/biconomy/steps/step2.ts',  // LatestWalletImplLocator
-        'scripts/biconomy/steps/step3.ts',  // StartupWalletImpl
-        'scripts/biconomy/steps/step8.ts',  // EntryPoint v0.7 (MOVED UP - needed by step4)
-        'scripts/biconomy/steps/step4.ts',  // Nexus Implementation (depends on EntryPoint)
-        'scripts/biconomy/steps/step5.ts',  // ImmutableSigner
-        'scripts/biconomy/steps/step6.ts',  // K1Validator
-        'scripts/biconomy/steps/step7.ts',  // NexusBootstrap
-        'scripts/biconomy/steps/step9.ts',  // NexusAccountFactory (Simplified)
-        'scripts/biconomy/steps/step10.ts'  // K1ValidatorFactory
+        'scripts/biconomy/steps/step0.ts',  // step0: OwnableCreate2Deployer
+        'scripts/biconomy/steps/step1.ts',  // step1: LatestWalletImplLocator
+        'scripts/biconomy/steps/step2.ts',  // step2: StartupWalletImpl
+        'scripts/biconomy/steps/step3.ts',  // step3: EntryPoint v0.7
+        'scripts/biconomy/steps/step4.ts',  // step4: Nexus Implementation + K1Validator
+        'scripts/biconomy/steps/step5.ts',  // step5: ImmutableSigner
+        'scripts/biconomy/steps/step6.ts',  // step6: Update LatestWalletImplLocator
+        'scripts/biconomy/steps/step7.ts',  // step7: MultiCallDeploy + NexusBootstrap + NexusAccountFactory
+        'scripts/biconomy/steps/step8.ts'   // step8: K1ValidatorFactory
     ];
 
     console.log(`[${network}] 📋 Deploying ${stepScripts.length} infrastructure components...`);
@@ -89,9 +111,7 @@ function loadInfrastructureAddresses() {
         'scripts/biconomy/steps/step5.json',
         'scripts/biconomy/steps/step6.json',
         'scripts/biconomy/steps/step7.json',
-        'scripts/biconomy/steps/step8.json',
-        'scripts/biconomy/steps/step9.json',
-        'scripts/biconomy/steps/step10.json'
+        'scripts/biconomy/steps/step8.json'
     ];
 
     const infrastructure = {};

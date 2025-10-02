@@ -5,7 +5,10 @@ pragma solidity 0.8.27;
 import './modules/commons/interfaces/IModuleCalls.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interfaces/IFactory.sol';
+import './biconomy/Nexus.sol';
 import './interfaces/INexusAccountFactory.sol';
+import './biconomy/lib/ModeLib.sol';
+import './NexusModuleCallsAdapter.sol';
 
 /**
  * @title MultiCallDeploy
@@ -15,6 +18,8 @@ import './interfaces/INexusAccountFactory.sol';
 contract MultiCallDeploy is AccessControl {
   // Role to execute functions
   bytes32 public constant EXECUTOR_ROLE = keccak256('EXECUTOR_ROLE');
+
+  event BatchExecuted(address indexed wallet, bytes32 indexed salt);
 
   constructor(address _admin, address _executor) {
     _grantRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -55,7 +60,7 @@ contract MultiCallDeploy is AccessControl {
    * @param initData Initialization data containing [entryPoint, validator, owner] addresses
    * @param _salt Salt used to generate the address
    * @param nexusFactory address of the NexusAccountFactory contract
-   * @param _txs transaction to execute
+   * @param _transactions Encoded batch transaction data
    * @param _nonce nonce of the wallet
    * @param _signature transaction signature from wallet
    */
@@ -67,8 +72,14 @@ contract MultiCallDeploy is AccessControl {
     uint256 _nonce,
     bytes calldata _signature
   ) external onlyRole(EXECUTOR_ROLE) {
-    address ret = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
-    IModuleCalls(ret).execute(_txs, _nonce, _signature);
+    // Deploy new wallet
+    address payable wallet = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
+
+    // Create adapter for the deployed wallet and execute via initialization
+    NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(wallet);
+    adapter.executeViaInitialization(_txs, _nonce, _signature);
+
+    emit BatchExecuted(wallet, _salt);
   }
 
   /*
@@ -132,14 +143,24 @@ contract MultiCallDeploy is AccessControl {
       size := extcodesize(cfa)
     }
 
+    // Create batch execution mode
+    ExecutionMode mode = ModeLib.encode(CALLTYPE_BATCH, EXECTYPE_DEFAULT, MODE_DEFAULT, ModePayload.wrap(0x00));
+
     // If size is 0, deploy the Nexus and execute write tx
     // Else, execute the users transaction
     if (size == 0) {
-      address ret = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
-      require(cfa == ret, 'MultiCallDeploy: deployed address does not match CFA');
-      IModuleCalls(ret).execute(_txs, _nonce, _signature);
+      address payable wallet = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
+      require(cfa == wallet, 'MultiCallDeploy: deployed address does not match CFA');
+
+      // Create adapter for the deployed wallet and execute via initialization
+      NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(wallet);
+      adapter.executeViaInitialization(_txs, _nonce, _signature);
     } else {
-      IModuleCalls(cfa).execute(_txs, _nonce, _signature);
+      // Create adapter for existing wallet and execute normally
+      NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(cfa);
+      adapter.execute(_txs, _nonce, _signature);
     }
+
+    emit BatchExecuted(cfa, _salt);
   }
 }

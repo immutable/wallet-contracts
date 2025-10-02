@@ -14,8 +14,7 @@ pragma solidity ^0.8.27;
 
 import {Stakeable} from '../common/Stakeable.sol';
 import {INexusFactory} from '../interfaces/factory/INexusFactory.sol';
-import {ProxyLib} from '../lib/ProxyLib.sol';
-import {Nexus} from '../Nexus.sol';
+import {NexusBootstrap} from '../utils/NexusBootstrap.sol';
 import '../../Wallet.sol';
 
 /// @title Nexus Account Factory
@@ -30,83 +29,104 @@ contract NexusAccountFactory is Stakeable, INexusFactory {
   /// @dev This address is immutable and set upon deployment, ensuring the implementation cannot be changed.
   address public immutable ACCOUNT_IMPLEMENTATION;
 
+  /// @notice Address of the NexusBootstrap contract for module initialization
+  /// @dev This address is immutable and set upon deployment
+  address public immutable NEXUS_BOOTSTRAP;
+
+  /// @notice Event emitted when a wallet is deployed (Factory.sol compatibility)
+  event WalletDeployed(address indexed wallet, address indexed mainModule, bytes32 salt);
+
   /// @notice Constructor to set the smart account implementation address and the factory owner.
   /// @param implementation_ The address of the Nexus implementation to be used for all deployments.
   /// @param owner_ The address of the owner of the factory.
-  constructor(address implementation_, address owner_) Stakeable(owner_) {
+  /// @param nexusBootstrap_ The address of the NexusBootstrap contract.
+  constructor(address implementation_, address owner_, address nexusBootstrap_) Stakeable(owner_) {
     require(implementation_ != address(0), ImplementationAddressCanNotBeZero());
     require(owner_ != address(0), ZeroAddressNotAllowed());
+    require(nexusBootstrap_ != address(0), ZeroAddressNotAllowed());
     ACCOUNT_IMPLEMENTATION = implementation_;
+    NEXUS_BOOTSTRAP = nexusBootstrap_;
   }
 
-  /// @notice Creates a new Nexus account using direct Nexus deployment
-  /// @dev Uses direct Nexus deployment with configurable EntryPoint and Validator
-  /// @param initData Initialization data containing [entryPoint, validator, owner] addresses
+  /// @notice Creates a new Nexus account with proper K1Validator initialization
+  /// @dev Uses WalletProxy.yul for CFA compatibility + NexusBootstrap for proper module initialization
+  /// @param initData Initialization data containing [entryPoint, validator, owner, cfa, startupWalletImpl] addresses
   /// @param salt Unique salt for the Smart Account creation.
-  /// @return The address of the newly created Nexus account.
-  function createAccount(bytes calldata initData, bytes32 salt) external payable override returns (address payable) {
-    // Extract addresses from initData: [entryPoint, validator, owner]
-    require(initData.length >= 96, 'NexusAccountFactory: initData too short'); // 3 addresses = 96 bytes
+  /// @return _contract The address of the newly created Nexus account.
+  function createAccount(
+    bytes calldata initData,
+    bytes32 salt
+  ) external payable override returns (address payable _contract) {
+    // Extract addresses from initData: [entryPoint, validator, owner, cfa, startupWalletImpl]
+    require(initData.length >= 160, 'NexusAccountFactory: initData too short'); // 5 addresses = 160 bytes
 
     address entryPoint;
     address validator;
     address owner;
+    address cfa;
+    address startupWalletImpl;
 
     assembly {
       entryPoint := calldataload(add(initData.offset, 0x00)) // First 32 bytes
       validator := calldataload(add(initData.offset, 0x20)) // Second 32 bytes
       owner := calldataload(add(initData.offset, 0x40)) // Third 32 bytes
+      cfa := calldataload(add(initData.offset, 0x60)) // Fourth 32 bytes
+      startupWalletImpl := calldataload(add(initData.offset, 0x80)) // Fifth 32 bytes
     }
 
-    // Deploy Nexus directly with CREATE2 (using provided parameters)
-    // FIXED: Pass owner data to constructor to satisfy K1Validator.onInstall requirement
-    // K1Validator.onInstall requires non-empty data (owner address)
-    bytes memory validatorInitData = abi.encodePacked(owner);
-    Nexus nexus = new Nexus{salt: salt}(entryPoint, validator, validatorInitData);
+    // Deploy WalletProxy.yul for CFA compatibility
+    bytes memory code = abi.encodePacked(Wallet.creationCode, uint256(uint160(startupWalletImpl)));
+    assembly {
+      _contract := create2(callvalue(), add(code, 32), mload(code), salt)
+    }
+    // check deployment success
+    require(_contract != address(0), 'WalletFactory: deployment failed');
 
-    address payable deployedAddress = payable(address(nexus));
+    // Following official Biconomy pattern: Deploy wallet WITHOUT initialization
+    // Initialization must be done via first UserOp calling initializeAccount()
+    // This maintains CFA compatibility and follows the official ERC-4337 pattern
 
-    // NOTE: K1Validator is now automatically initialized in Nexus constructor
-    // via ModuleManager(validator, validatorInitData) -> validator.onInstall(validatorInitData)
-    // No manual initialization needed
+    // emit event, increases gas cost by ~2k
+    emit WalletDeployed(_contract, startupWalletImpl, salt);
 
-    // emit event
-    emit AccountCreated(deployedAddress, initData, salt);
-
-    return deployedAddress;
+    return payable(_contract);
   }
 
   /// @notice Computes the expected address of a Nexus contract using the SAME logic as createAccount
   /// @dev Uses Nexus.creationCode to match the actual deployment in createAccount
-  /// @param initData - Initialization data containing [entryPoint, validator, owner] addresses
+  /// @param initData - Initialization data containing [entryPoint, validator, owner, cfa, startupWalletImpl] addresses
   /// @param salt - Unique salt for the Smart Account creation.
   /// @return expectedAddress The expected address at which the Nexus contract will be deployed if the provided parameters are used.
   function computeAccountAddress(
     bytes calldata initData,
     bytes32 salt
   ) external view override returns (address payable expectedAddress) {
-    // Extract addresses from initData: [entryPoint, validator, owner] (same as createAccount)
-    require(initData.length >= 96, 'NexusAccountFactory: initData too short');
+    // Extract addresses from initData: [entryPoint, validator, owner, cfa, startupWalletImpl]
+    require(initData.length >= 160, 'NexusAccountFactory: initData too short'); // 5 addresses = 160 bytes
 
     address entryPoint;
     address validator;
     address owner;
+    address cfa;
+    address startupWalletImpl; // This will be used as _mainModule
 
     assembly {
       entryPoint := calldataload(add(initData.offset, 0x00)) // First 32 bytes
       validator := calldataload(add(initData.offset, 0x20)) // Second 32 bytes
       owner := calldataload(add(initData.offset, 0x40)) // Third 32 bytes
+      cfa := calldataload(add(initData.offset, 0x60)) // Fourth 32 bytes
+      startupWalletImpl := calldataload(add(initData.offset, 0x80)) // Fifth 32 bytes
     }
 
-    // Use the SAME initCodeHash as createAccount (Nexus.creationCode)
-    // FIXED: Must match createAccount - using owner data in constructor
-    bytes memory validatorInitData = abi.encodePacked(owner);
-    bytes32 initCodeHash = keccak256(
-      abi.encodePacked(type(Nexus).creationCode, abi.encode(entryPoint, validator, validatorInitData))
+    // Use the SAME pattern as Factory.sol: startupWalletImpl as _mainModule in initCodeHash calculation
+    bytes32 _hash = keccak256(
+      abi.encodePacked(
+        bytes1(0xff),
+        address(this),
+        salt,
+        keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(startupWalletImpl))))
+      )
     );
-
-    bytes32 _hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash));
-
-    expectedAddress = payable(address(uint160(uint256(_hash))));
+    return payable(address(uint160(uint256(_hash))));
   }
 }

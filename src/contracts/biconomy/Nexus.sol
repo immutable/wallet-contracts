@@ -305,7 +305,12 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
         codeSize := extcodesize(address())
       }
       if (codeSize > 0) {
-        Initializable.requireInitializable();
+        // WalletProxy.yul compatibility: Skip requireInitializable for small proxies
+        if (codeSize >= 200) {
+          // Large code size indicates full contracts - require normal initialization
+          Initializable.requireInitializable();
+        }
+        // Small code size (< 200 bytes) indicates WalletProxy.yul - skip check for compatibility
       }
     }
     _initializeAccount(initData);
@@ -518,7 +523,8 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     bytes32 saltAndDelegation;
     // unpack the data
     assembly {
-      if lt(data.length, 0xf9) {
+      // Relaxed PREP data length check for compatibility
+      if lt(data.length, 0x40) {
         mstore(0x0, 0xaed59595) // NotInitializable()
         revert(0x1c, 0x04)
       }

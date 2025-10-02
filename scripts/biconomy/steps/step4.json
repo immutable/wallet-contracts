@@ -1,9 +1,10 @@
 {
- "startupWalletImplAddress": "0x64f5219563e28EeBAAd91Ca8D31fa3b36621FD4f",
- "entryPointAddress": "0x1757a98c1333B9dc8D408b194B2279b5AFDF70Cc",
+ "factoryAddress": "0x70E5370b8981Abc6e14C91F4AcE823954EFC8eA3",
+ "startupWalletImplAddress": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+ "entryPointAddress": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
  "validator": {
-  "address": "0x1a741c2CED8416a143e43b7893eB0958806EFa8E",
+  "address": "0xC1f25e96F8A3597a5eE98ec4bFa21463C33Abee2",
   "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
  },
- "nexus": "0xfA033Fb75133B33f94024c3267d23bca9e3cbD48"
+ "nexus": "0x3D0b49f735B02eB5126aFb5944d837149C443fA8"
 }

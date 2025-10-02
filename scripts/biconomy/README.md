@@ -8,16 +8,14 @@ This directory contains the **complete and production-ready** Passport-Nexus hyb
 scripts/biconomy/
 ├── steps/                                   # Step-by-step deployment scripts
 │   ├── step0.ts                            # Deploy OwnableCreate2Deployer (CREATE2 factory)
-│   ├── step1.ts                            # Deploy Passport base (MultiCallDeploy + Factory)
-│   ├── step2.ts                            # Deploy LatestWalletImplLocator (with CREATE2)
-│   ├── step3.ts                            # Deploy StartupWalletImpl
+│   ├── step1.ts                            # Deploy LatestWalletImplLocator (with CREATE2)
+│   ├── step2.ts                            # Deploy StartupWalletImpl
+│   ├── step3.ts                            # Deploy/Configure EntryPoint (ERC-4337)
 │   ├── step4.ts                            # Deploy Nexus core (K1Validator + Nexus with CREATE2)
 │   ├── step5.ts                            # Deploy ImmutableSigner
 │   ├── step6.ts                            # Configure LatestWalletImplLocator → Nexus
-│   ├── step7.ts                            # Deploy NexusBootstrap (REQUIRED for Nexus)
-│   ├── step8.ts                            # Deploy/Configure EntryPoint (ERC-4337)
-│   ├── step9.ts                            # Deploy NexusAccountFactory (Simplified Architecture)
-│   └── step10.ts                           # Deploy K1ValidatorFactory (Complete Factory)
+│   ├── step7.ts                            # Deploy MultiCallDeploy + NexusBootstrap + NexusAccountFactory
+│   └── step8.ts                            # Deploy K1ValidatorFactory (Complete Factory)
 │   ├── step0.json                          # Step 0 deployment results
 │   ├── step1.json                          # Step 1 deployment results
 │   ├── step2.json                          # Step 2 deployment results
@@ -26,9 +24,7 @@ scripts/biconomy/
 │   ├── step5.json                          # Step 5 deployment results
 │   ├── step6.json                          # Step 6 deployment results
 │   ├── step7.json                          # Step 7 deployment results
-│   ├── step8.json                          # Step 8 deployment results
-│   ├── step9.json                          # Step 9 deployment results
-│   └── step10.json                         # Step 10 deployment results
+│   └── step8.json                          # Step 8 deployment results
 ├── deploy-infrastructure-and-wallet.js     # Complete deployment script (all-in-one) with ERC-4337 v0.7
 ├── wallet-deployment.ts                    # Step-based wallet deployment (CFA + MultiCall + ERC-4337)
 ├── setup-base-sepolia.js                   # Base Sepolia network setup and validation
@@ -39,8 +35,9 @@ scripts/biconomy/
 **✨ Note**: This directory has been cleaned up from 47 files to 8 essential files. All temporary investigation, testing, debugging scripts, and unused legacy contracts have been removed.
 
 **🗑️ Recently Removed (Legacy/Unused):**
-- `deploy-real-entrypoint.js` - Replaced by `step8.ts` 
-- `PassportNexusMultiCallDeploy.sol` - Replaced by existing `MultiCallDeploy.sol` + `PassportCompatibleNexusFactory.sol`
+- `deploy-real-entrypoint.js` - Replaced by `step3.ts` 
+- `NexusMultiCallDeploy.sol` - Replaced by existing `MultiCallDeploy.sol`
+- `PassportNexusAccountFactory.sol` - Replaced by `NexusAccountFactory.sol`
 - `PassportNexusUpgradeController.sol` - Upgrade approach replaced by direct CFA deployment
 - `PassportNexusUpgradeFactory.sol` - Replaced by `PassportCompatibleNexusFactory.sol`
 
@@ -51,97 +48,83 @@ scripts/biconomy/
 The implementation combines the **proven stability of Passport** with the **modern capabilities of Nexus**:
 
 ```
-Step 1: Passport Base                Step 4: Nexus Core
+Step 0: CREATE2 Foundation           Step 1: Implementation Management
 ┌─────────────────┐                 ┌──────────────────┐
-│ MultiCallDeploy │◄─────────┐      │   K1Validator    │
-│   (Passport)    │          │      │    (Nexus)       │
-└─────────────────┘          │      └──────────────────┘
-         │                   │               │
-         ▼                   │               ▼
-┌─────────────────┐          │      ┌──────────────────┐
-│     Factory     │          │      │ Nexus Implementation│
-│   (Passport)    │──────────┼─────▶│     (Nexus)      │
-└─────────────────┘          │      └──────────────────┘
-         │                   │               │
-         │ deploys           │               │ configured via
-         ▼                   │               ▼
-┌─────────────────┐          │      ┌──────────────────┐
-│ Deployed Wallet │          │      │LatestWalletImpl  │
-│ (Hybrid Proxy)  │          │      │    Locator       │
-└─────────────────┘          │      └──────────────────┘
-                             │               │
-Step 3: Startup              │               │ Step 6: Config
-┌─────────────────┐          │               │
-│StartupWalletImpl│          │               │
-│                 │          │               │
-└─────────────────┘          │               │
-                             │               │
-Step 5: Security             │               │
-┌─────────────────┐          │               │
-│ ImmutableSigner │──────────┘               │
-│                 │                          │
+│ OwnableCreate2  │                 │LatestWalletImpl  │
+│    Deployer     │                 │    Locator       │
+│                 │                 │                  │
+└─────────────────┘                 └──────────────────┘
+         │                                   │
+         │ enables                           │ manages
+         │ deterministic                     │ implementation
+         ▼                                   ▼
+┌─────────────────┐                 ┌──────────────────┐
+│ Deterministic   │                 │ StartupWalletImpl│
+│   Addresses     │                 │   (Step 2)       │
+└─────────────────┘                 └──────────────────┘
+
+Step 3: ERC-4337 Support            Step 4: Nexus Core
+┌─────────────────┐                 ┌──────────────────┐
+│   EntryPoint    │                 │   K1Validator    │
+│  (ERC-4337)     │                 │    (Nexus)       │
+└─────────────────┘                 └──────────────────┘
+         │                                   │
+         │ enables                           ▼
+         ▼                          ┌──────────────────┐
+┌─────────────────┐                 │ Nexus Implementation│
+│ UserOperation   │                 │     (Nexus)      │
+│   Validation    │                 └──────────────────┘
 └─────────────────┘                          │
-                                             │
-Step 2: Implementation Management            │
-┌─────────────────┐◄─────────────────────────┘
-│LatestWalletImpl │  
-│    Locator      │  ──points to──▶ Nexus Implementation
+                                             │ configured via
+Step 5: Security                             ▼
+┌─────────────────┐                 ┌──────────────────┐
+│ ImmutableSigner │                 │LatestWalletImpl  │
+│  (2x2 Signing)  │                 │    Locator       │
+└─────────────────┘                 │  (Step 6 Config) │
+                                    └──────────────────┘
+
+Step 7: Nexus Factory & Bootstrap   Step 8: Complete Factory
+┌─────────────────┐                 ┌──────────────────┐
+│ MultiCallDeploy │                 │ K1ValidatorFactory│
+│   (Passport)    │                 │  (Official SDK)  │
+└─────────────────┘                 └──────────────────┘
+         │                                   │
+         ▼                                   │ creates complete
+┌─────────────────┐                         │ Nexus accounts
+│ NexusBootstrap  │                         ▼
+│   (Required)    │                 ┌──────────────────┐
+└─────────────────┘                 │ Fully Configured│
+         │                          │ Nexus Accounts  │
+         ▼                          │ (SDK Compatible)│
+┌─────────────────┐                 └──────────────────┘
+│NexusAccountFactory│
+│ (Direct Deploy) │
 └─────────────────┘
-
-Step 7: Nexus Initialization         Step 8: ERC-4337 Support
-┌─────────────────┐                 ┌──────────────────┐
-│ NexusBootstrap  │                 │    EntryPoint    │
-│   (Required)    │                 │   (ERC-4337)     │
-└─────────────────┘                 └──────────────────┘
-         │                                   │
-         │ enables                           │ enables
-         ▼                                   ▼
-┌─────────────────┐                 ┌──────────────────┐
-│ Nexus Module    │                 │ UserOperation    │
-│ Initialization  │                 │   Validation     │
-└─────────────────┘                 └──────────────────┘
-
-Step 9: Simplified Architecture      Step 0: CREATE2 Foundation
-┌─────────────────┐                 ┌──────────────────┐
-│ NexusAccount    │ ──uses──▶       │ OwnableCreate2   │
-│    Factory      │                 │    Deployer      │
-│ (Direct Deploy) │                 │                  │
-└─────────────────┘                 └──────────────────┘
-         │                                   │
-         │ creates Nexus                     │ enables
-         │ wallets directly                  │ deterministic
-         ▼                                   ▼
-┌─────────────────┐                 ┌──────────────────┐
-│ Nexus Wallets   │                 │ Deterministic    │
-│ (CFA Compatible)│                 │   Addresses      │
-└─────────────────┘                 └──────────────────┘
-
-Step 10: Complete K1Validator Factory
-┌─────────────────┐
-│ K1ValidatorFactory│ ──uses──▶ Nexus Implementation
-│  (Official SDK)  │           K1Validator
-│                  │           NexusBootstrap
-└─────────────────┘           Registry (optional)
          │
-         │ creates complete
-         │ Nexus accounts with
+         │ creates Nexus
+         │ wallets directly
          ▼
 ┌─────────────────┐
-│ Fully Configured│
-│ Nexus Accounts  │
-│ (SDK Compatible)│
+│ Nexus Wallets   │
+│ (CFA Compatible)│
 └─────────────────┘
 ```
 
 ### Core Components
 
-#### **Passport Infrastructure (Steps 1)**
-- **MultiCallDeploy**: Proven deployment with initial transactions
-- **Factory**: Reliable wallet deployment mechanism
+#### **CREATE2 Foundation (Step 0)**
+- **OwnableCreate2Deployer**: Enables deterministic contract addresses
+- **Used by**: Steps 1 and 4 for predictable deployments
 
-#### **Implementation Management (Steps 2-3)**
+#### **Implementation Management (Steps 1-2)**
 - **LatestWalletImplLocator**: Manages current wallet implementation
 - **StartupWalletImpl**: Initial wallet logic for bootstrapping
+
+#### **ERC-4337 Support (Step 3)**
+- **EntryPoint**: ERC-4337 Account Abstraction support
+  - Enables UserOperation validation and execution
+  - Supports bundler integration and gasless transactions
+  - Automatically deploys real EntryPoint or falls back to mock for development
 
 #### **Nexus Core (Step 4)**
 - **K1Validator**: Modern ECDSA signature validation (ERC-7579 compliant)
@@ -149,20 +132,20 @@ Step 10: Complete K1Validator Factory
 
 #### **Security & Configuration (Steps 5-6)**
 - **ImmutableSigner**: 2x2 signature validation for critical operations
-- **Configuration**: Links all components together
+- **Configuration**: Links all components together (LatestWalletImplLocator → Nexus)
 
-#### **Nexus Initialization & ERC-4337 (Steps 7-8)**
+#### **Nexus Factory & Bootstrap (Step 7)**
+- **MultiCallDeploy**: Proven deployment with initial transactions (Passport)
 - **NexusBootstrap**: **REQUIRED** component for Nexus wallet initialization
   - Enables proper module setup during wallet creation
   - Critical for Nexus functionality - wallets cannot be properly initialized without it
-- **EntryPoint**: ERC-4337 Account Abstraction support
-  - Enables UserOperation validation and execution
-  - Supports bundler integration and gasless transactions
-  - Automatically deploys real EntryPoint or falls back to mock for development
+- **NexusAccountFactory**: Direct Nexus wallet deployment with CFA compatibility
+  - **Optimized**: Removed unused methods (`generateInitData`, `generateFirstUserOpCallData`)
+  - **Streamlined**: Only essential deployment and address computation functions
+  - **Clean**: Minimal imports and focused functionality
 
-#### **CREATE2 Foundation (Step 0)**
-- **OwnableCreate2Deployer**: Enables deterministic contract addresses
-- **Used by**: Steps 2 and 4 for predictable deployments
+#### **Complete Factory (Step 8)**
+- **K1ValidatorFactory**: Official SDK-compatible factory for complete Nexus account creation
 
 ## Package.json Scripts (Base Sepolia Ready)
 
@@ -172,21 +155,19 @@ Step 10: Complete K1Validator Factory
 # Setup and validate Base Sepolia network
 npm run setup:base-sepolia
 
-# Deploy all infrastructure steps (0-10) in sequence
+# Deploy all infrastructure steps (0-8) in sequence
 npm run deploy:steps:base-sepolia
 
 # Deploy individual steps
 npm run deploy:step0:base-sepolia    # OwnableCreate2Deployer
-npm run deploy:step1:base-sepolia    # MultiCallDeploy + Factory
-npm run deploy:step2:base-sepolia    # LatestWalletImplLocator
-npm run deploy:step3:base-sepolia    # StartupWalletImpl
+npm run deploy:step1:base-sepolia    # LatestWalletImplLocator
+npm run deploy:step2:base-sepolia    # StartupWalletImpl
+npm run deploy:step3:base-sepolia    # EntryPoint v0.7
 npm run deploy:step4:base-sepolia    # Nexus Implementation + K1Validator
 npm run deploy:step5:base-sepolia    # ImmutableSigner
 npm run deploy:step6:base-sepolia    # Configuration
-npm run deploy:step7:base-sepolia    # NexusBootstrap
-npm run deploy:step8:base-sepolia    # EntryPoint v0.7
-npm run deploy:step9:base-sepolia    # NexusAccountFactory (Simplified)
-npm run deploy:step10:base-sepolia   # K1ValidatorFactory
+npm run deploy:step7:base-sepolia    # MultiCallDeploy + NexusBootstrap + NexusAccountFactory
+npm run deploy:step8:base-sepolia    # K1ValidatorFactory
 
 # Deploy wallet using existing infrastructure
 npm run deploy:wallet:base-sepolia
@@ -222,13 +203,13 @@ Execute individual steps for granular control:
 # Step 0: Deploy CREATE2 factory
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step0.ts --network localhost
 
-# Step 1: Deploy Passport base infrastructure
+# Step 1: Deploy LatestWalletImplLocator (CREATE2)
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step1.ts --network localhost
 
-# Step 2: Deploy LatestWalletImplLocator (CREATE2)
+# Step 2: Deploy StartupWalletImpl
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step2.ts --network localhost
 
-# Step 3: Deploy StartupWalletImpl
+# Step 3: Deploy/Configure EntryPoint (ERC-4337 support)
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step3.ts --network localhost
 
 # Step 4: Deploy Nexus core components (CREATE2)
@@ -240,17 +221,11 @@ NODE_ENV=development npx hardhat run scripts/biconomy/steps/step5.ts --network l
 # Step 6: Configure infrastructure
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step6.ts --network localhost
 
-# Step 7: Deploy NexusBootstrap (REQUIRED for Nexus initialization)
+# Step 7: Deploy MultiCallDeploy + NexusBootstrap + NexusAccountFactory
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step7.ts --network localhost
 
-# Step 8: Deploy/Configure EntryPoint (ERC-4337 support)
+# Step 8: Deploy K1ValidatorFactory (Complete Factory)
 NODE_ENV=development npx hardhat run scripts/biconomy/steps/step8.ts --network localhost
-
-# Step 9: Deploy PassportCompatibleNexusFactory (CFA compatibility)
-NODE_ENV=development npx hardhat run scripts/biconomy/steps/step9.ts --network localhost
-
-# Step 10: Deploy K1ValidatorFactory (Complete Factory)
-NODE_ENV=development npx hardhat run scripts/biconomy/steps/step10.ts --network localhost
 ```
 
 ### Method 2: Complete Deployment (Recommended)
@@ -283,8 +258,50 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 - **🔄 CFA Compatibility**: Maintains address compatibility with old Passport wallets
 - **🚀 ERC-4337 v0.7 Integration**: Full UserOperation testing with EntryPoint v0.7
 - **💰 EntryPoint Deposit Management**: Automatic deposit for UserOp gas prefund
-- **📋 Step-based**: Uses modular step artifacts (steps 0-10)
+- **📋 Step-based**: Uses modular step artifacts (steps 0-8)
 - **⚡ Robust Fallback**: MultiCallDeploy automatically falls back to NexusAccountFactory if interface issues occur
+
+## 🧹 Recent Optimizations (NexusAccountFactory)
+
+### Code Cleanup & Optimization
+The `NexusAccountFactory` has been **streamlined and optimized** for production use:
+
+#### **🗑️ Removed Unused Methods:**
+- **`generateInitData(address validator, address owner)`**
+  - **Purpose**: Generated initialization data for first UserOp approach
+  - **Status**: ❌ **REMOVED** - Unused approach, replaced by direct initialization
+  - **Impact**: -9 lines of code, cleaner interface
+
+- **`generateFirstUserOpCallData(address validator, address owner)`**
+  - **Purpose**: Generated complete callData for first UserOp initialization
+  - **Status**: ❌ **REMOVED** - Unused approach, replaced by direct initialization
+  - **Impact**: -12 lines of code, cleaner interface
+
+#### **🧹 Cleaned Imports:**
+- **Removed unused imports**: `ProxyLib`, `Nexus`, `IValidator`, `INexus`
+- **Kept essential imports**: `Stakeable`, `INexusFactory`, `NexusBootstrap`, `Wallet`
+- **Impact**: Smaller bytecode, faster compilation, cleaner dependencies
+
+#### **📊 Optimization Results:**
+- **✅ 21 lines removed** (methods + comments)
+- **✅ 4 unused imports removed**
+- **✅ Smaller contract bytecode**
+- **✅ Lower deployment gas costs**
+- **✅ Cleaner, more focused interface**
+- **✅ Zero breaking changes** to existing functionality
+
+#### **🎯 Current Interface:**
+```solidity
+contract NexusAccountFactory is Stakeable, INexusFactory {
+  // ✅ Essential functionality only
+  function createAccount(bytes calldata initData, bytes32 salt) external payable override returns (address payable);
+  function computeAccountAddress(bytes calldata initData, bytes32 salt) external view override returns (address payable);
+  
+  // ✅ Clean constructor and immutable variables
+  address public immutable ACCOUNT_IMPLEMENTATION;
+  address public immutable NEXUS_BOOTSTRAP;
+}
+```
 
 ## 🚀 ERC-4337 Account Abstraction (EntryPoint v0.7)
 
@@ -458,7 +475,7 @@ If migrating from previous implementations:
 ### Custom Salt Generation
 Scripts use deterministic salts for CREATE2:
 ```typescript
-// Example from step2.ts
+// Example from step1.ts
 const salt = hre.ethers.utils.keccak256(hre.ethers.utils.toUtf8Bytes('LatestWalletImplLocator'));
 ```
 
@@ -502,39 +519,13 @@ Development settings optimized for speed:
   - Falls back to MockEntryPoint for development if real EntryPoint unavailable
 - **Output**: `step8.json` with EntryPoint address and source type
 
-### Step 9: NexusAccountFactory (Simplified Architecture)
-**Direct Nexus deployment with CFA compatibility**
-- Deploys `NexusAccountFactory` contract for simplified architecture
-- Creates Nexus wallets directly without bridge modules
-- Maintains address compatibility through proper initData handling
-- Eliminates complexity of hybrid proxy patterns
-
-### Step 10: K1ValidatorFactory (Complete Factory)
-**Official SDK-compatible factory for complete Nexus account creation**
-- **Purpose**: Deploys the **correct** K1ValidatorFactory from official Biconomy SDK
-- **Features**:
-  - Full Nexus account creation with proper initialization
-  - Uses `initNexusWithSingleValidator` for complete setup
-  - Integrates K1Validator, NexusBootstrap, and Registry
-  - SDK-compatible account creation patterns
-- **Components**:
-  - **ACCOUNT_IMPLEMENTATION**: Nexus smart account implementation
-  - **K1_VALIDATOR**: ECDSA signature validation module
-  - **BOOTSTRAPPER**: NexusBootstrap for proper initialization
-  - **REGISTRY**: Optional registry for attesters (configurable)
-- **Benefits**:
-  - **SDK Compatibility**: Creates accounts exactly like official Biconomy SDK
-  - **Complete Initialization**: Accounts are fully configured and ready to use
-  - **Registry Support**: Optional attester registry for enhanced security
-  - **Deterministic Addresses**: Predictable account addresses via CREATE2
-- **Output**: `step10.json` with K1ValidatorFactory address and configuration
 
 ### Integration Notes
-- **Step 7** is **required** for Nexus wallets to function properly
-- **Step 8** is **optional** but recommended for full ERC-4337 support
-- **Step 10** provides **official SDK compatibility** for complete Nexus account creation
+- **Step 7** is **required** for Nexus wallets to function properly (includes NexusBootstrap and NexusAccountFactory)
+- **Step 8** provides **official SDK compatibility** for complete Nexus account creation (K1ValidatorFactory)
+- **Step 3** enables **ERC-4337 support** with EntryPoint v0.7 for UserOperation functionality
 - All steps integrate seamlessly with existing Passport infrastructure
-- Complete deployment now covers **11 steps** (0-10) for full functionality
+- Complete deployment now covers **9 steps** (0-8) for full functionality
 
 ## Support
 

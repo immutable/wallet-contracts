@@ -1,4 +1,5 @@
 {
- "walletImplLocatorAddress": "0xf37f06bfDD56366bA65E82670eb738b432CB008D",
- "startupWalletImpl": "0x64f5219563e28EeBAAd91Ca8D31fa3b36621FD4f"
+    "entryPoint": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+    "source": "deployed_v07",
+    "codeSize": 19652
 }

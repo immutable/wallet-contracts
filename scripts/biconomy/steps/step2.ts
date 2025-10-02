@@ -2,27 +2,27 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContractViaCREATE2 } from '../../contract';
+import { deployContract } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
  * Step 2 - Biconomy Implementation
- * Deploy LatestWalletImplLocator for Nexus implementation
- * This step is analogous to the original step2 but will be used to point to Nexus
+ * Deploy StartupWalletImpl that will be used as initial implementation
+ * This step is analogous to the original step3 but will be used with Nexus
  */
 async function step2(): Promise<EnvironmentInfo> {
     const env = loadEnvironmentInfo(hre.network.name);
-    const { network, deployerContractAddress } = env;
-    const walletImplLocatorAdmin = process.env.WALLET_IMPL_LOCATOR_ADMIN;
-    const walletImplChangerAdmin = process.env.WALLET_IMPL_CHANGER_ADMIN;
+    const { network } = env;
+
+    // Read step1 data to get the LatestWalletImplLocator address
+    const step1Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step1.json', 'utf8'));
+    const walletImplLocatorAddress = step1Data.latestWalletImplLocator;
 
     console.log(`[${network}] Starting Biconomy deployment step 2...`);
-    console.log(`[${network}] CREATE2 Factory address ${deployerContractAddress}`);
-    console.log(`[${network}] Wallet ImplLocator Admin address ${walletImplLocatorAdmin}`);
-    console.log(`[${network}] Wallet ImplLocator Changer address ${walletImplChangerAdmin}`);
+    console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
 
-    if (!walletImplLocatorAdmin || !walletImplChangerAdmin) {
-        throw new Error('Required environment variables not set');
+    if (!walletImplLocatorAddress) {
+        throw new Error('WalletImplLocator address not found in step1.json');
     }
 
     // await waitForInput(); // Commented out for automated deployment
@@ -30,29 +30,18 @@ async function step2(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
-    // Deploy LatestWalletImplLocator using CREATE2
-    console.log(`[${network}] Deploying LatestWalletImplLocator via CREATE2...`);
-    let latestWalletImplLocator;
-    try {
-        latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
-            walletImplLocatorAdmin,
-            walletImplChangerAdmin
-        ]);
-        console.log(`[${network}] LatestWalletImplLocator deployed at: ${latestWalletImplLocator.address}`);
-    } catch (error) {
-        console.error('Error deploying LatestWalletImplLocator via CREATE2:', error);
-        throw error;
-    }
+    // Deploy StartupWalletImpl
+    console.log(`[${network}] Deploying StartupWalletImpl...`);
+    const startupWalletImpl = await deployContract(env, wallets, 'StartupWalletImpl', [walletImplLocatorAddress]);
 
     // Save deployment information
     fs.writeFileSync('scripts/biconomy/steps/step2.json', JSON.stringify({
-        walletImplLocatorAdmin,
-        walletImplChangerAdmin,
-        latestWalletImplLocator: latestWalletImplLocator.address,
+        walletImplLocatorAddress,
+        startupWalletImpl: startupWalletImpl.address,
     }, null, 1));
 
     console.log(`[${network}] Step 2 deployment completed`);
-    console.log(`[${network}] LatestWalletImplLocator deployed at: ${latestWalletImplLocator.address}`);
+    console.log(`[${network}] StartupWalletImpl deployed at: ${startupWalletImpl.address}`);
 
     return env;
 }

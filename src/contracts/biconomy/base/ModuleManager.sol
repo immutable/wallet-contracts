@@ -54,7 +54,12 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   /// @dev initData should block the implementation from being used as a Smart Account
   constructor(address _defaultValidator, bytes memory _initData) {
     if (!IValidator(_defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) revert MismatchModuleTypeId();
-    IValidator(_defaultValidator).onInstall(_initData);
+
+    // Only call onInstall if initData is not empty - allows implementation deployment without initialization
+    if (_initData.length > 0) {
+      IValidator(_defaultValidator).onInstall(_initData);
+    }
+
     _DEFAULT_VALIDATOR = _defaultValidator;
   }
 

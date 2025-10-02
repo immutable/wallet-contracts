@@ -1,5 +1,16 @@
 {
-  "entryPoint": "0x1757a98c1333B9dc8D408b194B2279b5AFDF70Cc",
-  "source": "deployed_v07",
-  "codeSize": 19652
+  "timestamp": "2025-10-02T03:35:44.005Z",
+  "network": "localhost",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "step": 8,
+  "description": "K1ValidatorFactory (Complete Factory)",
+  "k1ValidatorFactory": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
+  "accountImplementation": "0x1F8165fEb0B7Ca66F98D6C590F86692302ef8060",
+  "k1ValidatorModule": "0xFFefF1dF7C9104e0D3Eea5d4Cf76ab1cE82aA355",
+  "bootstrapper": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
+  "registry": "0x0000000000000000000000000000000000000000",
+  "codeSize": 6677,
+  "configurationVerified": true,
+  "status": "SUCCESS",
+  "gasUsed": "N/A"
 }

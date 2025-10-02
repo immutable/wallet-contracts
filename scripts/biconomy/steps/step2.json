@@ -1,5 +1,4 @@
 {
- "walletImplLocatorAdmin": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
- "walletImplChangerAdmin": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
- "latestWalletImplLocator": "0xf37f06bfDD56366bA65E82670eb738b432CB008D"
+    "walletImplLocatorAddress": "0xEb05D441ac924763943fca653E39D8b5CE00bf5D",
+    "startupWalletImpl": "0xf5059a5D33d5853360D16C683c16e67980206f36"
 }

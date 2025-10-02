@@ -2,30 +2,26 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
 import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContract } from '../../contract';
+import { deployContractViaCREATE2 } from '../../contract';
 import { waitForInput } from '../../helper-functions';
 
 /**
  * Step 1 - Biconomy Implementation
- * Deploy NexusMultiCallDeploy and NexusAccountFactoryTest
- * This step is analogous to the original step1 but uses Biconomy's implementations
+ * Deploy LatestWalletImplLocator for Nexus implementation
+ * This step is analogous to the original step2 but will be used to point to Nexus
  */
 async function step1(): Promise<EnvironmentInfo> {
     const env = loadEnvironmentInfo(hre.network.name);
-    const { network, submitterAddress, signerAddress } = env;
-    const multiCallAdminPubKey = process.env.MULTICALL_ADMIN_PUB_KEY;
-    const factoryAdminPubKey = process.env.FACTORY_ADMIN_PUB_KEY;
-
-    const entryPointAddress = process.env.ENTRY_POINT_ADDRESS;
+    const { network, deployerContractAddress } = env;
+    const walletImplLocatorAdmin = process.env.WALLET_IMPL_LOCATOR_ADMIN;
+    const walletImplChangerAdmin = process.env.WALLET_IMPL_CHANGER_ADMIN;
 
     console.log(`[${network}] Starting Biconomy deployment step 1...`);
-    console.log(`[${network}] Submitter address ${submitterAddress}`);
-    console.log(`[${network}] Signer address ${signerAddress}`);
-    console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
-    console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
-    console.log(`[${network}] entryPointAddress ${entryPointAddress}`);
+    console.log(`[${network}] CREATE2 Factory address ${deployerContractAddress}`);
+    console.log(`[${network}] Wallet ImplLocator Admin address ${walletImplLocatorAdmin}`);
+    console.log(`[${network}] Wallet ImplLocator Changer address ${walletImplChangerAdmin}`);
 
-    if (!multiCallAdminPubKey || !factoryAdminPubKey || !entryPointAddress) {
+    if (!walletImplLocatorAdmin || !walletImplChangerAdmin) {
         throw new Error('Required environment variables not set');
     }
 
@@ -34,28 +30,29 @@ async function step1(): Promise<EnvironmentInfo> {
     // Setup wallet
     const wallets: WalletOptions = await newWalletOptions(env);
 
-    // Deploy Passport MultiCallDeploy (proven working)
-    console.log(`[${network}] Deploying MultiCallDeploy (Passport)...`);
-    const multiCallDeploy = await deployContract(env, wallets, 'MultiCallDeploy', [
-        multiCallAdminPubKey,
-        submitterAddress
-    ]);
-
-    // NOTE: Factory deployment removed - using new simplified architecture
-    // MultiCallDeploy will work directly with NexusAccountFactory (deployed in step9)
-    console.log(`[${network}] ✅ Factory deployment skipped - using simplified architecture`);
+    // Deploy LatestWalletImplLocator using CREATE2
+    console.log(`[${network}] Deploying LatestWalletImplLocator via CREATE2...`);
+    let latestWalletImplLocator;
+    try {
+        latestWalletImplLocator = await deployContractViaCREATE2(env, wallets, 'LatestWalletImplLocator', [
+            walletImplLocatorAdmin,
+            walletImplChangerAdmin
+        ]);
+        console.log(`[${network}] LatestWalletImplLocator deployed at: ${latestWalletImplLocator.address}`);
+    } catch (error) {
+        console.error('Error deploying LatestWalletImplLocator via CREATE2:', error);
+        throw error;
+    }
 
     // Save deployment information
     fs.writeFileSync('scripts/biconomy/steps/step1.json', JSON.stringify({
-        multiCallAdminPubKey,
-        factoryAdminPubKey,
-        multiCallDeploy: multiCallDeploy.address,
-        // factory: removed - not needed anymore
+        walletImplLocatorAdmin,
+        walletImplChangerAdmin,
+        latestWalletImplLocator: latestWalletImplLocator.address,
     }, null, 1));
 
     console.log(`[${network}] Step 1 deployment completed`);
-    console.log(`[${network}] MultiCallDeploy (Passport) deployed at: ${multiCallDeploy.address}`);
-    console.log(`[${network}] ✅ Factory deployment skipped - using simplified architecture`);
+    console.log(`[${network}] LatestWalletImplLocator deployed at: ${latestWalletImplLocator.address}`);
 
     return env;
 }

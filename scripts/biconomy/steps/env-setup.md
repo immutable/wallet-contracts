@@ -4,7 +4,7 @@ Before running the deployment steps, you need to configure the following environ
 
 ## Step 1 - Factory and MultiCallDeploy
 ```bash
-# Admin address for NexusMultiCallDeploy
+# Admin address for MultiCallDeploy
 export MULTICALL_ADMIN_PUB_KEY=0x...
 
 # Admin address for NexusAccountFactory

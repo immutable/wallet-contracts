@@ -1,22 +1,23 @@
-import * as fs from 'fs';
+// Step 9: Deploy K1ValidatorFactory (Complete Factory)
 import * as hre from 'hardhat';
-import { createPublicClient, http, parseGwei } from 'viem';
+import * as fs from 'fs';
+import { createPublicClient, http, zeroAddress } from 'viem';
 import { EnvironmentInfo, loadEnvironmentInfo } from '../../environment';
-import { newWalletOptions, WalletOptions } from '../../wallet-options';
-import { deployContract } from '../../contract';
+import { newWalletOptions } from '../../wallet-options';
 
-/**
- * Step 8 - Deploy EntryPoint for ERC-4337
- * Deploy EntryPoint contract required for Nexus ERC-4337 functionality
- */
-async function step8(): Promise<EnvironmentInfo> {
-    const env = loadEnvironmentInfo(hre.network.name);
+async function step8() {
+    console.log('STEP 8: DEPLOYING K1VALIDATORFACTORY (COMPLETE FACTORY)');
+    console.log('='.repeat(65));
+
+    const env: EnvironmentInfo = loadEnvironmentInfo(hre.network.name);
     const { network } = env;
 
-    console.log(`[${network}] Starting deployment of EntryPoint (Step 8)...`);
+    console.log(`[${network}] Starting K1ValidatorFactory deployment...`);
 
     // Setup wallet
-    const wallets: WalletOptions = await newWalletOptions(env);
+    const walletOptions = await newWalletOptions(env);
+    const deployer = walletOptions.getWallet();
+    const deployerAddress = await deployer.getAddress();
 
     // Setup viem public client for code verification
     const networkConfig = hre.network.config as any;
@@ -25,132 +26,145 @@ async function step8(): Promise<EnvironmentInfo> {
         transport: http(rpcUrl)
     });
 
-    // Check if we already have an EntryPoint from environment
-    const existingEntryPoint = process.env.ENTRY_POINT_ADDRESS;
-
-    if (existingEntryPoint && existingEntryPoint !== '0x0000000000000000000000000000000000000000') {
-        console.log(`[${network}] Using existing EntryPoint from environment: ${existingEntryPoint}`);
-
-        // Verify it has code using viem
-        const code = await publicClient.getCode({
-            address: existingEntryPoint as `0x${string}`
-        });
-
-        if (code && code !== '0x') {
-            console.log(`[${network}] ✅ EntryPoint verified with ${Math.floor(code.length / 2)} bytes of code`);
-
-            // Save to step8.json
-            fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
-                entryPoint: existingEntryPoint,
-                source: 'environment'
-            ,
-                version: 'v0.7',
-                description: 'EntryPoint v0.7 (Real Implementation)'}, null, 1));
-
-            console.log(`[${network}] Step 8 (EntryPoint) using existing deployment completed`);
-            return env;
-        } else {
-            console.log(`[${network}] ⚠️ EntryPoint address has no code, deploying new one...`);
-        }
-    }
-
-    // Deploy a minimal EntryPoint for local development
-    console.log(`[${network}] Deploying minimal EntryPoint for local development...`);
+    console.log(`[${network}] Deployer: ${deployerAddress}`);
 
     try {
-        // Try to deploy the real EntryPoint if available in artifacts
+        // Load required artifacts from previous steps
+        const step4Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step4.json', 'utf8'));
+        const step7Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step7.json', 'utf8'));
+
+        const nexusImplementation = step4Data.nexus;
+        const k1Validator = step4Data.validator.address;
+        const nexusBootstrap = step7Data.nexusBootstrap;
+
+        console.log(`[${network}] 📋 Using artifacts from previous steps:`);
+        console.log(`[${network}]    Nexus Implementation: ${nexusImplementation}`);
+        console.log(`[${network}]    K1Validator: ${k1Validator}`);
+        console.log(`[${network}]    NexusBootstrap: ${nexusBootstrap}`);
+
+        // Deploy K1ValidatorFactory
+        console.log(`\n[${network}] 🚀 Deploying K1ValidatorFactory...`);
+
+        const K1ValidatorFactoryContract = await hre.ethers.getContractFactory('K1ValidatorFactory');
+        const k1ValidatorFactory = await K1ValidatorFactoryContract.deploy(
+            nexusImplementation,        // ACCOUNT_IMPLEMENTATION
+            deployerAddress,            // factoryOwner
+            k1Validator,               // K1_VALIDATOR
+            nexusBootstrap,            // BOOTSTRAPPER
+            zeroAddress                 // REGISTRY (minimal for now) - using viem zeroAddress
+        );
+        await k1ValidatorFactory.deployed();
+
+        console.log(`[${network}] ✅ K1ValidatorFactory deployed at: ${k1ValidatorFactory.address}`);
+
+        // Verify deployment using viem
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const k1FactoryCode = await publicClient.getCode({
+            address: k1ValidatorFactory.address as `0x${string}`
+        });
+
+        if (!k1FactoryCode || k1FactoryCode === '0x') {
+            throw new Error('K1ValidatorFactory deployment verification failed');
+        }
+        console.log(`[${network}] ✅ K1ValidatorFactory verified with ${Math.floor(k1FactoryCode.length / 2)} bytes`);
+
+        // Test factory configuration
+        console.log(`\n[${network}] 🧪 Testing factory configuration...`);
+
         try {
-            // Deploy real EntryPoint using the same approach as deploy-infrastructure-and-wallet.js
-            console.log(`[${network}] 🚀 Deploying REAL EntryPoint from account-abstraction package...`);
+            const accountImpl = await k1ValidatorFactory.ACCOUNT_IMPLEMENTATION();
+            const k1Val = await k1ValidatorFactory.K1_VALIDATOR();
+            const bootstrap = await k1ValidatorFactory.BOOTSTRAPPER();
+            const registry = await k1ValidatorFactory.REGISTRY();
 
-            const deployer = wallets.getWallet();
+            console.log(`[${network}]    ✅ ACCOUNT_IMPLEMENTATION: ${accountImpl}`);
+            console.log(`[${network}]    ✅ K1_VALIDATOR: ${k1Val}`);
+            console.log(`[${network}]    ✅ BOOTSTRAPPER: ${bootstrap}`);
+            console.log(`[${network}]    ✅ REGISTRY: ${registry}`);
 
-            // Deploy EntryPoint v0.7 from our compiled contracts (not deployments)
-            console.log(`[${network}] 📋 Using EntryPoint v0.7 from compiled contracts...`);
-            const EntryPointFactory = await hre.ethers.getContractFactory('EntryPoint');
+            // Verify addresses match
+            const configCorrect =
+                accountImpl.toLowerCase() === nexusImplementation.toLowerCase() &&
+                k1Val.toLowerCase() === k1Validator.toLowerCase() &&
+                bootstrap.toLowerCase() === nexusBootstrap.toLowerCase();
 
-            // Deploy EntryPoint v0.7 (compiled from account-abstraction source)
-            const entryPoint = await EntryPointFactory.deploy({
-                gasLimit: 30000000 // Keep as number for gas limit
-            });
-            await entryPoint.deployed();
+            if (configCorrect) {
+                console.log(`[${network}]    🎉 Factory configuration verified!`);
+            } else {
+                throw new Error('Factory configuration mismatch');
+            }
 
-            console.log(`[${network}] ✅ EntryPoint v0.7 deployed at: ${entryPoint.address}`);
-
-            // Get code size using viem
-            const entryPointCode = await publicClient.getCode({
-                address: entryPoint.address as `0x${string}`
-            });
-            console.log(`[${network}] 📏 Code size: ${Math.floor((entryPointCode?.length || 0) / 2)} bytes`);
-
-            // Save deployment information
-            fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
-                entryPoint: entryPoint.address,
-                source: 'deployed_v07',
-                codeSize: Math.floor((entryPointCode?.length || 0) / 2)
-            }, null, 2));
-
-            console.log(`[${network}] Step 8 (REAL EntryPoint) deployment completed`);
-            return env;
-
-        } catch (realEntryPointError) {
-            console.log(`[${network}] ❌ Failed to deploy real EntryPoint:`, realEntryPointError.message);
-            console.log(`[${network}] Real EntryPoint not available, deploying mock...`);
-
-            // Deploy a minimal mock EntryPoint
-            const MockEntryPointFactory = await hre.ethers.getContractFactory('MockEntryPoint');
-            const mockEntryPoint = await MockEntryPointFactory.deploy();
-            await mockEntryPoint.deployed();
-
-            console.log(`[${network}] ✅ Mock EntryPoint deployed at: ${mockEntryPoint.address}`);
-
-            // Save deployment information
-            fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
-                entryPoint: mockEntryPoint.address,
-                source: 'deployed_mock'
-            }, null, 1));
-
-            console.log(`[${network}] Step 8 (Mock EntryPoint) deployment completed`);
-            return env;
+        } catch (configError) {
+            console.log(`[${network}]    ❌ Factory configuration test failed: ${configError.message}`);
+            throw configError;
         }
 
+        // Save step results
+        const stepResults = {
+            timestamp: new Date().toISOString(),
+            network: network,
+            deployer: deployerAddress,
+            step: 8,
+            description: 'K1ValidatorFactory (Complete Factory)',
+
+            // Main deployment
+            k1ValidatorFactory: k1ValidatorFactory.address,
+
+            // Configuration
+            accountImplementation: nexusImplementation,
+            k1ValidatorModule: k1Validator,
+            bootstrapper: nexusBootstrap,
+            registry: zeroAddress, // Use viem zeroAddress
+
+            // Verification
+            codeSize: Math.floor(k1FactoryCode.length / 2),
+            configurationVerified: true,
+
+            // Status
+            status: 'SUCCESS',
+            gasUsed: 'N/A' // Could be extracted from deployment transaction if needed
+        };
+
+        // Save to step file
+        fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify(stepResults, null, 2));
+        console.log(`[${network}] 📁 Step 8 results saved to step8.json`);
+
+        console.log(`\n[${network}] ✅ STEP 8 COMPLETED SUCCESSFULLY`);
+        console.log(`[${network}] 🏭 K1ValidatorFactory: ${k1ValidatorFactory.address}`);
+
+        return stepResults;
+
     } catch (error) {
-        console.error(`[${network}] Error in step8:`, error);
+        console.error(`[${network}] ❌ Step 8 failed:`, error);
 
-        // Fallback: use a standard EntryPoint address for local networks
-        const standardEntryPoint = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
-        console.log(`[${network}] Using standard EntryPoint address: ${standardEntryPoint}`);
+        // Save error state
+        const errorResults = {
+            timestamp: new Date().toISOString(),
+            network: network,
+            deployer: deployerAddress,
+            step: 8,
+            description: 'K1ValidatorFactory (Complete Factory)',
+            status: 'FAILED',
+            error: error.message,
+            stack: error.stack
+        };
 
-        // Save fallback information
-        fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify({
-            entryPoint: standardEntryPoint,
-            source: 'standard_address'
-        }, null, 1));
-
-        console.log(`[${network}] Step 8 (Standard EntryPoint) fallback completed`);
-        return env;
+        fs.writeFileSync('scripts/biconomy/steps/step8.json', JSON.stringify(errorResults, null, 2));
+        throw error;
     }
 }
 
-// Execute deployment
-step8()
-    .then((env: EnvironmentInfo) => {
-        console.log(`[${env.network}] Step 8 completed successfully`);
+// Run if called directly
+if (require.main === module) {
+    step8()
+        .then(() => {
+            console.log('\n🎉 STEP 8 DEPLOYMENT COMPLETED');
+            process.exit(0);
+        })
+        .catch((error) => {
+            console.error('\n❌ STEP 8 DEPLOYMENT FAILED:', error);
+            process.exit(1);
+        });
+}
 
-        // Load the result and show summary
-        const step8Data = JSON.parse(fs.readFileSync('scripts/biconomy/steps/step8.json', 'utf8'));
-        console.log(`[${env.network}] 📋 EntryPoint Summary:`);
-        console.log(`[${env.network}]    Address: ${step8Data.entryPoint}`);
-        console.log(`[${env.network}]    Source: ${step8Data.source}`);
-
-        if (step8Data.source === 'deployed_mock' || step8Data.source === 'standard_address') {
-            console.log(`[${env.network}] ⚠️  Note: Using mock/standard EntryPoint for local development`);
-            console.log(`[${env.network}]    For production, deploy real EntryPoint from account-abstraction package`);
-        }
-
-        process.exit(0);
-    })
-    .catch(err => {
-        console.error('Error in step8:', err);
-        process.exit(1);
-    });
+export { step8 };
