@@ -168,6 +168,57 @@ async function deployWallet(): Promise<void> {
     await testWalletFunctionality(walletAddress, artifacts, deployer, network);
 }
 
+
+/**
+ * Validate CFA compatibility between legacy Factory.sol pattern and NexusAccountFactory
+ * This safety check ensures both methods calculate the same address before deployment
+ */
+async function validateCFACompatibility(
+    cfaByLegacy: string,
+    artifacts: any,
+    initData: string,
+    salt: string,
+    network: string
+): Promise<{ isValid: boolean; legacyPrediction: string; factoryPrediction: string; reason?: string }> {
+    console.log(`[${network}] 🔍 Performing CFA compatibility validation...`);
+
+    // Calculate CFA using NexusAccountFactory pattern
+    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory');
+    const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
+    const cfaByFactory = await factory.computeAccountAddress(initData, salt);
+
+    // Compare results
+    const isValid = cfaByLegacy.toLowerCase() === cfaByFactory.toLowerCase();
+
+    console.log(`[${network}] 📋 CFA Validation Results:`);
+    console.log(`[${network}]   - Legacy Pattern (Factory.sol): ${cfaByLegacy}`);
+    console.log(`[${network}]   - Factory Pattern (NexusAccountFactory): ${cfaByFactory}`);
+    console.log(`[${network}]   - Compatible: ${isValid ? '✅ YES' : '❌ NO'}`);
+
+    if (!isValid) {
+        const reason = 'Address calculation mismatch between legacy Factory.sol and NexusAccountFactory patterns';
+        console.log(`[${network}] ❌ CFA INCOMPATIBILITY DETECTED!`);
+        console.log(`[${network}] 💡 Reason: ${reason}`);
+        console.log(`[${network}] 🚨 This would cause MultiCallDeploy to revert with "deployed address does not match CFA"`);
+
+        return {
+            isValid: false,
+            legacyPrediction: cfaByLegacy,
+            factoryPrediction: cfaByFactory,
+            reason
+        };
+    }
+
+    console.log(`[${network}] ✅ CFA compatibility validated - both methods agree!`);
+    console.log(`[${network}] 📋 Wallet will be deployed at: ${cfaByLegacy}`);
+
+    return {
+        isValid: true,
+        legacyPrediction: cfaByLegacy,
+        factoryPrediction: cfaByFactory
+    };
+}
+
 /**
  * Deploy wallet using MultiCallDeploy with initialization (Bootstrap pattern)
  * This approach deploys and initializes the wallet in one atomic transaction
@@ -217,6 +268,25 @@ async function deployWithMultiCallAndInitialization(
 
     console.log(`[${network}] 📋 Predicted wallet address: ${cfa}`);
     console.log(`[${network}] 📋 Salt: ${salt}`);
+
+    // Create initData for CFA validation (same format as used in deployAndExecuteNexus)
+    const initDataForValidation = hre.ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'address', 'address', 'address'],
+        [
+            artifacts.entryPoint,           // EntryPoint
+            artifacts.validatorAddress || artifacts.k1ValidatorModule,   // K1Validator
+            deployer.address,              // Owner
+            cfa,                           // CFA (for compatibility)
+            artifacts.nexus                // Nexus implementation
+        ]
+    );
+
+    // Validate CFA compatibility between Factory.sol and NexusAccountFactory patterns
+    const cfaValidation = await validateCFACompatibility(cfa, artifacts, initDataForValidation, salt, network);
+
+    if (!cfaValidation.isValid) {
+        throw new Error(`CFA validation failed: ${cfaValidation.reason}`);
+    }
 
     // Check if wallet already exists
     const existingCode = await hre.ethers.provider.getCode(cfa);
@@ -353,96 +423,6 @@ async function deployWithMultiCallAndInitialization(
 
     return cfa;
 }
-
-/**
- * Deploy Nexus wallet using NexusAccountFactory (Simplified Architecture)
- * This approach uses direct Nexus deployment with CFA compatibility
- */
-async function deployNexusWithCFAFactory(
-    env: EnvironmentInfo,
-    artifacts: any,
-    initData: string,
-    salt: string,
-    walletConfig: WalletDeploymentConfig
-): Promise<void> {
-    const { network } = env;
-    console.log(`[${network}] 🚀 Starting CFA-compatible Nexus deployment...`);
-
-    // Setup wallet
-    const walletOptions: WalletOptions = await newWalletOptions(env);
-    const deployer = walletOptions.getWallet();
-
-    // Get NexusAccountFactory (Simplified Architecture)
-    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory', deployer);
-    const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
-
-    console.log(`[${network}] 📋 Using NexusAccountFactory: ${artifacts.nexusAccountFactory}`);
-    console.log(`[${network}] 📋 Nexus Implementation: ${artifacts.nexus}`);
-    console.log(`[${network}] 📋 EntryPoint: ${artifacts.entryPoint}`);
-
-    // Predict wallet address using NexusAccountFactory (CFA compatibility maintained)
-    const predictedAddress = await factory.computeAccountAddress(initData, salt);
-    console.log(`[${network}] 🔮 Predicted CFA-compatible address: ${predictedAddress}`);
-
-    // Check if wallet already exists
-    const publicClient = createViemPublicClient();
-    const existingCode = await publicClient.getCode({ address: predictedAddress as `0x${string}` });
-    if (existingCode && existingCode !== '0x') {
-        console.log(`[${network}] ✅ Wallet already exists at ${predictedAddress}`);
-        console.log(`[${network}] 🧪 Continuing to test wallet functionality...`);
-
-        // Verify deployment and test functionality
-        await verifyDeployment(predictedAddress, network);
-        await testWalletFunctionality(predictedAddress, artifacts, deployer, network);
-        return;
-    }
-
-    // Deploy wallet via NexusAccountFactory (Simplified Architecture)
-    console.log(`[${network}] 🔨 Deploying Nexus wallet via NexusAccountFactory...`);
-
-    try {
-        // Direct deployment using NexusAccountFactory
-        const deployTx = await factory.createAccount(
-            initData,           // initData: [entryPoint, validator, owner]
-            salt,     // salt
-            {
-                gasLimit: 10000000,  // Sufficient for Nexus deployment
-                maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
-                maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
-            }
-        );
-
-        console.log(`[${network}] 📋 Deployment transaction: ${deployTx.hash}`);
-        const receipt = await deployTx.wait();
-        console.log(`[${network}] ✅ Wallet deployed in block: ${receipt.blockNumber}`);
-        console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
-
-        // Get deployed address from events
-        const accountCreatedEvent = receipt.events?.find((e: any) => e.event === 'AccountCreated');
-        const deployedAddress = accountCreatedEvent?.args?.[0] || predictedAddress;
-
-        console.log(`[${network}] 🎯 Deployed wallet address: ${deployedAddress}`);
-
-        // Verify CFA compatibility
-        if (predictedAddress.toLowerCase() === deployedAddress.toLowerCase()) {
-            console.log(`[${network}] ✅ CFA COMPATIBILITY VERIFIED!`);
-        } else {
-            console.log(`[${network}] ❌ CFA COMPATIBILITY FAILED!`);
-            console.log(`[${network}]   Expected: ${predictedAddress}`);
-            console.log(`[${network}]   Actual: ${deployedAddress}`);
-            return;
-        }
-
-        // Verify deployment and test functionality
-        await verifyDeployment(deployedAddress, network);
-        await testWalletFunctionality(deployedAddress, artifacts, deployer, network);
-
-    } catch (error) {
-        console.error(`[${network}] ❌ Nexus deployment failed:`, error.message);
-        throw error;
-    }
-}
-
 
 /**
  * Test basic Nexus wallet functionality
