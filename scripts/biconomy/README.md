@@ -38,8 +38,6 @@ scripts/biconomy/
 - `deploy-real-entrypoint.js` - Replaced by `step3.ts` 
 - `NexusMultiCallDeploy.sol` - Replaced by existing `MultiCallDeploy.sol`
 - `PassportNexusAccountFactory.sol` - Replaced by `NexusAccountFactory.sol`
-- `PassportNexusUpgradeController.sol` - Upgrade approach replaced by direct CFA deployment
-- `PassportNexusUpgradeFactory.sol` - Replaced by `PassportCompatibleNexusFactory.sol`
 
 ## Architecture Overview
 
@@ -245,7 +243,7 @@ USE_MULTICALL_DEPLOY=true NODE_ENV=development npx hardhat run scripts/biconomy/
 Deploy wallet using existing infrastructure with the **cleaned and optimized** `wallet-deployment.ts`:
 
 ```bash
-# Deploy wallet using step artifacts (default: PassportCompatibleNexusFactory)
+# Deploy wallet using step artifacts (default: NexusAccountFactory)
 NODE_ENV=development npx hardhat run scripts/biconomy/wallet-deployment.ts --network localhost
 
 # Deploy using MultiCallDeploy with fallback to Factory

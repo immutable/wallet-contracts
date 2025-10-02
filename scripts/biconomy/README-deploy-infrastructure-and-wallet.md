@@ -37,7 +37,7 @@ The `deploy-infrastructure-and-wallet.js` script is a **complete, self-contained
 
 ### ✅ **Robust Architecture**
 - **Hybrid approach** combines the best of both systems
-- **Complete 11-step implementation** (all steps 0-10 in one script including NexusBootstrap, EntryPoint, PassportCompatibleNexusFactory, and K1ValidatorFactory)
+- **Complete 9-step implementation** (all steps 0-8 in one script including NexusBootstrap, EntryPoint, NexusAccountFactory, and K1ValidatorFactory)
 - **Dual deployment methods** (Factory and MultiCallDeploy)
 - **Proper timing** with verification between deployments
 - **Comprehensive verification** of all components
