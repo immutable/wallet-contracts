@@ -143,21 +143,18 @@ async function deployWalletWithNexusFactory(infrastructure, deployer, network) {
     console.log(`[${network}] 📋 EntryPoint: ${infrastructure.entryPoint}`);
     console.log(`[${network}] 📋 K1Validator: ${infrastructure.k1ValidatorModule}`);
 
-    // Create initData for NexusAccountFactory: [entryPoint, validator, owner]
-    const initData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address', 'address'],
-        [infrastructure.entryPoint, infrastructure.k1ValidatorModule, deployer.address]
-    );
+    // Using simplified signature: just pass the mainModule (Nexus implementation)
+    const mainModule = infrastructure.nexus;
 
     // Generate deployment salt
     const salt = hre.ethers.utils.formatBytes32String(`nexus-${Date.now()}`);
 
-    console.log(`[${network}] 📋 InitData: [entryPoint, validator, owner]`);
+    console.log(`[${network}] 📋 MainModule (Nexus Implementation): ${mainModule}`);
     console.log(`[${network}] 📋 Owner: ${deployer.address}`);
     console.log(`[${network}] 📋 Salt: ${salt}`);
 
     // Predict wallet address (CFA compatibility)
-    const predictedAddress = await factory.computeAccountAddress(initData, salt);
+    const predictedAddress = await factory.computeAccountAddress(mainModule, salt);
     console.log(`[${network}] 🔮 Predicted address: ${predictedAddress}`);
 
     // Check if wallet already exists
@@ -170,7 +167,7 @@ async function deployWalletWithNexusFactory(infrastructure, deployer, network) {
     // Deploy wallet
     console.log(`[${network}] 🔨 Deploying Nexus wallet...`);
 
-    const deployTx = await factory.createAccount(initData, salt, {
+    const deployTx = await factory.createAccount(mainModule, salt, {
         gasLimit: 10000000,
         maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
         maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
@@ -202,7 +199,8 @@ async function deployWalletWithNexusFactory(infrastructure, deployer, network) {
     const codeSize = Math.floor(deployedCode.length / 2);
     console.log(`[${network}] 📏 Deployed code size: ${codeSize} bytes`);
 
-    if (codeSize < 100) {
+    // WalletProxy.yul has 53 bytes, which is correct for a minimal proxy
+    if (codeSize < 50) {
         throw new Error(`Wallet deployment failed - code too small (${codeSize} bytes)`);
     }
 

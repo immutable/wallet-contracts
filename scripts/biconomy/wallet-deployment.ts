@@ -148,12 +148,6 @@ async function deployWallet(): Promise<void> {
         salt
     );
 
-    // Create initData for NexusAccountFactory: [entryPoint, validator, owner]
-    const nexusInitData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address', 'address', 'address', 'address'],
-        [artifacts.entryPoint, artifacts.validatorAddress || artifacts.k1ValidatorModule, walletConfig.owner, cfa, artifacts.startupWalletImpl]
-    );
-
     console.log(`[${network}] 🎯 MULTICALL DEPLOYMENT with initialization (Bootstrap pattern)`);
     const walletAddress = await deployWithMultiCallAndInitialization(
         artifacts,
@@ -176,16 +170,16 @@ async function deployWallet(): Promise<void> {
 async function validateCFACompatibility(
     cfaByLegacy: string,
     artifacts: any,
-    initData: string,
+    mainModule: string,
     salt: string,
     network: string
 ): Promise<{ isValid: boolean; legacyPrediction: string; factoryPrediction: string; reason?: string }> {
     console.log(`[${network}] 🔍 Performing CFA compatibility validation...`);
 
-    // Calculate CFA using NexusAccountFactory pattern
+    // Calculate CFA using NexusAccountFactory pattern (simplified signature)
     const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory');
     const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
-    const cfaByFactory = await factory.computeAccountAddress(initData, salt);
+    const cfaByFactory = await factory.computeAccountAddress(mainModule, salt);
 
     // Compare results
     const isValid = cfaByLegacy.toLowerCase() === cfaByFactory.toLowerCase();
@@ -269,20 +263,9 @@ async function deployWithMultiCallAndInitialization(
     console.log(`[${network}] 📋 Predicted wallet address: ${cfa}`);
     console.log(`[${network}] 📋 Salt: ${salt}`);
 
-    // Create initData for CFA validation (same format as used in deployAndExecuteNexus)
-    const initDataForValidation = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address', 'address', 'address', 'address'],
-        [
-            artifacts.entryPoint,           // EntryPoint
-            artifacts.validatorAddress || artifacts.k1ValidatorModule,   // K1Validator
-            deployer.address,              // Owner
-            cfa,                           // CFA (for compatibility)
-            artifacts.nexus                // Nexus implementation
-        ]
-    );
-
     // Validate CFA compatibility between Factory.sol and NexusAccountFactory patterns
-    const cfaValidation = await validateCFACompatibility(cfa, artifacts, initDataForValidation, salt, network);
+    // Now using simplified signature: just pass the mainModule (Nexus implementation)
+    const cfaValidation = await validateCFACompatibility(cfa, artifacts, artifacts.nexus, salt, network);
 
     if (!cfaValidation.isValid) {
         throw new Error(`CFA validation failed: ${cfaValidation.reason}`);
@@ -344,24 +327,15 @@ async function deployWithMultiCallAndInitialization(
 
     console.log(`[${network}] ✍️  Generated signature for self-call initialization`);
 
-    // Create initData for NexusAccountFactory (5 addresses)
-    const initData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address', 'address', 'address', 'address', 'address'],
-        [
-            artifacts.entryPoint,           // EntryPoint
-            artifacts.validatorAddress || artifacts.k1ValidatorModule,   // K1Validator
-            deployer.address,              // Owner
-            cfa,                           // CFA (for compatibility)
-            artifacts.nexus                // Nexus implementation
-        ]
-    );
+    // Using simplified signature: just pass the mainModule (Nexus implementation)
+    const mainModule = artifacts.nexus;
 
     // Try callStatic first to catch errors (same as bootstrap script)
     try {
         console.log(`[${network}] 🔍 Testing deployAndExecuteNexus with callStatic...`);
         await multiCallDeploy.connect(deployer).callStatic.deployAndExecuteNexus(
             cfa,                        // counterfactual address
-            initData,                   // initialization data for NexusAccountFactory
+            mainModule,                 // main module (Nexus implementation)
             salt,                       // salt for deployment
             artifacts.nexusAccountFactory, // NexusAccountFactory address
             transactions,               // initialization transaction
@@ -385,7 +359,7 @@ async function deployWithMultiCallAndInitialization(
 
     const deployTx = await multiCallDeploy.connect(deployer).deployAndExecuteNexus(
         cfa,                        // counterfactual address
-        initData,                   // initialization data for NexusAccountFactory
+        mainModule,                 // main module (Nexus implementation)
         salt,                       // salt for deployment
         artifacts.nexusAccountFactory, // NexusAccountFactory address
         transactions,               // initialization transaction

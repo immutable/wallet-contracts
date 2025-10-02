@@ -48,34 +48,17 @@ contract NexusAccountFactory is Stakeable, INexusFactory {
     NEXUS_BOOTSTRAP = nexusBootstrap_;
   }
 
-  /// @notice Creates a new Nexus account with proper K1Validator initialization
-  /// @dev Uses WalletProxy.yul for CFA compatibility + NexusBootstrap for proper module initialization
-  /// @param initData Initialization data containing [entryPoint, validator, owner, cfa, startupWalletImpl] addresses
+  /// @notice Creates a new Nexus account with CFA compatibility (same signature as Factory.sol)
+  /// @dev Uses WalletProxy.yul for CFA compatibility, identical to legacy Factory pattern
+  /// @param _mainModule Address of the main module to be used by the wallet (Nexus implementation)
   /// @param salt Unique salt for the Smart Account creation.
   /// @return _contract The address of the newly created Nexus account.
   function createAccount(
-    bytes calldata initData,
+    address _mainModule,
     bytes32 salt
   ) external payable override returns (address payable _contract) {
-    // Extract addresses from initData: [entryPoint, validator, owner, cfa, startupWalletImpl]
-    require(initData.length >= 160, 'NexusAccountFactory: initData too short'); // 5 addresses = 160 bytes
-
-    address entryPoint;
-    address validator;
-    address owner;
-    address cfa;
-    address startupWalletImpl;
-
-    assembly {
-      entryPoint := calldataload(add(initData.offset, 0x00)) // First 32 bytes
-      validator := calldataload(add(initData.offset, 0x20)) // Second 32 bytes
-      owner := calldataload(add(initData.offset, 0x40)) // Third 32 bytes
-      cfa := calldataload(add(initData.offset, 0x60)) // Fourth 32 bytes
-      startupWalletImpl := calldataload(add(initData.offset, 0x80)) // Fifth 32 bytes
-    }
-
-    // Deploy WalletProxy.yul for CFA compatibility
-    bytes memory code = abi.encodePacked(Wallet.creationCode, uint256(uint160(startupWalletImpl)));
+    // Deploy WalletProxy.yul for CFA compatibility (identical to Factory.sol)
+    bytes memory code = abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule)));
     assembly {
       _contract := create2(callvalue(), add(code, 32), mload(code), salt)
     }
@@ -87,44 +70,27 @@ contract NexusAccountFactory is Stakeable, INexusFactory {
     // This maintains CFA compatibility and follows the official ERC-4337 pattern
 
     // emit event, increases gas cost by ~2k
-    emit WalletDeployed(_contract, startupWalletImpl, salt);
+    emit WalletDeployed(_contract, _mainModule, salt);
 
     return payable(_contract);
   }
 
   /// @notice Computes the expected address of a Nexus contract using the SAME logic as createAccount
-  /// @dev Uses Nexus.creationCode to match the actual deployment in createAccount
-  /// @param initData - Initialization data containing [entryPoint, validator, owner, cfa, startupWalletImpl] addresses
-  /// @param salt - Unique salt for the Smart Account creation.
+  /// @dev Uses identical pattern to Factory.sol for perfect CFA compatibility
+  /// @param _mainModule Address of the main module to be used by the wallet (Nexus implementation)
+  /// @param salt Unique salt for the Smart Account creation.
   /// @return expectedAddress The expected address at which the Nexus contract will be deployed if the provided parameters are used.
   function computeAccountAddress(
-    bytes calldata initData,
+    address _mainModule,
     bytes32 salt
   ) external view override returns (address payable expectedAddress) {
-    // Extract addresses from initData: [entryPoint, validator, owner, cfa, startupWalletImpl]
-    require(initData.length >= 160, 'NexusAccountFactory: initData too short'); // 5 addresses = 160 bytes
-
-    address entryPoint;
-    address validator;
-    address owner;
-    address cfa;
-    address startupWalletImpl; // This will be used as _mainModule
-
-    assembly {
-      entryPoint := calldataload(add(initData.offset, 0x00)) // First 32 bytes
-      validator := calldataload(add(initData.offset, 0x20)) // Second 32 bytes
-      owner := calldataload(add(initData.offset, 0x40)) // Third 32 bytes
-      cfa := calldataload(add(initData.offset, 0x60)) // Fourth 32 bytes
-      startupWalletImpl := calldataload(add(initData.offset, 0x80)) // Fifth 32 bytes
-    }
-
-    // Use the SAME pattern as Factory.sol: startupWalletImpl as _mainModule in initCodeHash calculation
+    // Use the SAME pattern as Factory.sol for perfect CFA compatibility
     bytes32 _hash = keccak256(
       abi.encodePacked(
         bytes1(0xff),
         address(this),
         salt,
-        keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(startupWalletImpl))))
+        keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(_mainModule))))
       )
     );
     return payable(address(uint160(uint256(_hash))));

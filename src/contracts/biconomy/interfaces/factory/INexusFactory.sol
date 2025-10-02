@@ -22,9 +22,9 @@ pragma solidity ^0.8.27;
 interface INexusFactory {
   /// @notice Emitted when a new Smart Account is created.
   /// @param account The address of the newly created account.
-  /// @param initData Initialization data used for the new Smart Account.
+  /// @param mainModule Main module address used for the new Smart Account.
   /// @param salt Unique salt used during the creation of the Smart Account.
-  event AccountCreated(address indexed account, bytes indexed initData, bytes32 indexed salt);
+  event AccountCreated(address indexed account, address indexed mainModule, bytes32 indexed salt);
 
   /// @notice Error indicating that the account is already deployed
   /// @param account The address of the account that is already deployed
@@ -36,18 +36,18 @@ interface INexusFactory {
   /// @notice Error thrown when the implementation address is zero.
   error ImplementationAddressCanNotBeZero();
 
-  /// @notice Creates a new Nexus with initialization data.
-  /// @param initData Initialization data to be called on the new Smart Account.
+  /// @notice Creates a new Nexus with the specified main module (same signature as Factory.sol).
+  /// @param _mainModule Address of the main module to be used by the wallet.
   /// @param salt Unique salt for the Smart Account creation.
   /// @return _contract The address of the newly created Nexus.
-  function createAccount(bytes calldata initData, bytes32 salt) external payable returns (address payable _contract);
+  function createAccount(address _mainModule, bytes32 salt) external payable returns (address payable _contract);
 
   /// @notice Computes the expected address of a Nexus contract using the factory's deterministic deployment algorithm.
-  /// @param initData Initialization data to be called on the new Smart Account.
+  /// @param _mainModule Address of the main module to be used by the wallet.
   /// @param salt Unique salt for the Smart Account creation.
   /// @return expectedAddress The expected address at which the Nexus contract will be deployed if the provided parameters are used.
   function computeAccountAddress(
-    bytes calldata initData,
+    address _mainModule,
     bytes32 salt
   ) external view returns (address payable expectedAddress);
 }

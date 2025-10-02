@@ -56,24 +56,24 @@ contract MultiCallDeploy is AccessControl {
   }
 
   /*
-   * @dev Deploy Nexus wallet and execute transaction (NEW NexusAccountFactory).
-   * @param initData Initialization data containing [entryPoint, validator, owner] addresses
+   * @dev Deploy Nexus wallet and execute transaction (NEW NexusAccountFactory - simplified signature).
+   * @param _mainModule Address of the main module to be used by the wallet (Nexus implementation)
    * @param _salt Salt used to generate the address
    * @param nexusFactory address of the NexusAccountFactory contract
-   * @param _transactions Encoded batch transaction data
+   * @param _txs transaction to execute
    * @param _nonce nonce of the wallet
    * @param _signature transaction signature from wallet
    */
   function deployExecuteNexus(
-    bytes calldata initData,
+    address _mainModule,
     bytes32 _salt,
     address nexusFactory,
     IModuleCalls.Transaction[] calldata _txs,
     uint256 _nonce,
     bytes calldata _signature
   ) external onlyRole(EXECUTOR_ROLE) {
-    // Deploy new wallet
-    address payable wallet = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
+    // Deploy new wallet (same signature as legacy deployExecute)
+    address payable wallet = INexusAccountFactory(nexusFactory).createAccount(_mainModule, _salt);
 
     // Create adapter for the deployed wallet and execute via initialization
     NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(wallet);
@@ -119,9 +119,9 @@ contract MultiCallDeploy is AccessControl {
   }
 
   /*
-   * @dev Handles deployment of Nexus wallet and transaction execution for both cases (NEW NexusAccountFactory)
+   * @dev Handles deployment of Nexus wallet and transaction execution for both cases (NEW NexusAccountFactory - simplified signature)
    * @param cfa counter factual address of the wallet
-   * @param initData Initialization data containing [entryPoint, validator, owner] addresses
+   * @param _mainModule Address of the main module to be used by the wallet (Nexus implementation)
    * @param _salt Salt used to generate the address
    * @param nexusFactory address of the NexusAccountFactory contract
    * @param _txs transaction to execute
@@ -130,7 +130,7 @@ contract MultiCallDeploy is AccessControl {
    */
   function deployAndExecuteNexus(
     address cfa,
-    bytes calldata initData,
+    address _mainModule,
     bytes32 _salt,
     address nexusFactory,
     IModuleCalls.Transaction[] calldata _txs,
@@ -143,13 +143,10 @@ contract MultiCallDeploy is AccessControl {
       size := extcodesize(cfa)
     }
 
-    // Create batch execution mode
-    ExecutionMode mode = ModeLib.encode(CALLTYPE_BATCH, EXECTYPE_DEFAULT, MODE_DEFAULT, ModePayload.wrap(0x00));
-
     // If size is 0, deploy the Nexus and execute write tx
     // Else, execute the users transaction
     if (size == 0) {
-      address payable wallet = INexusAccountFactory(nexusFactory).createAccount(initData, _salt);
+      address payable wallet = INexusAccountFactory(nexusFactory).createAccount(_mainModule, _salt);
       require(cfa == wallet, 'MultiCallDeploy: deployed address does not match CFA');
 
       // Create adapter for the deployed wallet and execute via initialization

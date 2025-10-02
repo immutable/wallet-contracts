@@ -1,9 +1,9 @@
 {
-  "multiCallAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "factoryAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "multiCallDeploy": "0xA21DDc1f17dF41589BC6A5209292AED2dF61Cc94",
-  "nexusBootstrap": "0x2A590C461Db46bca129E8dBe5C3998A8fF402e76",
-  "nexusAccountFactory": "0x158d291D8b47F056751cfF47d1eEcd19FDF9B6f8",
-  "factory": "0x158d291D8b47F056751cfF47d1eEcd19FDF9B6f8",
-  "validatorAddress": "0xC1f25e96F8A3597a5eE98ec4bFa21463C33Abee2"
+ "multiCallAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+ "factoryAdminPubKey": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+ "multiCallDeploy": "0xc3023a2c9f7B92d1dd19F488AF6Ee107a78Df9DB",
+ "nexusBootstrap": "0x124dDf9BdD2DdaD012ef1D5bBd77c00F05C610DA",
+ "nexusAccountFactory": "0xe044814c9eD1e6442Af956a817c161192cBaE98F",
+ "factory": "0xe044814c9eD1e6442Af956a817c161192cBaE98F",
+ "validatorAddress": "0x61Bd4b3B8B99cd0ab450a8581495937B8FfBfFbD"
 }
