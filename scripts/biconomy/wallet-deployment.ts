@@ -11,12 +11,10 @@ import {
 } from '../../utils/helpers';
 
 // Configuration
-const USE_MULTICALL_DEPLOY = process.env.USE_MULTICALL_DEPLOY === 'true';
 
 interface WalletDeploymentConfig {
     owner: string;
     salt: string;
-    useMultiCall: boolean;
     owners: Array<{
         address: string;
         weight: number;
@@ -126,7 +124,6 @@ async function deployWallet(): Promise<void> {
     const walletConfig: WalletDeploymentConfig = {
         owner: await deployer.getAddress(),
         salt: `nexus-${Date.now()}`,
-        useMultiCall: USE_MULTICALL_DEPLOY,
         owners: [
             {
                 address: '0xdD2FD4581271e230360230F9337D5c0430Bf44C0', // accounts[18]
@@ -140,7 +137,6 @@ async function deployWallet(): Promise<void> {
     console.log(`[${network}] 📋 Deployment configuration:`);
     console.log(`[${network}]   - Owner: ${walletConfig.owner}`);
     console.log(`[${network}]   - Salt: ${walletConfig.salt}`);
-    console.log(`[${network}]   - Use MultiCall: ${walletConfig.useMultiCall}`);
 
     const salt = encodeImageHash(walletConfig.threshold, walletConfig.owners);
     console.log(`[${network}] Generated salt: ${salt}`);
@@ -158,29 +154,18 @@ async function deployWallet(): Promise<void> {
         [artifacts.entryPoint, artifacts.validatorAddress || artifacts.k1ValidatorModule, walletConfig.owner, cfa, artifacts.startupWalletImpl]
     );
 
-    if (walletConfig.useMultiCall) {
-        console.log(`[${network}] 🎯 MULTICALL DEPLOYMENT via MultiCallDeploy with Nexus support`);
-        await deployWithMultiCallDeploy(
-            env,
-            artifacts,
-            nexusInitData,
-            salt,
-            walletConfig
-        );
-    } else {
-        console.log(`[${network}] 🎯 MULTICALL DEPLOYMENT with initialization (Bootstrap pattern)`);
-        const walletAddress = await deployWithMultiCallAndInitialization(
-            artifacts,
-            walletConfig,
-            deployer,
-            network
-        );
+    console.log(`[${network}] 🎯 MULTICALL DEPLOYMENT with initialization (Bootstrap pattern)`);
+    const walletAddress = await deployWithMultiCallAndInitialization(
+        artifacts,
+        walletConfig,
+        deployer,
+        network
+    );
 
-        // Continue with wallet functionality testing
-        console.log(`[${network}] 🧪 Testing wallet functionality...`);
-        await verifyDeployment(walletAddress, network);
-        await testWalletFunctionality(walletAddress, artifacts, deployer, network);
-    }
+    // Continue with wallet functionality testing
+    console.log(`[${network}] 🧪 Testing wallet functionality...`);
+    await verifyDeployment(walletAddress, network);
+    await testWalletFunctionality(walletAddress, artifacts, deployer, network);
 }
 
 /**
@@ -458,104 +443,6 @@ async function deployNexusWithCFAFactory(
     }
 }
 
-/**
- * Deploy wallet using MultiCallDeploy with Nexus support
- */
-async function deployWithMultiCallDeploy(
-    env: EnvironmentInfo,
-    artifacts: any,
-    initData: string,
-    salt: string,
-    walletConfig: WalletDeploymentConfig
-): Promise<void> {
-    const { network } = env;
-    console.log(`[${network}] 🚀 Starting MultiCallDeploy with Nexus support...`);
-
-    // Setup wallet
-    const walletOptions: WalletOptions = await newWalletOptions(env);
-    const deployer = walletOptions.getWallet();
-
-    // Get MultiCallDeploy
-    const MultiCallDeploy = await hre.ethers.getContractFactory('MultiCallDeploy', deployer);
-    const multiCallDeploy = MultiCallDeploy.attach(artifacts.multiCallDeploy);
-
-    // Get NexusAccountFactory for address prediction
-    const NexusAccountFactory = await hre.ethers.getContractFactory('NexusAccountFactory', deployer);
-    const factory = NexusAccountFactory.attach(artifacts.nexusAccountFactory);
-
-    console.log(`[${network}] 📋 Using MultiCallDeploy: ${artifacts.multiCallDeploy}`);
-    console.log(`[${network}] 📋 Using NexusAccountFactory: ${artifacts.nexusAccountFactory}`);
-
-    // Predict wallet address
-    const predictedAddress = await factory.computeAccountAddress(initData, salt);
-    console.log(`[${network}] 🔮 Predicted wallet address: ${predictedAddress}`);
-
-    // Check if wallet already exists
-    const publicClient = createViemPublicClient();
-    const existingCode = await publicClient.getCode({ address: predictedAddress as `0x${string}` });
-    if (existingCode && existingCode !== '0x') {
-        console.log(`[${network}] ✅ Wallet already exists at ${predictedAddress}`);
-        console.log(`[${network}] 🧪 Continuing to test wallet functionality...`);
-
-        // Verify deployment and test functionality
-        await verifyDeployment(predictedAddress, network);
-        await testWalletFunctionality(predictedAddress, artifacts, deployer, network);
-        return;
-    }
-
-    // Prepare a simple transaction for testing
-    const deployerAddress = await deployer.getAddress();
-    const testTransaction = {
-        to: deployerAddress,
-        value: hre.ethers.utils.parseEther('0.001'),
-        data: '0x',
-        operation: 0,
-        targetTxGas: 21000,
-        baseGas: 0,
-        gasPrice: 0,
-        gasToken: hre.ethers.constants.AddressZero,
-        refundReceiver: hre.ethers.constants.AddressZero,
-        nonce: 0
-    };
-
-    const transactions = [testTransaction];
-    const nonce = 0;
-    const signature = '0x'; // Placeholder signature
-
-    try {
-        // Use the new deployAndExecuteNexus method
-        const deployTx = await multiCallDeploy.deployAndExecuteNexus(
-            predictedAddress,               // cfa
-            initData,                      // initData
-            salt,                          // salt
-            artifacts.nexusAccountFactory, // nexusFactory
-            transactions,                  // transactions
-            nonce,                         // nonce
-            signature,                     // signature
-            {
-                gasLimit: 15000000,
-                maxFeePerGas: hre.ethers.utils.parseUnits('20', 'gwei'),
-                maxPriorityFeePerGas: hre.ethers.utils.parseUnits('2', 'gwei')
-            }
-        );
-
-        console.log(`[${network}] 📋 MultiCall deployment transaction: ${deployTx.hash}`);
-        const receipt = await deployTx.wait();
-        console.log(`[${network}] ✅ MultiCall deployment completed in block: ${receipt.blockNumber}`);
-        console.log(`[${network}] ⛽ Gas used: ${receipt.gasUsed.toString()}`);
-
-        // Verify deployment
-        await verifyDeployment(predictedAddress, network);
-        await testWalletFunctionality(predictedAddress, artifacts, deployer, network);
-
-    } catch (error) {
-        console.error(`[${network}] ❌ MultiCall deployment failed:`, error.message);
-
-        // Fallback to direct deployment
-        console.log(`[${network}] 🔄 Falling back to direct NexusAccountFactory deployment...`);
-        await deployNexusWithCFAFactory(env, artifacts, initData, salt, walletConfig);
-    }
-}
 
 /**
  * Test basic Nexus wallet functionality
