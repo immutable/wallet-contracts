@@ -569,6 +569,10 @@ const executorSignature = await centralExecutorWallet.signMessage(
   
   // STEP 6: Post-execution verification
   console.log(`[${env.network}] ================ POST-EXECUTION VERIFICATION ================`);
+  
+  console.log(`[${env.network}] ⏳ Waiting for 3 seconds before continuing post-execution verification...`);
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
   try {
     const deployedWallet = await hardhat.getContractAt('MainModuleDynamicAuthV2', cfa);
     const finalNonce = (await deployedWallet.nonce()).toNumber();
