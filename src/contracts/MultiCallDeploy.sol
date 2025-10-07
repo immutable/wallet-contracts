@@ -5,10 +5,7 @@ pragma solidity 0.8.27;
 import './modules/commons/interfaces/IModuleCalls.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import './interfaces/IFactory.sol';
-import './biconomy/Nexus.sol';
 import './interfaces/INexusAccountFactory.sol';
-import './biconomy/lib/ModeLib.sol';
-import './NexusModuleCallsAdapter.sol';
 
 /**
  * @title MultiCallDeploy
@@ -75,9 +72,8 @@ contract MultiCallDeploy is AccessControl {
     // Deploy new wallet (same signature as legacy deployExecute)
     address payable wallet = INexusAccountFactory(nexusFactory).createAccount(_mainModule, _salt);
 
-    // Create adapter for the deployed wallet and execute via initialization
-    NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(wallet);
-    adapter.executeViaInitialization(_txs, _nonce, _signature);
+    // Execute initialization directly using wallet's selfExecute
+    IModuleCalls(wallet).selfExecute(_txs);
 
     emit BatchExecuted(wallet, _salt);
   }
@@ -149,13 +145,11 @@ contract MultiCallDeploy is AccessControl {
       address payable wallet = INexusAccountFactory(nexusFactory).createAccount(_mainModule, _salt);
       require(cfa == wallet, 'MultiCallDeploy: deployed address does not match CFA');
 
-      // Create adapter for the deployed wallet and execute via initialization
-      NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(wallet);
-      adapter.executeViaInitialization(_txs, _nonce, _signature);
+      // Execute initialization directly using wallet's selfExecute
+      IModuleCalls(wallet).selfExecute(_txs);
     } else {
-      // Create adapter for existing wallet and execute normally
-      NexusModuleCallsAdapter adapter = new NexusModuleCallsAdapter(cfa);
-      adapter.execute(_txs, _nonce, _signature);
+      // Execute directly on existing wallet using selfExecute
+      IModuleCalls(cfa).selfExecute(_txs);
     }
 
     emit BatchExecuted(cfa, _salt);

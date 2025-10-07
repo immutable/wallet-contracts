@@ -16,6 +16,7 @@ import {UUPSUpgradeable} from 'solady/utils/UUPSUpgradeable.sol';
 import {PackedUserOperation} from 'account-abstraction/interfaces/PackedUserOperation.sol';
 import {ExecLib} from './lib/ExecLib.sol';
 import {INexus} from './interfaces/INexus.sol';
+import {IModuleCalls} from '../modules/commons/interfaces/IModuleCalls.sol';
 import {BaseAccount} from './base/BaseAccount.sol';
 import {IERC7484} from './interfaces/IERC7484.sol';
 import {ModuleManager} from './base/ModuleManager.sol';
@@ -179,6 +180,63 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
   /// @param executions The composable executions to execute
   function executeComposable(ComposableExecution[] calldata executions) external payable onlyEntryPoint withHook {
     _executeComposable(executions);
+  }
+
+  /// @notice Returns the next nonce of the default nonce space
+  /// @dev Compatible with IModuleCalls interface
+  /// @return The next nonce (simplified implementation)
+  function nonce() external view returns (uint256) {
+    // For compatibility, return 0
+    // Real nonce management is handled by EntryPoint
+    return 0;
+  }
+
+  /// @notice Returns the next nonce of the given nonce space
+  /// @param _space Nonce space (ignored in this implementation)
+  /// @dev Compatible with IModuleCalls interface
+  /// @return The next nonce (simplified implementation)
+  function readNonce(uint256 _space) external view returns (uint256) {
+    // For compatibility, return 0
+    // Real nonce management is handled by EntryPoint
+    return 0;
+  }
+
+  /// @notice Allow wallet to execute transactions without signature validation
+  /// @param _txs Transactions to execute
+  /// @dev This function provides compatibility with IModuleCalls interface for MultiCallDeploy
+  /// @dev No signature validation is performed - caller is responsible for access control
+  function selfExecute(IModuleCalls.Transaction[] calldata _txs) external {
+    require(_txs.length > 0, 'Nexus: no transactions provided');
+
+    // Execute each transaction directly
+    for (uint256 i = 0; i < _txs.length; i++) {
+      IModuleCalls.Transaction calldata txn = _txs[i];
+
+      bool success;
+      bytes memory result;
+
+      if (txn.delegateCall) {
+        // Delegate call execution
+        (success, result) = txn.target.delegatecall(txn.data);
+      } else {
+        // Regular call execution
+        (success, result) = txn.target.call{value: txn.value, gas: txn.gasLimit == 0 ? gasleft() : txn.gasLimit}(
+          txn.data
+        );
+      }
+
+      // Handle revert behavior
+      if (!success && txn.revertOnError) {
+        // Revert with the original error
+        if (result.length > 0) {
+          assembly {
+            revert(add(32, result), mload(result))
+          }
+        } else {
+          revert('Nexus: transaction execution failed');
+        }
+      }
+    }
   }
 
   /// @notice Executes a call to a target address with specified value and data.
