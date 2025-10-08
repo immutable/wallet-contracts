@@ -608,6 +608,77 @@ const executorSignature = await centralExecutorWallet.signMessage(
 }
 
 /**
+ * Detect the implementation contract of a deployed wallet
+ */
+async function detectWalletImplementation(walletAddress: string, network: string): Promise<void> {
+  console.log(`[${network}] =================== IMPLEMENTATION DETECTION ===================`);
+  console.log(`[${network}] Detecting wallet implementation contract...`);
+  
+  try {
+    // Check if there's deployed code at the provided address
+    const code = await hardhat.provider.getCode(walletAddress);
+    
+    if (code && code !== '0x') {
+      console.log(`[${network}] ✅ Wallet has deployed code`);
+      
+      let implementationAddress = 'not found';
+      
+      try {
+        // First try PROXY_getImplementation() using IWalletProxy interface
+        try {
+          console.log(`[${network}] Trying PROXY_getImplementation() via IWalletProxy interface...`);
+          const walletProxy = await hardhat.getContractAt('IWalletProxy', walletAddress);
+          const proxyImplementation = await walletProxy.PROXY_getImplementation();
+          
+          if (proxyImplementation && proxyImplementation !== ethers.constants.AddressZero) {
+            console.log(`[${network}] PROXY_getImplementation result: ${proxyImplementation}`);
+            implementationAddress = proxyImplementation;
+          }
+        } catch (proxyError) {
+          console.log(`[${network}] PROXY_getImplementation not available, trying getImplementation()...`);
+          
+          // If PROXY_getImplementation fails, try getImplementation()
+          try {
+            const nexusImplementation = await hardhat.provider.call({
+              to: walletAddress,
+              data: hardhat.utils.Interface.getSighash('getImplementation()')
+            });
+            
+            if (nexusImplementation && nexusImplementation !== '0x') {
+              const decodedAddress = ethers.utils.getAddress('0x' + nexusImplementation.slice(-40));
+              console.log(`[${network}] getImplementation result: ${decodedAddress}`);
+              implementationAddress = decodedAddress;
+            }
+          } catch (getImplError) {
+            console.log(`[${network}] getImplementation also not available: ${getImplError.message}`);
+          }
+        }
+        
+        // Output the results
+        console.log(`[${network}] 🔍 Implementation Detection Results:`);
+        console.log(`[${network}]   - Implementation Address: ${implementationAddress}`);
+        
+        if (implementationAddress !== 'not found') {
+          console.log(`[${network}] ✅ Successfully detected wallet implementation`);
+        } else {
+          console.log(`[${network}] ❌ Could not detect implementation - neither PROXY_getImplementation() nor getImplementation() methods are available`);
+        }
+        
+      } catch (error) {
+        console.log(`[${network}] ❌ Error during implementation detection: ${error.message}`);
+      }
+    } else {
+      console.log(`[${network}] ❌ No code found at wallet address - wallet deployment may have failed`);
+    }
+    
+  } catch (error) {
+    console.log(`[${network}] ❌ Error checking wallet code: ${error.message}`);
+  }
+  
+  console.log(`[${network}] ==============================================================`);
+}
+
+/**
  * Verify the wallet was deployed correctly and modules were installed via bootstrap
  */
 async function verifyBootstrapInitialization(walletAddress: string, artifacts: any, network: string) {
@@ -621,6 +692,9 @@ async function verifyBootstrapInitialization(walletAddress: string, artifacts: a
   }
   
   console.log(`[${network}] ✅ Wallet deployment verified - wallet has code`);
+  
+  // Detect wallet implementation
+  await detectWalletImplementation(walletAddress, network);
   
   // Try to connect to the wallet and verify module installations
   try {

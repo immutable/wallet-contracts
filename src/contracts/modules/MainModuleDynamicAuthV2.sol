@@ -4,6 +4,7 @@ pragma solidity 0.8.27;
 import "./commons/ModuleAuthDynamic.sol";
 import "./commons/ModuleReceivers.sol";
 import "./commons/ModuleCalls.sol";
+import "./commons/ModuleUpdate.sol";
 
 import { PackedUserOperation } from "account-abstraction/interfaces/PackedUserOperation.sol";
 import { ExecLib } from "../lib/ExecLib.sol";
@@ -58,7 +59,8 @@ contract MainModuleDynamicAuthV2 is
   ModuleCalls,
   ModuleReceivers,
   ExecutionHelper, 
-  ModuleManager
+  ModuleManager,
+  ModuleUpdate
 {
   using ModeLib for ExecutionMode;
     using ExecLib for bytes;
@@ -487,7 +489,8 @@ contract MainModuleDynamicAuthV2 is
   ) public override(
     ModuleAuthUpgradable,
     ModuleCalls,
-    ModuleReceivers
+    ModuleReceivers,
+    ModuleUpdate
   ) pure returns (bool) {
     return super.supportsInterface(_interfaceID);
   }
