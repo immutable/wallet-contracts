@@ -11,14 +11,18 @@ import { deployContractViaCREATE2 } from './contract';
 async function step4(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const factoryAddress = '0x8Fa5088dF65855E0DaF87FA6591659893b24871d';
-  const startupWalletImplAddress = '0x8FD900677aabcbB368e0a27566cCd0C7435F1926';
+  
+  const step1Data = JSON.parse(fs.readFileSync('step1.json', 'utf-8'));
+  const factoryAddress = step1Data.factory;
+  
+  const step3Data = JSON.parse(fs.readFileSync('step3.json', 'utf-8'));
+  const startupWalletImplAddress = step3Data.startupWalletImpl;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] Factory address ${factoryAddress}`);
   console.log(`[${network}] StartupWalletImpl address ${startupWalletImplAddress}`);
 
-  await waitForInput();
+  // await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

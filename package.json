@@ -7,10 +7,10 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "yarn clean && yarn compile && yarn adapter",
-    "clean": "rimraf src/artifacts && rimraf src/gen && rimraf cache",
+    "clean": "rimraf artifacts && rimraf src/gen && rimraf cache",
     "compile": "hardhat --max-memory 4096 compile",
     "adapter": "yarn adapter:gen && yarn adapter:build",
-    "adapter:gen": "rimraf src/gen/typechain && typechain --target ethers-v5 --out-dir src/gen/typechain './src/artifacts/contracts/**/*[^dbg].json'",
+    "adapter:gen": "rimraf src/gen/typechain && typechain --target ethers-v5 --out-dir src/gen/typechain './artifacts/src/contracts/**/*[^dbg].json'",
     "adapter:build": "rimraf src/gen/adapter && tsc -p ./src/tsconfig.adapter.json",
     "test": "yarn build && npx hardhat test tests/*",
     "quicktest": "npx hardhat test tests/*",
@@ -45,7 +45,9 @@
     "@ethersproject/providers": "^5.7.2",
     "@ledgerhq/hw-app-eth": "^6.35.0",
     "@ledgerhq/hw-transport-node-hid": "^6.28.0",
+    "@nomad-xyz/excessively-safe-call": "^0.0.1-rc.1",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
@@ -60,6 +62,7 @@
     "@types/mocha": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^5.42.1",
     "@typescript-eslint/parser": "^5.42.1",
+    "account-abstraction": "https://github.com/eth-infinitism/account-abstraction#v0.7.0",
     "bn-chai": "^1.0.1",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^3.0.0",
@@ -73,10 +76,13 @@
     "ethers": "^5.7.2",
     "ganache": "^7.5.0",
     "hardhat": "^2.26.3",
+    "hardhat-contract-sizer": "^2.10.1",
     "hardhat-gas-reporter": "^1.0.9",
     "husky": "^4.2.3",
     "prompt-sync": "^4.2.0",
     "rimraf": "^3.0.2",
+    "sentinellist": "github:rhinestonewtf/sentinellist#v1.0.0",
+    "solady": "github:vectorized/solady#v0.1.22",
     "solhint": "^3.3.4",
     "solidity-coverage": "^0.8.5",
     "solmate": "^6.7.0",
@@ -95,6 +101,7 @@
     "extra": ""
   },
   "dependencies": {
+    "@nomicfoundation/ethereumjs-util": "^9.0.4",
     "ethereum-private-key-to-public-key": "^0.0.5",
     "ethereum-public-key-to-address": "^0.0.5"
   }

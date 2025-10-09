@@ -12,7 +12,7 @@ import ContractDeployerInterface from './abi/OwnableCreate2Deployer.json';
  * the contract that isn't dependent on the nonce of the contract deployer account.
 */
 const getSaltFromKey = (): string => {
-  let key: string = 'relayer-deployer-key-2';
+  let key: string = 'relayer-deployer-key-4';
   return utils.keccak256(utils.defaultAbiCoder.encode(['string'], [key]));
 };
 
@@ -37,11 +37,13 @@ export async function deployContractViaCREATE2(
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
   const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
 
+  console.log(`[${env.network}] Gas config: gasLimit=${process.env.GAS_LIMIT}, maxFeePerGas=${process.env.MAX_FEE_PER_GAS}, maxPriorityFeePerGas=${process.env.MAX_PRIORITY_FEE_PER_GAS}`);
+
   // Deploy the contract
   let tx = await deployer.deploy(bytecode, salt, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: process.env.GAS_LIMIT,
+    maxFeePerGas: process.env.MAX_FEE_PER_GAS,
+    maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
   });
   await tx.wait();
 
@@ -61,10 +63,13 @@ export async function deployContract(
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
+
+  console.log(`[${env.network}] Gas config: gasLimit=${process.env.GAS_LIMIT}, maxFeePerGas=${process.env.MAX_FEE_PER_GAS}, maxPriorityFeePerGas=${process.env.MAX_PRIORITY_FEE_PER_GAS}`);
+
   const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: process.env.GAS_LIMIT,
+    maxFeePerGas: process.env.MAX_FEE_PER_GAS,
+    maxPriorityFeePerGas: process.env.MAX_PRIORITY_FEE_PER_GAS,
   });
   console.log(`[${env.network}] Deployed ${contractName} to ${contract.address}`);
   return contract;

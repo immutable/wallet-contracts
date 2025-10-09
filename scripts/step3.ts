@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newWalletOptions, WalletOptions } from './wallet-options';
-import { deployContract } from './contract';
+import { deployContract, deployContractViaCREATE2 } from './contract';
 import { waitForInput } from './helper-functions';
 
 /**
@@ -11,19 +11,20 @@ import { waitForInput } from './helper-functions';
 async function step3(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const walletImplLocatorAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+  const step2Data = JSON.parse(fs.readFileSync('step2.json', 'utf-8'));
+  const walletImplLocatorAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
 
-  await waitForInput();
+  // await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
   // --- Step 3: Deployed using Passport Nonce Reserver.
   // Deploy startup wallet impl (PNR)
-  const startupWalletImpl = await deployContract(env, wallets, 'StartupWalletImpl', [walletImplLocatorAddress]);
+  const startupWalletImpl = await deployContractViaCREATE2(env, wallets, 'StartupWalletImpl', [walletImplLocatorAddress]);
 
   fs.writeFileSync('step3.json', JSON.stringify({
     walletImplLocatorAddress: walletImplLocatorAddress,

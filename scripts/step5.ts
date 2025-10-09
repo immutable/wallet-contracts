@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newWalletOptions, WalletOptions } from './wallet-options';
-import { deployContract } from './contract';
+import { deployContract, deployContractViaCREATE2 } from './contract';
 import { waitForInput } from './helper-functions';
 
 /**
@@ -19,14 +19,14 @@ async function step5(): Promise<EnvironmentInfo> {
   console.log(`[${network}] SignerAdmin address ${signerAdminPubKey}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
 
-  await waitForInput();
+  // await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
   // --- Step 5: Deployed using Passport Nonce Reserver.
   // Deploy immutable signer (PNR)
-  const immutableSigner = await deployContract(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
+  const immutableSigner = await deployContractViaCREATE2(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
 
   fs.writeFileSync('step5.json', JSON.stringify({
     signerRootAdminPubKey: signerRootAdminPubKey,
