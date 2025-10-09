@@ -1,5 +1,6 @@
+import * as fs from 'fs';
 import * as hre from 'hardhat';
-import { Contract, ContractFactory, utils } from 'ethers';
+import { Contract, ContractFactory } from 'ethers';
 import { newContractFactory, waitForInput } from './helper-functions';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newWalletOptions, WalletOptions } from './wallet-options';
@@ -10,15 +11,19 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '0x38D64731246b62fd7A79731ff1cC4D579aA420D0';
-  const walletImplLocatorContractAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+  
+  const step4Data = JSON.parse(fs.readFileSync('step4.json', 'utf-8'));
+  const mainModuleDynamicAuthAddress = step4Data.mainModuleDynamicAuth;
+  
+  const step2Data = JSON.parse(fs.readFileSync('step2.json', 'utf-8'));
+  const walletImplLocatorContractAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);
   console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
 
-  await waitForInput();
+  // await waitForInput();
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

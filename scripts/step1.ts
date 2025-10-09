@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { EnvironmentInfo, loadEnvironmentInfo } from './environment';
 import { newWalletOptions, WalletOptions } from './wallet-options';
-import { deployContract } from './contract';
+import { deployContract, deployContractViaCREATE2 } from './contract';
 import { waitForInput } from './helper-functions';
 
 // Addresses that need to be pre-determined
@@ -25,17 +25,15 @@ async function step1(): Promise<EnvironmentInfo> {
   console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
   console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
 
-  await waitForInput();
-
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
   // --- STEP 1: Deployed using Passport Nonce Reserver.
   // Deploy multi call deploy (PNR)
-  const multiCallDeploy = await deployContract(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
+  const multiCallDeploy = await deployContractViaCREATE2(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
 
   // Deploy factory with multi call deploy address as deployer role EST (PNR)
-  const factory = await deployContract(env, wallets, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
+  const factory = await deployContractViaCREATE2(env, wallets, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
 
   fs.writeFileSync('step1.json', JSON.stringify({
     multiCallAdminPubKey: multiCallAdminPubKey,
