@@ -11,7 +11,17 @@ import { waitForInput } from './helper-functions';
 async function step3(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network } = env;
-  const walletImplLocatorAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+
+  // Load step2 data for walletImplLocator address
+  const stepDir = network === 'base_sepolia' ? 'scripts/steps/base_sepolia' : 'scripts/steps';
+  const step2Path = `${stepDir}/step2.json`;
+
+  if (!fs.existsSync(step2Path)) {
+    throw new Error(`Step 2 not found at ${step2Path}. Please run step 2 first.`);
+  }
+
+  const step2Data = JSON.parse(fs.readFileSync(step2Path, 'utf8'));
+  const walletImplLocatorAddress = step2Data.latestWalletImplLocator;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] WalletImplLocator address ${walletImplLocatorAddress}`);
@@ -25,7 +35,11 @@ async function step3(): Promise<EnvironmentInfo> {
   // Deploy startup wallet impl (PNR)
   const startupWalletImpl = await deployContract(env, wallets, 'StartupWalletImpl', [walletImplLocatorAddress]);
 
-  fs.writeFileSync('step3.json', JSON.stringify({
+  // Save to network-specific directory
+  if (!fs.existsSync(stepDir)) {
+    fs.mkdirSync(stepDir, { recursive: true });
+  }
+  fs.writeFileSync(`${stepDir}/step3.json`, JSON.stringify({
     walletImplLocatorAddress: walletImplLocatorAddress,
     startupWalletImpl: startupWalletImpl.address,
   }, null, 1));

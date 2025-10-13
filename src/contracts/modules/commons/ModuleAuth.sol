@@ -182,7 +182,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   function isValidSignature(
     bytes calldata _data,
     bytes calldata _signatures
-  ) external override view returns (bytes4) {
+  ) external view virtual override returns (bytes4) {
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(keccak256(_data)), _signatures)) {
       return SELECTOR_ERC1271_BYTES_BYTES;
@@ -202,7 +202,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
   function isValidSignature(
     bytes32 _hash,
     bytes calldata _signatures
-  ) external override view returns (bytes4) {
+  ) external view virtual override returns (bytes4) {
     // Validate signatures
     if (_signatureValidationInternal(_subDigest(_hash), _signatures)) {
       return SELECTOR_ERC1271_BYTES32_BYTES;

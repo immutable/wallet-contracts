@@ -51,17 +51,15 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
   /// @notice To explicitly initialize the default validator, Nexus.execute(_DEFAULT_VALIDATOR.onInstall(...)) should be called.
   address internal immutable _DEFAULT_VALIDATOR;
 
-  /// @dev initData should block the implementation from being used as a Smart Account
-  constructor(address _defaultValidator, bytes memory _initData) {
-    if (!IValidator(_defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) revert MismatchModuleTypeId();
-
-    // Only call onInstall if initData is not empty - allows implementation deployment without initialization
-    if (_initData.length > 0) {
-      IValidator(_defaultValidator).onInstall(_initData);
-    }
-
-    _DEFAULT_VALIDATOR = _defaultValidator;
-  }
+  // Default validator is address(0) to reuse existing validation logic in ModuleAuth
+  // /// @dev initData should block the implementation from being used as a Smart Account
+  // constructor(address defaultValidator, bytes memory initData) {
+  //     if (!IValidator(defaultValidator).isModuleType(MODULE_TYPE_VALIDATOR)) {
+  //         revert MismatchModuleTypeId();
+  //     }
+  //     IValidator(defaultValidator).onInstall(initData);
+  //     _DEFAULT_VALIDATOR = defaultValidator;
+  // }
 
   /// @notice Ensures the message sender is a registered executor module.
   modifier onlyExecutorModule() virtual {
@@ -82,14 +80,16 @@ abstract contract ModuleManager is Storage, EIP712, IModuleManager, RegistryAdap
     }
   }
 
+  // fallback function in Module Hooks is used instead of receive function
   // receive function
-  receive() external payable {}
+  //receive() external payable {}
 
+  // fallback function in Module Hooks is used
   /// @dev Fallback function to manage incoming calls using designated handlers based on the call type.
   /// Hooked manually in the _fallback function
-  fallback() external payable {
-    _fallback(msg.data);
-  }
+  // fallback() external payable {
+  //     _fallback(msg.data);
+  // }
 
   /// @dev Retrieves a paginated list of validator addresses from the linked list.
   /// This utility function is not defined by the ERC-7579 standard and is implemented to facilitate
