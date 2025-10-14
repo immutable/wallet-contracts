@@ -542,6 +542,18 @@ async function deployWithMultiCallDeploy(
     console.log(`[${env.network}] ================ POST-EXECUTION VERIFICATION ================`);
     try {
         const deployedWallet = await hardhat.getContractAt('MainModuleDynamicAuth', cfa);
+
+        // Verify proxy is working correctly
+        console.log(`[${env.network}] 🔍 Verifying deployed wallet proxy:`);
+        try {
+            const proxyInterface = await hardhat.getContractAt('IWalletProxy', cfa);
+            const implementation = await proxyInterface.PROXY_getImplementation();
+            console.log(`[${env.network}]   - Proxy implementation: ${implementation}`);
+            console.log(`[${env.network}]   - Expected main module: ${artifacts.mainModule}`);
+        } catch (proxyError) {
+            console.log(`[${env.network}]   - Could not read proxy implementation: ${proxyError.message}`);
+        }
+
         const finalNonce = (await deployedWallet.nonce()).toNumber();
 
         console.log(`[${env.network}] 🔍 Final wallet state:`);
