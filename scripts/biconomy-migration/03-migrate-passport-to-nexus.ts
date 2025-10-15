@@ -61,9 +61,13 @@ async function migratePassportToNexus() {
     const biconomyDeploymentPath = path.join(__dirname, "../biconomy/base-sepolia-deployment.json");
     const biconomyDeployment = JSON.parse(fs.readFileSync(biconomyDeploymentPath, "utf8"));
 
-    const nexusImplementation = biconomyDeployment.contracts.nexus.address;
-    const nexusBootstrap = biconomyDeployment.contracts.nexusBootstrap.address;
-    const k1Validator = "0x0000000031ef4155C978d48a8A7d4EDba03b04fE"; // MEE K1 Validator v1.0.3
+    // Use Nexus v1.2.1 (experimental/deployed by us, but identical to official experimental)
+    const nexusImplementation = ethers.utils.getAddress("0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90"); // v1.2.1 (experimental)
+    const nexusFactory = ethers.utils.getAddress("0xDB1D73d8c7e8D50F760083449390b1D4080108dF"); // Factory (experimental)
+
+    // Use OFFICIAL Bootstrap & Validator
+    const nexusBootstrap = ethers.utils.getAddress("0x0000003eDf18913c01cBc482C978bBD3D6E8ffA3"); // OFFICIAL Bootstrap v1.2.1
+    const k1Validator = ethers.utils.getAddress("0x0000000031ef4155C978d48a8A7d4EDba03b04fE"); // OFFICIAL K1 Validator v1.0.3
 
     console.log("\n📋 Migration Targets:");
     console.log("-".repeat(80));
@@ -76,21 +80,29 @@ async function migratePassportToNexus() {
     // CONNECT TO WALLET
     // ============================================================================
 
-    const [signer] = await ethers.getSigners();
+    // Support custom owner (same as script 02)
+    let signer = deployer;
+    const customOwnerPk = process.env.MIGRATION_TEST_OWNER_PK;
+    if (customOwnerPk) {
+        signer = new ethers.Wallet(customOwnerPk, ethers.provider);
+        console.log("\n⚠️  Using custom owner from MIGRATION_TEST_OWNER_PK");
+    }
 
     if (signer.address.toLowerCase() !== owner.toLowerCase()) {
         throw new Error(
-            `Signer mismatch! Expected ${owner}, got ${signer.address}`
+            `Signer mismatch! Expected ${owner}, got ${signer.address}. Make sure MIGRATION_TEST_OWNER_PK matches the wallet owner.`
         );
     }
 
     console.log(`\n👤 Connected as: ${signer.address}`);
+    console.log(`👤 Deployer (for gas): ${deployer.address}`);
 
-    const balance = await signer.getBalance();
-    console.log(`💰 Balance: ${ethers.utils.formatEther(balance)} ETH\n`);
+    // Check deployer balance (will pay for gas)
+    const deployerBalance = await deployer.getBalance();
+    console.log(`💰 Deployer Balance: ${ethers.utils.formatEther(deployerBalance)} ETH\n`);
 
-    if (balance.lt(ethers.utils.parseEther("0.001"))) {
-        throw new Error("Insufficient balance for migration (need at least 0.001 ETH)");
+    if (deployerBalance.lt(ethers.utils.parseEther("0.001"))) {
+        throw new Error("Insufficient deployer balance for migration (need at least 0.001 ETH)");
     }
 
     // Connect to wallet as MainModuleDynamicAuth
@@ -177,7 +189,7 @@ async function migratePassportToNexus() {
 
     const transactions = [
         {
-            delegateCall: false,
+            delegateCall: false, // MUST be FALSE! (regular call, not delegatecall)
             revertOnError: true,
             gasLimit: ethers.BigNumber.from(2000000),
             target: walletAddress, // Call wallet itself
@@ -185,7 +197,7 @@ async function migratePassportToNexus() {
             data: updateImplementationCalldata,
         },
         {
-            delegateCall: false,
+            delegateCall: false, // MUST be FALSE! (regular call, not delegatecall)
             revertOnError: true,
             gasLimit: ethers.BigNumber.from(2000000),
             target: walletAddress, // Call wallet itself
@@ -217,9 +229,9 @@ async function migratePassportToNexus() {
     const chainId = await ethers.provider.getNetwork().then((n) => n.chainId);
     const data = encodeMetaTransactionsData(walletAddress, transactions, chainId, nonce);
 
-    // Sign using walletMultiSign helper
+    // Sign using walletMultiSign helper (MUST use signer, not deployer!)
     const formattedSignature = await walletMultiSign(
-        [{ weight: 1, owner: deployer }],
+        [{ weight: 1, owner: signer }],
         1,
         data
     );

@@ -55,20 +55,20 @@ async function testWithBiconomySDK() {
 
     console.log("\n⚙️  Setting up Viem client...");
 
-    // Get owner's private key from environment or hardhat
-    const [hardhatSigner] = await ethers.getSigners();
+    // Support custom owner (same as scripts 02 and 03)
+    let privateKeyRaw: string | undefined;
 
-    if (hardhatSigner.address.toLowerCase() !== ownerAddress.toLowerCase()) {
-        throw new Error(
-            `Signer mismatch! Expected ${ownerAddress}, got ${hardhatSigner.address}`
-        );
+    const customOwnerPk = process.env.MIGRATION_TEST_OWNER_PK;
+    if (customOwnerPk) {
+        privateKeyRaw = customOwnerPk;
+        console.log("  ⚠️  Using custom owner from MIGRATION_TEST_OWNER_PK");
+    } else {
+        // Get private key from .env (same as used for deployment)
+        privateKeyRaw = process.env.BASE_SEPOLIA_PRIVATE_KEY || process.env.COLD_WALLET_PRIVATE_KEY;
     }
 
-    // Get private key from .env (same as used for deployment)
-    const privateKeyRaw = process.env.BASE_SEPOLIA_PRIVATE_KEY || process.env.COLD_WALLET_PRIVATE_KEY;
-
     if (!privateKeyRaw) {
-        throw new Error("BASE_SEPOLIA_PRIVATE_KEY or COLD_WALLET_PRIVATE_KEY not found in .env");
+        throw new Error("MIGRATION_TEST_OWNER_PK, BASE_SEPOLIA_PRIVATE_KEY or COLD_WALLET_PRIVATE_KEY not found");
     }
 
     // Ensure it has 0x prefix
@@ -77,6 +77,14 @@ async function testWithBiconomySDK() {
     const eoaAccount = privateKeyToAccount(privateKey as `0x${string}`);
 
     console.log(`  EOA: ${eoaAccount.address}`);
+
+    // Verify it matches the owner
+    if (eoaAccount.address.toLowerCase() !== ownerAddress.toLowerCase()) {
+        throw new Error(
+            `Signer mismatch! Expected ${ownerAddress}, got ${eoaAccount.address}`
+        );
+    }
+
     console.log("  ✅ Viem client configured\n");
     console.log("=".repeat(80));
 
@@ -86,8 +94,8 @@ async function testWithBiconomySDK() {
 
     console.log("\n🔗 Creating Nexus Account with Biconomy SDK...");
 
-    // Use MEE version v2.1.0 (matches our deployment)
-    const version = MEEVersion.V2_1_0;
+    // Use MEE version v2.2.0 (Experimental - matches our Nexus v1.2.1 deployment)
+    const version = MEEVersion.V2_2_0;
     const versionConfig = getMEEVersion(version);
 
     console.log(`  MEE Version: ${version}`);
@@ -113,7 +121,29 @@ async function testWithBiconomySDK() {
             );
         }
 
-        console.log("  ✅ Address matches migrated wallet\n");
+        console.log("  ✅ Address matches migrated wallet");
+
+        // Check account initialization using Nexus contract
+        // NOTE: nexusAccount from SDK does NOT have an isInitialized() method
+        // We need to call the Nexus contract directly using ethers.js
+        const Nexus = await ethers.getContractFactory("Nexus");
+        const nexusContract = Nexus.attach(walletAddress);
+
+        try {
+            const isInitialized = await nexusContract.isInitialized();
+            console.log(`  Initialization: ${isInitialized ? "✅ YES" : "❌ NO"}`);
+
+            if (!isInitialized) {
+                console.log("  ⚠️  Warning: Wallet is not initialized!");
+            }
+        } catch (error: any) {
+            console.log(`  ⚠️  Could not check initialization: ${error.message}`);
+        }
+
+        // Check account ID from SDK
+        console.log(`  Account ID: ${nexusAccount.accountId}`);
+
+        console.log();
         console.log("=".repeat(80));
 
         // ========================================================================
@@ -172,7 +202,7 @@ async function testWithBiconomySDK() {
         // Get current gas prices from provider
         const feeData = await provider.getFeeData();
         console.log(`  ⛽ Max Fee Per Gas: ${ethers.utils.formatUnits(feeData.maxFeePerGas || 0, "gwei")} gwei`);
-        console.log(`  ⛽ Max Priority Fee: ${ethers.utils.formatUnits(feeData.maxPriorityFeePerGas || 0, "gwei")} gwei`);
+        console.log(`  ⛽ Max Priority Fee: ${ethers.utils.formatUnits(feeData.maxPriorityFeePerGas || 0, "gwei")} gwei\n`);
 
         const userOpHash = await bundlerClient.sendUserOperation({
             calls: [
@@ -181,9 +211,6 @@ async function testWithBiconomySDK() {
                     value: testAmount,
                 },
             ],
-            // Provide gas parameters manually to avoid bundler gas estimation issues
-            maxFeePerGas: BigInt(feeData.maxFeePerGas?.toString() || "1000000000"), // 1 gwei fallback
-            maxPriorityFeePerGas: BigInt(feeData.maxPriorityFeePerGas?.toString() || "1000000000"), // 1 gwei fallback
         });
 
         console.log(`  ✅ UserOp submitted: ${userOpHash}\n`);

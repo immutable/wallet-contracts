@@ -46,10 +46,22 @@ async function deployTestPassportWallet() {
     // ============================================================================
 
     const [deployer] = await ethers.getSigners();
-    console.log(`\n👤 Test Wallet Owner: ${deployer.address}`);
+
+    // Option to use a different wallet owner (to avoid address collision)
+    // If you want a different address, create a new wallet and set MIGRATION_TEST_OWNER_PK in .env
+    let walletOwner = deployer;
+
+    const customOwnerPk = process.env.MIGRATION_TEST_OWNER_PK;
+    if (customOwnerPk) {
+        walletOwner = new ethers.Wallet(customOwnerPk, ethers.provider);
+        console.log("\n⚠️  Using custom owner from MIGRATION_TEST_OWNER_PK");
+    }
+
+    console.log(`\n👤 Test Wallet Owner: ${walletOwner.address}`);
+    console.log(`👤 Deployer (for funding): ${deployer.address}`);
 
     const balance = await deployer.getBalance();
-    console.log(`💰 Owner Balance: ${ethers.utils.formatEther(balance)} ETH\n`);
+    console.log(`💰 Deployer Balance: ${ethers.utils.formatEther(balance)} ETH\n`);
 
     if (balance.lt(ethers.utils.parseEther("0.01"))) {
         throw new Error("Insufficient balance for deployment (need at least 0.01 ETH)");
@@ -64,7 +76,7 @@ async function deployTestPassportWallet() {
         owners: [
             {
                 weight: 1,
-                address: deployer.address,
+                address: walletOwner.address,
             }
         ],
     };
@@ -138,13 +150,13 @@ async function deployTestPassportWallet() {
             delegateCall: false,
             revertOnError: true,
             gasLimit: ethers.BigNumber.from(200000), // 200K gas for simple transfer
-            target: deployer.address, // Transfer back to deployer
+            target: walletOwner.address, // Transfer to owner (not deployer)
             value: ethers.utils.parseEther("0.0001"), // 0.0001 ETH
             data: new Uint8Array([]), // Empty data for simple transfer
         },
     ];
 
-    console.log(`  Transaction: ETH transfer to ${deployer.address}`);
+    console.log(`  Transaction: ETH transfer to ${walletOwner.address}`);
     console.log(`  Amount: 0.0001 ETH\n`);
     console.log("=".repeat(80));
 
@@ -162,7 +174,7 @@ async function deployTestPassportWallet() {
 
     // Sign with wallet owner
     const signature = await walletMultiSign(
-        [{ weight: walletConfig.threshold, owner: deployer }],
+        [{ weight: walletConfig.threshold, owner: walletOwner }],
         walletConfig.threshold,
         data
     );
@@ -256,7 +268,7 @@ async function deployTestPassportWallet() {
         timestamp: new Date().toISOString(),
         network: "base_sepolia",
         walletAddress: cfa,
-        owner: deployer.address,
+        owner: walletOwner.address,
         imageHash: salt,
         implementationAddress,
         deploymentTx: deployTx.hash,
@@ -278,7 +290,7 @@ async function deployTestPassportWallet() {
     console.log("\n🎉 TEST WALLET DEPLOYED SUCCESSFULLY!\n");
     console.log("📋 Summary:");
     console.log(`  Address:        ${cfa}`);
-    console.log(`  Owner:          ${deployer.address}`);
+    console.log(`  Owner:          ${walletOwner.address}`);
     console.log(`  Implementation: ${implementationAddress}`);
     console.log(`  Balance:        ${ethers.utils.formatEther(walletBalance)} ETH`);
     console.log(`  TX Hash:        ${deployTx.hash}\n`);
