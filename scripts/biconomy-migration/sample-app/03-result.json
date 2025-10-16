@@ -1,0 +1,15 @@
+{
+  "scenario": "NFT Purchase via Seaport",
+  "timestamp": "2025-10-16T02:18:56.562Z",
+  "wallet": "0x10b3cc2192F2e30708a9DE22243786C8C5883D54",
+  "seaportAddress": "0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC",
+  "mode": "TEMPLATE",
+  "note": "No real order executed - template mode only",
+  "instructions": {
+    "step1": "Get Seaport order from OpenSea API",
+    "step2": "Parse order parameters",
+    "step3": "Encode fulfillOrder call",
+    "step4": "Send UserOperation with ETH value",
+    "step5": "Wait for receipt and verify NFT transfer"
+  }
+}

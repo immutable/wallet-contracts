@@ -1,0 +1,22 @@
+{
+  "scenario": "Gas Sponsorship",
+  "timestamp": "2025-10-16T02:27:21.629Z",
+  "wallet": "0x10b3cc2192F2e30708a9DE22243786C8C5883D54",
+  "recipient": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+  "amount": "0.00001 ETH",
+  "gasSponsorship": {
+    "enabled": true,
+    "paymasterUsed": true,
+    "gasCostSponsoredByApp": "~0.000000 ETH"
+  },
+  "balanceChange": {
+    "initial": "0.000829 ETH",
+    "final": "0.000819 ETH",
+    "spent": "0.000010 ETH"
+  },
+  "userOpHash": "0xe5257b59c8eb14526d1b26dc9a50c9aadc464fcd0827925eaaacdf2acd94a97a",
+  "txHash": "0x4d2b187080deb35a751103251d0315514a9ebde631618b70d6b5b83fa4520407",
+  "success": "true",
+  "duration": "7.32s",
+  "explorer": "https://sepolia.basescan.org/tx/0x4d2b187080deb35a751103251d0315514a9ebde631618b70d6b5b83fa4520407"
+}

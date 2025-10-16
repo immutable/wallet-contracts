@@ -1,0 +1,12 @@
+{
+  "scenario": "Native Token Transfer",
+  "timestamp": "2025-10-16T02:06:34.878Z",
+  "wallet": "0x10b3cc2192F2e30708a9DE22243786C8C5883D54",
+  "recipient": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+  "amount": "0.00001 ETH",
+  "userOpHash": "0xd8372952937837750ea49b2bb289ef936e1bd0504386dd169168c3aa0ef4651e",
+  "txHash": "0x009dd4c6cd86338b8d26fd2350a5c72535a5c0e491ea6f123a8eb225a3a361c4",
+  "success": "true",
+  "duration": "7.61s",
+  "explorer": "https://sepolia.basescan.org/tx/0x009dd4c6cd86338b8d26fd2350a5c72535a5c0e491ea6f123a8eb225a3a361c4"
+}
