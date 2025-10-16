@@ -46,8 +46,9 @@ PAYMASTER_API_KEY=...
 1. **01-analyze-storage-layout.ts** - Verify storage compatibility (30 min)
 2. **02-deploy-test-passport-wallet.ts** - Deploy test wallet (15 min)
 3. **03-migrate-passport-to-nexus.ts** - Execute migration (30 min)
-4. **04-test-with-biconomy-sdk.ts** - Validate with SDK (15 min)
-5. **05-migrate-production-wallet.ts** - Migrate real wallet (30 min)
+4. **04-test-with-biconomy-abstractjs.ts** - Validate with AbstractJS SDK ✅ (15 min)
+5. **05-test-with-supertransactions.ts** - Test Supertransactions ❌ (incompatible)
+6. **06-migrate-production-wallet.ts** - Migrate real wallet (30 min)
 
 ## ⚠️ Important Notes
 
@@ -68,11 +69,14 @@ npx hardhat run scripts/biconomy-migration/02-deploy-test-passport-wallet.ts --n
 # 3. Migrate test wallet
 npx hardhat run scripts/biconomy-migration/03-migrate-passport-to-nexus.ts --network base_sepolia
 
-# 4. Test with Biconomy SDK
-npx hardhat run scripts/biconomy-migration/04-test-with-biconomy-sdk.ts --network base_sepolia
+# 4. Test with Biconomy AbstractJS SDK ✅
+npx hardhat run scripts/biconomy-migration/04-test-with-biconomy-abstractjs.ts --network base_sepolia
 
-# 5. Migrate production wallet (after successful testing)
-npx hardhat run scripts/biconomy-migration/05-migrate-production-wallet.ts --network base_sepolia
+# 5. Test Supertransactions ❌ (will fail - incompatible)
+npx hardhat run scripts/biconomy-migration/05-test-with-supertransactions.ts --network base_sepolia
+
+# 6. Migrate production wallet (after successful testing)
+npx hardhat run scripts/biconomy-migration/06-migrate-production-wallet.ts --network base_sepolia
 ```
 
 ## 📚 References

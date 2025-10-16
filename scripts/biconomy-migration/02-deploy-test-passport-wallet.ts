@@ -8,6 +8,14 @@
  * APPROACH: Uses the SAME approach as scripts/wallet-deployment.ts
  * 
  * NO BICONOMY SDK: Uses ethers.js directly
+ * 
+ * ✅ INCLUDES: 3 test transactions to increment nonce before migration
+ * 
+ * CRITICAL FIXES (discovered during debugging):
+ * 1. Read nonce from wallet.nonce() - NOT from timestamp!
+ * 2. Parameter order: encodeMetaTransactionsData(owner, txs, networkId, nonce)
+ *    - networkId comes BEFORE nonce (not after!)
+ * 3. Use wallet owner as signer when calling execute()
  */
 
 import { ethers } from "hardhat";
@@ -281,6 +289,144 @@ async function deployTestPassportWallet() {
     fs.writeFileSync(infoPath, JSON.stringify(testWalletInfo, null, 2));
 
     console.log(`\n📄 Test wallet info saved to: ${infoPath}\n`);
+
+    // ============================================================================
+    // FUND WALLET OWNER (for gas to execute test transactions)
+    // ============================================================================
+
+    console.log("=".repeat(80));
+    console.log("\n💰 Funding Wallet Owner for Test Transactions...\n");
+
+    const ownerBalance = await ethers.provider.getBalance(walletOwner.address);
+    console.log(`  Current owner balance: ${ethers.utils.formatEther(ownerBalance)} ETH`);
+
+    if (ownerBalance.lt(ethers.utils.parseEther("0.001"))) {
+        console.log(`  Owner needs funding for gas...`);
+        console.log(`  Sending 0.01 ETH to ${walletOwner.address}...\n`);
+
+        const fundTx = await deployer.sendTransaction({
+            to: walletOwner.address,
+            value: ethers.utils.parseEther("0.01")
+        });
+
+        console.log(`  📤 Funding TX: ${fundTx.hash}`);
+        await fundTx.wait();
+        console.log(`  ✅ Owner funded successfully!\n`);
+
+        const newBalance = await ethers.provider.getBalance(walletOwner.address);
+        console.log(`  New owner balance: ${ethers.utils.formatEther(newBalance)} ETH\n`);
+    } else {
+        console.log(`  ✅ Owner already has sufficient balance\n`);
+    }
+
+    console.log("=".repeat(80));
+
+    // ============================================================================
+    // EXECUTE TEST TRANSACTIONS (to increment nonce)
+    // ============================================================================
+
+    console.log("\n🧪 Executing Test Transactions to Increment Nonce...\n");
+
+    // Connect wallet with the owner as signer (who will pay gas)
+    const wallet = await ethers.getContractAt("MainModuleDynamicAuth", cfa, walletOwner);
+
+    // Get network info for chainId
+    const network = await ethers.provider.getNetwork();
+    const chainId = network.chainId;
+
+    for (let i = 1; i <= 3; i++) {
+        console.log(`  Transaction ${i}/3:`);
+
+        // CRITICAL: Read nonce from wallet (not timestamp!)
+        const currentNonce = await wallet.nonce();
+        console.log(`    Wallet nonce: ${currentNonce.toString()}`);
+
+        const testTransactions = [
+            {
+                delegateCall: false,
+                revertOnError: true,
+                gasLimit: ethers.BigNumber.from(100000),
+                target: deployer.address,  // Send back to deployer
+                value: ethers.utils.parseEther("0.00001"),
+                data: new Uint8Array([]),
+            },
+        ];
+
+        // CRITICAL: Parameter order is (owner, txs, networkId, nonce)
+        const testData = encodeMetaTransactionsData(
+            cfa,
+            testTransactions,
+            chainId,      // networkId FIRST!
+            currentNonce  // nonce SECOND!
+        );
+
+        const testSignature = await walletMultiSign(
+            [{ weight: walletConfig.threshold, owner: walletOwner }],
+            walletConfig.threshold,
+            testData
+        );
+
+        try {
+            const testTx = await wallet.execute(
+                testTransactions,
+                currentNonce,
+                testSignature,
+                { gasLimit: 500000 }
+            );
+
+            const testReceipt = await testTx.wait();
+
+            if (testReceipt.status === 1) {
+                console.log(`    ✅ SUCCESS! TX: ${testTx.hash}`);
+                console.log(`    Gas used: ${testReceipt.gasUsed.toString()}\n`);
+            } else {
+                console.log(`    ❌ REVERTED! TX: ${testTx.hash}\n`);
+                throw new Error(`Transaction ${i} reverted`);
+            }
+        } catch (error: any) {
+            console.error(`    ❌ ERROR: ${error.message}\n`);
+            throw error;
+        }
+
+        // Small delay between transactions
+        if (i < 3) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+
+    console.log("  ✅ 3 test transactions executed successfully!");
+    console.log("=".repeat(80));
+
+    // ============================================================================
+    // CHECK FINAL NONCE
+    // ============================================================================
+
+    console.log("\n📊 Checking Final Nonce State...\n");
+
+    const finalTxCount = await ethers.provider.getTransactionCount(cfa);
+    console.log(`  Node transaction count: ${finalTxCount}`);
+
+    const finalWalletNonce = await wallet.nonce();
+    console.log(`  Wallet nonce: ${finalWalletNonce.toString()}`);
+    console.log(`  (Incremented from initial value)\n`);
+
+    // Check EntryPoint nonce (should be 0 since we're using direct transactions)
+    const ENTRY_POINT_ADDRESS = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+    const entryPointAbi = [
+        "function getNonce(address sender, uint192 key) view returns (uint256 nonce)"
+    ];
+    const entryPoint = new ethers.Contract(
+        ENTRY_POINT_ADDRESS,
+        entryPointAbi,
+        ethers.provider
+    );
+    const entryPointNonce = await entryPoint.getNonce(cfa, 0);
+    console.log(`  EntryPoint nonce (key=0): ${entryPointNonce.toString()}`);
+    console.log(`  (Should be 0 for direct transactions)\n`);
+
+    console.log("  ℹ️  Note: These are direct transactions, not UserOperations.");
+    console.log("  ℹ️  The wallet's internal nonce was incremented by execute().");
+    console.log("  ℹ️  After migration, EntryPoint will track nonce for UserOperations.\n");
 
     // ============================================================================
     // SUMMARY

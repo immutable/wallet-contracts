@@ -1,5 +1,5 @@
 /**
- * 05-migrate-production-wallet.ts
+ * 06-migrate-production-wallet.ts
  * 
  * Migrates a PRODUCTION Passport wallet to Nexus.
  * 
@@ -9,6 +9,10 @@
  * APPROACH: Same as script 03, but with production wallet addresses
  * 
  * NO BICONOMY SDK: Uses ethers.js directly (same as script 03)
+ * 
+ * AFTER MIGRATION:
+ * - Use @biconomy/abstractjs (script 04) - tested and working
+ * - Supertransactions (script 05) - under investigation
  */
 
 import { ethers } from "hardhat";
