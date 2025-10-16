@@ -1,0 +1,17 @@
+{
+  "scenario": "ERC20 Token Transfer",
+  "timestamp": "2025-10-16T03:25:19.634Z",
+  "wallet": "0x10b3cc2192F2e30708a9DE22243786C8C5883D54",
+  "token": {
+    "address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "recipient": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+  "amount": "0.1 USDC",
+  "userOpHash": "0x6fe14ae3f30d17c8bf17af28182e0cdbf1a7008b394b444fcbd8219127c7b470",
+  "txHash": "0x479e10217cf50c08519bcc4c37910532c1eaa6d1a2230e5f17213ca82a70d06f",
+  "success": "true",
+  "duration": "7.64s",
+  "explorer": "https://sepolia.basescan.org/tx/0x479e10217cf50c08519bcc4c37910532c1eaa6d1a2230e5f17213ca82a70d06f"
+}
