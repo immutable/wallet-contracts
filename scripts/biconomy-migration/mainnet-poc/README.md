@@ -55,7 +55,7 @@ This POC demonstrates:
 
 ```bash
 # .env file
-MIGRATION_TEST_OWNER_PK=***REMOVED***
+MIGRATION_TEST_OWNER_PK=your_private_key_here  # ⚠️ NEVER COMMIT REAL PRIVATE KEYS!
 BICONOMY_BUNDLER_API_KEY=your_bundler_key
 BICONOMY_PAYMASTER_API_KEY=your_paymaster_key
 BASE_MAINNET_RPC_URL=https://mainnet.base.org

@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-10-15T02:15:34.175Z",
+  "network": "base_sepolia",
+  "walletAddress": "0x3d6c6703b7520c5fE427C356aedC76Fc98dA32e7",
+  "owner": "0xA2De953eD1AeBd64E29eb3C4ACce0367e70Ef778",
+  "migrationTx": "0x5f15ec842daba83ea915e556f6b5d9ecf88309acea70555356bfd1ca6b021acf",
+  "blockNumber": 32363122,
+  "gasUsed": "95349",
+  "previousImplementation": "0x5a7f9AAE3523A124017cA553Fc0f8CCA975Bd1c5",
+  "newImplementation": "0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90",
+  "nexusBootstrap": "0x0000003eDf18913c01cBc482C978bBD3D6E8ffA3",
+  "k1Validator": "0x0000000031ef4155C978d48a8A7d4EDba03b04fE"
+}
