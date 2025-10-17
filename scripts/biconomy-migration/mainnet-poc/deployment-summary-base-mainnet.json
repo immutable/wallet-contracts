@@ -4,13 +4,13 @@
   "deployedAt": "2025-10-17T10:39:58.157Z",
   "deployer": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
   "infrastructure": {
-    "create2Deployer": "0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b",
-    "multiCallDeploy": "0x43E6FbD6014aC763B1d97E9eF0D119f863B31530",
-    "factory": "0x8D95FB3bC8F42e8DA68EF804870a79eF17491f6F",
+    "create2Deployer": "0xe9cd28F08fe4A1037Cf0f54C2014F742f18e4bc0",
+    "multiCallDeploy": "0xcAbE7b2A52D326eeEe886677DCE6D65df7922115",
+    "factory": "0xc9E44d5a8758B55D35B6898eFB4769bf626d6843",
     "latestWalletImplLocator": "0xdEe17F37667de8c17CE7E64364e781346cdE07e5",
-    "startupWalletImpl": "0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3",
+    "startupWalletImpl": "0x7019dF9993cb0B25539cFcc4924e043972C0015c",
     "immutableSigner": "0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2",
-    "mainModuleDynamicAuth": "0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91"
+    "mainModuleDynamicAuth": "0x7838C041DfbFE80adE919aB6ec9EA10E124eE8ea"
   },
   "admins": {
     "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
@@ -20,5 +20,25 @@
     "walletImplChanger": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
     "signerRootAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
     "signerAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC"
-  }
+  },
+  "configuration": {
+    "latestWalletImplLocatorConfigured": true,
+    "pointsTo": "0x7838C041DfbFE80adE919aB6ec9EA10E124eE8ea"
+  },
+  "testWallet": {
+    "passportAddress": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
+    "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "migrated": true,
+    "nexusImplementation": "0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90",
+    "migrationTx": "0x9b68eb960d64f6be7d106bd6d561ff0e891c7e842448518ee7c271bb930a1f4d"
+  },
+  "status": "COMPLETE",
+  "notes": [
+    "All infrastructure deployed with secure admin (0xeDC117...)",
+    "StartupWalletImpl was the missing component - redeployed with correct LatestWalletImplLocator",
+    "MainModuleDynamicAuth redeployed with correct Factory reference",
+    "Test Passport wallet deployed and successfully migrated to Nexus",
+    "Security incident resolved - all compromised components replaced",
+    "POC complete and validated on Base Mainnet"
+  ]
 }

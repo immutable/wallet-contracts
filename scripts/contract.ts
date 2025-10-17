@@ -38,11 +38,14 @@ export async function deployContractViaCREATE2(
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
   const bytecode: BytesLike | undefined = contractFactory.getDeployTransaction(...constructorArgs).data;
 
+  // Adjust gas settings for Base network (lower limits)
+  const isBase = env.network === 'base' || env.network === 'base_sepolia';
+  const gasLimit = isBase ? 5000000 : 30000000;
+
   // Deploy the contract
   let tx = await deployer.deploy(bytecode, salt, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: gasLimit,
+    ...(isBase ? {} : { maxFeePerGas: 10000000000, maxPriorityFeePerGas: 10000000000 })
   });
   await tx.wait();
 
@@ -62,10 +65,14 @@ export async function deployContract(
   contractName: string,
   constructorArgs: Array<string | undefined>): Promise<Contract> {
   const contractFactory: ContractFactory = await newContractFactory(walletsOptions.getWallet(), contractName);
+
+  // Adjust gas settings for Base network (lower limits)
+  const isBase = env.network === 'base' || env.network === 'base_sepolia';
+  const gasLimit = isBase ? 5000000 : 30000000;
+
   const contract: Contract = await contractFactory.connect(walletsOptions.getWallet()).deploy(...constructorArgs, {
-    gasLimit: 30000000,
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 10000000000,
+    gasLimit: gasLimit,
+    ...(isBase ? {} : { maxFeePerGas: 10000000000, maxPriorityFeePerGas: 10000000000 })
   });
   console.log(`[${env.network}] Deployed ${contractName} to ${contract.address}`);
   return contract;

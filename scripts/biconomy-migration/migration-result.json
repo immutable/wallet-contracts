@@ -1,12 +1,12 @@
 {
-  "timestamp": "2025-10-14T03:16:15.905Z",
+  "timestamp": "2025-10-17T14:31:31.230Z",
   "network": "base_sepolia",
-  "walletAddress": "0x911980A6b579fc6d7a30b13C63E50AC55a0C1E7b",
+  "walletAddress": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
   "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
-  "migrationTx": "0x6ebc1e619954f75b0ffb25ef2cb6320ec1eff36de1c46fc2b78851be58ecb597",
-  "blockNumber": 32321742,
-  "gasUsed": "95362",
-  "previousImplementation": "0x5a7f9AAE3523A124017cA553Fc0f8CCA975Bd1c5",
+  "migrationTx": "0x9b68eb960d64f6be7d106bd6d561ff0e891c7e842448518ee7c271bb930a1f4d",
+  "blockNumber": 36961067,
+  "gasUsed": "99478",
+  "previousImplementation": "0x7838C041DfbFE80adE919aB6ec9EA10E124eE8ea",
   "newImplementation": "0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90",
   "nexusBootstrap": "0x0000003eDf18913c01cBc482C978bBD3D6E8ffA3",
   "k1Validator": "0x0000000031ef4155C978d48a8A7d4EDba03b04fE"

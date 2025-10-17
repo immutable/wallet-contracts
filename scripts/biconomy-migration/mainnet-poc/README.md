@@ -38,9 +38,10 @@ This POC demonstrates:
 ### Required Information
 
 1. **Wallet (Owner EOA):**
-   - Address: `0x33De6721Da81c02BE4eCFa14260a30753C50E776`
-   - Private Key: Set in `MIGRATION_TEST_OWNER_PK` env var
+   - Address: `0xeDC117090236293afEBb179260e8B9dd5bffe4dC` ✅ **SECURE**
+   - Private Key: Set in `SECURE_DEPLOYER_PK` and `MIGRATION_TEST_OWNER_PK` env vars
    - Must have ETH on Base Mainnet
+   - **⚠️ SECURITY NOTE:** Use only secure, non-compromised private keys!
 
 2. **Biconomy API Keys:**
    - Bundler API Key: Set in `BICONOMY_BUNDLER_API_KEY`
@@ -275,16 +276,29 @@ All transactions can be verified on BaseScan:
 
 ## 🎉 Results Summary
 
-**POC Status:** ✅ **COMPLETE SUCCESS**
+**POC Status:** ✅ **COMPLETE SUCCESS** (Security Incident Resolved)
 
-**Deployed Wallet:**
-- Address: `0xfFDe4C904E7262b4bdde127f159c3a44584726bC`
-- Owner: `0x33De6721Da81c02BE4eCFa14260a30753C50E776`
+**FINAL Deployed Infrastructure:**
+
+| Component | Address | Admin |
+|-----------|---------|-------|
+| Create2Deployer | `0xe9cd28F08fe4A1037Cf0f54C2014F742f18e4bc0` | `0xeDC117...e4dC` ✅ |
+| MultiCallDeploy | `0xcAbE7b2A52D326eeEe886677DCE6D65df7922115` | `0xeDC117...e4dC` ✅ |
+| Factory | `0xc9E44d5a8758B55D35B6898eFB4769bf626d6843` | `0xeDC117...e4dC` ✅ |
+| LatestWalletImplLocator | `0xdEe17F37667de8c17CE7E64364e781346cdE07e5` | `0xeDC117...e4dC` ✅ |
+| StartupWalletImpl | `0x7019dF9993cb0B25539cFcc4924e043972C0015c` | Stateless ✅ |
+| ImmutableSigner | `0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2` | `0xeDC117...e4dC` ✅ |
+| MainModuleDynamicAuth | `0x7838C041DfbFE80adE919aB6ec9EA10E124eE8ea` | Stateless ✅ |
+
+**FINAL Deployed Wallet:**
+- Address: `0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6`
+- Owner: `0xeDC117090236293afEBb179260e8B9dd5bffe4dC` ✅ **SECURE**
 - Type: Passport → Migrated to Nexus
 - Network: Base Mainnet (8453)
+- Migration TX: [`0x9b68eb9...`](https://basescan.org/tx/0x9b68eb960d64f6be7d106bd6d561ff0e891c7e842448518ee7c271bb930a1f4d)
 
 **Key Achievements:**
-- ✅ Complete Passport infrastructure deployed
+- ✅ Complete Passport infrastructure deployed and secured
 - ✅ Successful migration to Biconomy Nexus (ERC-4337)
 - ✅ 100% test success rate (9/9 scenarios)
 - ✅ Gas sponsorship working perfectly

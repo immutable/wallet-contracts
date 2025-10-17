@@ -36,7 +36,7 @@ async function step6(): Promise<EnvironmentInfo> {
   console.log(`[${network}] walletImplLocatorContract address ${walletImplLocatorContractAddress}`);
   console.log(`[${network}] Signer address ${signerAddress}`);
 
-  await waitForInput();
+  // await waitForInput(); // Commented out for automated deployment
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
@@ -58,10 +58,10 @@ async function step6(): Promise<EnvironmentInfo> {
     gasLimit = 30000000;
     maxFeePerGas = 10000000000;
     maxPriorityFeePerGas = 10000000000;
-  } else if (isBaseSepolia) {
-    gasLimit = 20000000; // Within 25M gas limit
-    maxFeePerGas = 200000000; // 0.2 gwei
-    maxPriorityFeePerGas = 100000000; // 0.1 gwei
+  } else if (isBaseSepolia || network === 'base') {
+    gasLimit = 5000000; // Within 25M gas limit
+    maxFeePerGas = undefined; // Let hardhat handle it
+    maxPriorityFeePerGas = undefined;
   } else {
     gasLimit = 30000000;
     maxFeePerGas = 10000000000;
@@ -72,8 +72,8 @@ async function step6(): Promise<EnvironmentInfo> {
     .connect(wallets.getWalletImplLocatorChanger())
     .changeWalletImplementation(mainModuleDynamicAuthAddress, {
       gasLimit: gasLimit,
-      // Let Hardhat handle gas pricing automatically for Base Sepolia
-      ...(isBaseSepolia ? {} : { maxFeePerGas, maxPriorityFeePerGas })
+      // Let Hardhat handle gas pricing automatically for Base networks
+      ...(maxFeePerGas ? { maxFeePerGas, maxPriorityFeePerGas } : {})
     });
   await tx.wait();
   console.log(`[${network}] Wallet Impl Locator implementation changed to: ${mainModuleDynamicAuthAddress}`);

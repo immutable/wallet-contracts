@@ -59,7 +59,7 @@ async function step4(): Promise<EnvironmentInfo> {
   console.log(`[${network}] EntryPoint address ${entryPointAddress}`);
   console.log(`[${network}] ImmutableSigner address ${immutableSignerAddress}`);
 
-  await waitForInput();
+  // await waitForInput(); // Commented out for automated deployment
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);

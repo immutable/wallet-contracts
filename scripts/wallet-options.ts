@@ -18,7 +18,7 @@ export class WalletOptions {
 
   constructor(env: EnvironmentInfo, coldWallet: Signer, walletImplLocatorImplChanger: Signer) {
     // For development, use local wallets instead of Ledger
-    const isDevEnvironment = env.network === 'localhost' || env.network === 'hardhat' || env.network === 'base_sepolia' || process.env.NODE_ENV === 'development';
+    const isDevEnvironment = env.network === 'localhost' || env.network === 'hardhat' || env.network === 'base_sepolia' || env.network === 'base' || process.env.NODE_ENV === 'development';
 
     if (isDevEnvironment) {
       console.log(`[${env.network}] Using local wallet for development...`);

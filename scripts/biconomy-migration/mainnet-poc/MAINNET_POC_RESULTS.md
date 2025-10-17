@@ -33,17 +33,17 @@ This POC demonstrates a complete end-to-end flow of:
 
 ## 🏗️ Phase 1: Passport Infrastructure
 
-### Deployed Contracts on Base Mainnet
+### Deployed Contracts on Base Mainnet (FINAL - Security Incident Resolved)
 
 | Contract | Address | Status | Admin |
 |----------|---------|--------|-------|
-| **Create2Deployer** | `0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b` | ✅ | N/A |
-| **MultiCallDeploy** | `0x43E6FbD6014aC763B1d97E9eF0D119f863B31530` | ✅ | `0xeDC117...e4dC` |
-| **Factory** | `0x8D95FB3bC8F42e8DA68EF804870a79eF17491f6F` | ✅ | `0xeDC117...e4dC` |
-| **ImmutableSigner** | `0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2` | ✅ | `0xeDC117...e4dC` |
-| **LatestWalletImplLocator** | `0xdEe17F37667de8c17CE7E64364e781346cdE07e5` | ✅ | `0xeDC117...e4dC` |
-| **StartupWalletImpl** | `0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3` | ✅ | N/A |
-| **MainModuleDynamicAuth** | `0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91` | ✅ | N/A |
+| **Create2Deployer** | `0xe9cd28F08fe4A1037Cf0f54C2014F742f18e4bc0` | ✅ SECURE | `0xeDC117...e4dC` |
+| **MultiCallDeploy** | `0xcAbE7b2A52D326eeEe886677DCE6D65df7922115` | ✅ SECURE | `0xeDC117...e4dC` |
+| **Factory** | `0xc9E44d5a8758B55D35B6898eFB4769bf626d6843` | ✅ SECURE | `0xeDC117...e4dC` |
+| **LatestWalletImplLocator** | `0xdEe17F37667de8c17CE7E64364e781346cdE07e5` | ✅ SECURE | `0xeDC117...e4dC` |
+| **StartupWalletImpl** | `0x7019dF9993cb0B25539cFcc4924e043972C0015c` | ✅ SECURE | N/A (stateless) |
+| **ImmutableSigner** | `0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2` | ✅ SECURE | `0xeDC117...e4dC` |
+| **MainModuleDynamicAuth** | `0x7838C041DfbFE80adE919aB6ec9EA10E124eE8ea` | ✅ SECURE | N/A (stateless) |
 
 **Result:** ✅ Complete deployment and verification
 
@@ -51,10 +51,10 @@ This POC demonstrates a complete end-to-end flow of:
 
 ## 👛 Phase 2: Passport Wallet
 
-### Wallet Details
+### Wallet Details (FINAL - Secure Owner)
 
-- **Address:** `0xfFDe4C904E7262b4bdde127f159c3a44584726bC`
-- **Owner:** `0x33De6721Da81c02BE4eCFa14260a30753C50E776`
+- **Address:** `0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6`
+- **Owner:** `0xeDC117090236293afEBb179260e8B9dd5bffe4dC` ✅ **SECURE**
 - **Type:** Passport (Sequence Protocol)
 - **Status:** ✅ Deployed and verified
 
@@ -62,22 +62,29 @@ This POC demonstrates a complete end-to-end flow of:
 
 ## 🔄 Phase 3: Migration to Nexus
 
-### Migration Details
+### Migration Details (FINAL - Secure Wallet)
 
-- **From:** Passport Wallet (`0xfFDe4C904E7262b4bdde127f159c3a44584726bC`)
+- **From:** Passport Wallet (`0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6`)
 - **To:** Nexus (Biconomy ERC-4337)
-- **Transaction:** [`0xd3db6af4439a12c22633b912524795564f08bf0cd35a3650113939f5b4664ab2`](https://basescan.org/tx/0xd3db6af4439a12c22633b912524795564f08bf0cd35a3650113939f5b4664ab2)
-- **Date:** October 17, 2025, 3:43:03 PM
+- **Transaction:** [`0x9b68eb960d64f6be7d106bd6d561ff0e891c7e842448518ee7c271bb930a1f4d`](https://basescan.org/tx/0x9b68eb960d64f6be7d106bd6d561ff0e891c7e842448518ee7c271bb930a1f4d)
+- **Block:** 36961067
+- **Gas Used:** 99,478
 - **Status:** ✅ **SUCCESS**
 
-### Nexus Configuration (Biconomy v2.1.0)
+### What Was Preserved
+
+- ✅ Wallet address (`0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6`)
+- ✅ Balance
+- ✅ Transaction history
+- ✅ Nonce state
+
+### Nexus Configuration (Biconomy Official)
 
 | Component | Address |
 |-----------|---------|
-| **Implementation** | `0x00000d14fa24cdc0f6df7e308c4d1c670e1524b0` |
-| **Factory** | `0x000000a56aaca3e9a4c479ea6b6cd0dbc4b945f9` |
-| **Bootstrap** | `0x00000625a8d7c669b6cb212ec4f3b9225bb4844e` |
-| **K1Validator** | `0x6ca09e2b54c3b620ba3c764abbc2f4e8e1f1bd42` |
+| **Implementation** | `0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90` |
+| **Bootstrap** | `0x0000003eDf18913c01cBc482C978bBD3D6E8ffA3` |
+| **K1Validator** | `0x0000000031ef4155C978d48a8A7d4EDba03b04fE` |
 
 ---
 
