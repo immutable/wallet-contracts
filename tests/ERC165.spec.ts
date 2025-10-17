@@ -91,7 +91,11 @@ contract('ERC165', () => {
   describe('Implement all interfaces for ERC165 on MainModule', () => {
     interfaceIds.forEach(element => {
       it(`Should return implements ${element} interfaceId`, async () => {
-        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(element).abi))
+        // Use fully qualified name for IERC721Receiver to avoid ambiguity
+        const contractName = element === 'IERC721Receiver'
+          ? 'src/contracts/interfaces/receivers/IERC721Receiver.sol:IERC721Receiver'
+          : element
+        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(contractName).abi))
         expect(web3.utils.toBN(interfaceId)).to.not.eq.BN(0)
 
         const erc165result = await erc165checker.doesContractImplementInterface(wallet.address, interfaceId)
@@ -129,7 +133,11 @@ contract('ERC165', () => {
     })
     interfaceIds.concat('IModuleAuthUpgradable').forEach(element => {
       it(`Should return implements ${element} interfaceId`, async () => {
-        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(element).abi))
+        // Use fully qualified name for IERC721Receiver to avoid ambiguity
+        const contractName = element === 'IERC721Receiver'
+          ? 'src/contracts/interfaces/receivers/IERC721Receiver.sol:IERC721Receiver'
+          : element
+        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(contractName).abi))
         expect(web3.utils.toBN(interfaceId)).to.not.eq.BN(0)
 
         const erc165result = await erc165checker.doesContractImplementInterface(wallet.address, interfaceId)
@@ -151,7 +159,11 @@ contract('ERC165', () => {
     // Should implement a fixed set of interfaces
     dynamicModuleInterfaceIds.forEach(id => {
       it(`Should implement the ${id} interface`, async () => {
-        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(id).abi))
+        // Use fully qualified name for IERC721Receiver to avoid ambiguity
+        const contractName = id === 'IERC721Receiver'
+          ? 'src/contracts/interfaces/receivers/IERC721Receiver.sol:IERC721Receiver'
+          : id
+        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(contractName).abi))
         expect(web3.utils.toBN(interfaceId)).to.not.eq.BN(0)
 
         const erc165result = await erc165checker.doesContractImplementInterface(wallet.address, interfaceId)
@@ -162,7 +174,11 @@ contract('ERC165', () => {
     // And should not implement other interfaces
     interfaceIds.filter(id => !dynamicModuleInterfaceIds.includes(id)).forEach(id => {
       it(`Should not implement the ${id} interface`, async () => {
-        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(id).abi))
+        // Use fully qualified name for IERC721Receiver to avoid ambiguity
+        const contractName = id === 'IERC721Receiver'
+          ? 'src/contracts/interfaces/receivers/IERC721Receiver.sol:IERC721Receiver'
+          : id
+        const interfaceId = interfaceIdOf(new ethers.utils.Interface(artifacts.require(contractName).abi))
         expect(web3.utils.toBN(interfaceId)).to.not.eq.BN(0)
 
         const erc165result = await erc165checker.doesContractImplementInterface(wallet.address, interfaceId)
