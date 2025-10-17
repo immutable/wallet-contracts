@@ -6,18 +6,22 @@
 
 import { ethers } from "hardhat";
 import { createPublicClient, http } from "viem";
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import * as fs from "fs";
 import * as path from "path";
 
 /**
- * Creates a public client for Base Sepolia
+ * Creates a public client for Base (auto-detects mainnet/testnet)
  */
 export function createBaseSepoliaClient(rpcUrl?: string) {
+    // Auto-detect network from hardhat provider
+    const network = ethers.provider.network;
+    const isMainnet = network?.chainId === 8453;
+
     return createPublicClient({
-        chain: baseSepolia,
-        transport: http(rpcUrl || process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org"),
+        chain: isMainnet ? base : baseSepolia,
+        transport: http(rpcUrl || (isMainnet ? "https://mainnet.base.org" : "https://sepolia.base.org")),
     });
 }
 
@@ -62,12 +66,12 @@ export async function checkBalance(
     address: string,
     label: string = "Balance"
 ): Promise<bigint> {
-    const balance = await publicClient.getBalance({
-        address: address as `0x${string}`,
-    });
+    // Use ethers provider directly for correct network
+    const balance = await ethers.provider.getBalance(address);
+    const balanceBigInt = BigInt(balance.toString());
 
-    console.log(`  ${label}: ${ethers.utils.formatEther(balance.toString())} ETH`);
-    return balance;
+    console.log(`  ${label}: ${ethers.utils.formatEther(balance)} ETH`);
+    return balanceBigInt;
 }
 
 /**
@@ -78,15 +82,15 @@ export async function ensureSufficientBalance(
     address: string,
     minBalance: bigint = 0n
 ): Promise<void> {
-    const balance = await publicClient.getBalance({
-        address: address as `0x${string}`,
-    });
+    // Use ethers provider directly for correct network
+    const balance = await ethers.provider.getBalance(address);
+    const balanceBigInt = BigInt(balance.toString());
 
-    if (balance <= minBalance) {
+    if (balanceBigInt <= minBalance) {
         throw new Error(
             `Insufficient balance!\n` +
             `  Address: ${address}\n` +
-            `  Balance: ${ethers.utils.formatEther(balance.toString())} ETH\n` +
+            `  Balance: ${ethers.utils.formatEther(balance)} ETH\n` +
             `  Required: ${ethers.utils.formatEther(minBalance.toString())} ETH`
         );
     }

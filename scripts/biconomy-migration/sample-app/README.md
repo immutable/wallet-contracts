@@ -1,13 +1,13 @@
 # Biconomy Nexus Sample App
 
 [![Status](https://img.shields.io/badge/Status-✅%20All%20Tests%20Passing-success)]()
-[![Network](https://img.shields.io/badge/Network-Base%20Sepolia-blue)]()
+[![Network](https://img.shields.io/badge/Network-Base%20Sepolia%20%26%20Mainnet-blue)]()
 [![SDK](https://img.shields.io/badge/SDK-@biconomy/abstractjs%20v2.2.0-purple)]()
-[![Scenarios](https://img.shields.io/badge/Scenarios-5/5%20Complete-success)]()
+[![Scenarios](https://img.shields.io/badge/Scenarios-6/6%20Complete-success)]()
 
 This sample app demonstrates various use cases for migrated Passport → Nexus wallets using Biconomy's AbstractJS SDK.
 
-**🎊 Phase 1 Complete!** All 5 test scenarios successfully executed on Base Sepolia with 100% success rate.
+**🎊 Both Phases Complete!** All 6 test scenarios successfully executed on Base Sepolia (testnet) and Base Mainnet with 100% success rate.
 
 ## ✅ **What Works**
 
@@ -29,22 +29,43 @@ All scenarios use **`@biconomy/abstractjs`** which has been extensively tested a
 | `04-invisible-signing.ts` | Batch transactions (no UI popup) | ✅ **PASSED** | 2025-10-15 |
 | `05-gas-sponsorship.ts` | Gas sponsorship with paymaster | ✅ **PASSED** | 2025-10-15 |
 
-**🎊 All scenarios successfully tested on Base Sepolia!**
-
-**Total Transactions:** 8 on-chain transactions
+**Total Transactions (Testnet):** 8 on-chain transactions
 - 1x Native ETH transfer
 - 1x ERC20 USDC transfer
 - 2x NFT operations (deploy + mint + transfer)
 - 3x Batch transactions (invisible signing)
 - 1x Gas sponsored transaction
 
-**Results:** All transactions confirmed on [BaseScan](https://sepolia.basescan.org/)
+**Results:** All transactions confirmed on [BaseScan Sepolia](https://sepolia.basescan.org/)
 
-### **Phase 2: Multi-Chain (Future)**
+---
 
-- 🔮 Cross-chain token transfers
-- 🔮 Cross-chain NFT operations
-- 🔮 Multi-chain gas sponsorship
+### **Phase 2: Base Mainnet POC** ✅ **COMPLETED!**
+
+| Script | Scenario | Status | Date |
+|--------|----------|--------|------|
+| `01-native-token-transfer.ts` | ETH transfer on mainnet | ✅ **PASSED** | 2025-10-17 |
+| `02-erc20-transfer.ts` | USDC transfer on mainnet | ✅ **PASSED** | 2025-10-17 |
+| `03-nft-transfer.ts` | Custom NFT on mainnet | ✅ **PASSED** | 2025-10-17 |
+| `04-invisible-signing.ts` | Batch txs on mainnet | ✅ **PASSED** | 2025-10-17 |
+| `05-gas-sponsorship.ts` | Paymaster on mainnet | ✅ **PASSED** | 2025-10-17 |
+| `06-nft-purchase-seaport.ts` | **OpenSea/Seaport purchase** | ✅ **PASSED** | 2025-10-17 |
+
+**🎉 NEW: NFT Purchase via OpenSea/Seaport!**
+- ✅ Real NFT purchased from OpenSea marketplace
+- ✅ Seaport Protocol integration validated
+- ✅ Collection: "Base, Introduced" #333499
+- ✅ Price: 0.00103 ETH (~$2.58 USD)
+- ✅ [View on BaseScan](https://basescan.org/tx/0x91f3411050476255cdd7b9ed70f91c77e4ab56ce49d265a15f1e9a6d5f638e49)
+
+**Total Transactions (Mainnet):** 9 on-chain transactions
+- Complete Passport infrastructure deployed
+- Passport wallet migrated to Nexus
+- All 6 core scenarios validated with real assets
+
+**Results:** All transactions confirmed on [BaseScan Mainnet](https://basescan.org/)
+
+**Detailed Report:** See [`../mainnet-poc/MAINNET_POC_RESULTS.md`](../mainnet-poc/MAINNET_POC_RESULTS.md)
 
 ## 🚀 **Quick Start**
 
@@ -122,16 +143,15 @@ MIGRATION_TEST_OWNER_PK=0x... npx hardhat run scripts/biconomy-migration/sample-
 
 ### **📈 Test Statistics**
 
-| Metric | Value |
-|--------|-------|
-| **Total Scenarios** | 5 |
-| **Success Rate** | 100% ✅ |
-| **Total Transactions** | 8 on-chain |
-| **Total Gas Spent** | ~0.002 ETH (~$5 USD) |
-| **Avg Transaction Time** | ~3-5 seconds |
-| **Network** | Base Sepolia (testnet) |
-| **SDK Used** | @biconomy/abstractjs v2.2.0 |
-| **Test Duration** | 2 days |
+| Metric | Testnet (Sepolia) | Mainnet (Base) |
+|--------|-------------------|----------------|
+| **Total Scenarios** | 5 | 6 |
+| **Success Rate** | 100% ✅ | 100% ✅ |
+| **Total Transactions** | 8 on-chain | 9 on-chain |
+| **Total Gas Spent** | ~0.002 ETH (~$5 USD) | ~0.0012 ETH (~$3 USD) |
+| **Avg Transaction Time** | ~3-5 seconds | ~6-8 seconds |
+| **SDK Used** | @biconomy/abstractjs v2.2.0 | @biconomy/abstractjs v2.2.0 |
+| **Test Duration** | 2 days | 2 days |
 
 **Test Wallet Details:**
 - Address: `0x10b3cc2192F2e30708a9DE22243786C8C5883D54`
@@ -193,6 +213,7 @@ Each test scenario generates a result file with transaction details:
 | `03-result.json` | NFT Transfer | NFT contract, token ID, mint + transfer TXs, explorer links |
 | `04-result.json` | Batch Signing | 3 TX hashes, operations, total gas |
 | `05-result.json` | Gas Sponsorship | TX hash, paymaster address, sponsored amount |
+| `06-result.json` | **NFT Purchase (Seaport)** | OpenSea order, Seaport TX, NFT details, price |
 
 **Example result structure:**
 ```json
@@ -232,14 +253,15 @@ Each test scenario generates a result file with transaction details:
 ## 🎯 **Next Steps**
 
 - [x] ✅ Complete Phase 1 (single chain scenarios) - **DONE!**
-- [ ] 🎯 Test on Base Mainnet with real funds
-  - Deploy Passport infrastructure
-  - Deploy & migrate wallet
-  - Execute all 5 test scenarios
-  - Document real costs vs estimates
-- [ ] 🔮 Expand to Phase 2 (multi-chain)
+- [x] ✅ Test on Base Mainnet with real funds - **DONE!**
+  - [x] Deploy Passport infrastructure
+  - [x] Deploy & migrate wallet
+  - [x] Execute all 6 test scenarios (including NFT purchase)
+  - [x] Document real costs vs estimates
+- [ ] 🔮 Expand to multi-chain scenarios
   - Test on Immutable zkEVM
   - Test cross-chain operations
+  - Validate chain-agnostic deployment
 - [ ] 🌐 Build frontend demo app
   - UI for migration flow
   - Transaction history viewer
@@ -248,17 +270,25 @@ Each test scenario generates a result file with transaction details:
 ## 📝 **Achievements Log**
 
 ### **October 2025**
-- ✅ **Oct 15-16:** Completed all Phase 1 scenarios on Base Sepolia
-- ✅ **Oct 15:** Successfully migrated Passport wallet to Nexus
-- ✅ **Oct 15:** Validated AbstractJS SDK compatibility
-- ✅ **Oct 15:** Identified Supertransactions SDK limitation (AA23)
-- ✅ **Oct 16:** Adapted NFT scenario from Seaport to direct transfer
-- ✅ **Oct 16:** Refactored sample-app with helper utilities
-- ✅ **Oct 16:** All 8 transactions confirmed on BaseScan
 
-### **Planning**
-- 🎯 **Oct 16:** Mainnet POC preparation in progress
-  - Budget request: $100 ETH on L1
-  - Target: Base Mainnet
+**Base Sepolia (Testnet) - Oct 15-16:**
+- ✅ Completed all Phase 1 scenarios (5/5)
+- ✅ Successfully migrated Passport wallet to Nexus
+- ✅ Validated AbstractJS SDK compatibility
+- ✅ Identified Supertransactions SDK limitation (AA23)
+- ✅ Adapted NFT scenario from Seaport to direct transfer
+- ✅ Refactored sample-app with helper utilities
+- ✅ All 8 transactions confirmed on BaseScan
+
+**Base Mainnet - Oct 16-17:**
+- ✅ Deployed complete Passport infrastructure (~$30)
+- ✅ Deployed and migrated Passport wallet (~$3)
+- ✅ Executed all 6 core scenarios on mainnet (6/6 passed)
+- ✅ **NEW:** NFT Purchase via OpenSea/Seaport integration
+- ✅ Purchased "Base, Introduced" NFT #333499 for 0.00103 ETH
+- ✅ Validated gas sponsorship on mainnet with Biconomy Paymaster
+- ✅ Total spent: ~$39.58 (60% under $100 budget!)
+- ✅ All 9 transactions confirmed on BaseScan
+- ✅ Generated comprehensive POC report ([MAINNET_POC_RESULTS.md](../mainnet-poc/MAINNET_POC_RESULTS.md))
   - Full Passport → Nexus flow with real funds
 

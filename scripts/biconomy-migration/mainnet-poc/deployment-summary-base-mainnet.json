@@ -1,0 +1,24 @@
+{
+    "network": "base",
+    "chainId": 8453,
+    "deployedAt": "2025-10-17T04:00:00.000Z",
+    "deployer": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+    "infrastructure": {
+        "create2Deployer": "0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b",
+        "multiCallDeploy": "0x43E6FbD6014aC763B1d97E9eF0D119f863B31530",
+        "factory": "0xc717462912081A3822fEF854c292514291380dEa",
+        "latestWalletImplLocator": "0xb5b7b3AA3C6a6d02B34529d66ca0F3b488360C97",
+        "startupWalletImpl": "0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3",
+        "immutableSigner": "0xFB7a9A6E110C6732Bc936F0e1285bEca8B05a0B3",
+        "mainModuleDynamicAuth": "0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91"
+    },
+    "admins": {
+        "owner": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "multiCallAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "factoryAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "walletImplLocatorAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "walletImplChanger": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "signerRootAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+        "signerAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776"
+    }
+}

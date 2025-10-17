@@ -12,8 +12,9 @@ import {
     MEEVersion,
 } from "@biconomy/abstractjs";
 import { http } from "viem";
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import type { PrivateKeyAccount } from "viem/accounts";
+import { ethers } from "hardhat";
 
 export interface NexusClientConfig {
     owner: PrivateKeyAccount;
@@ -50,7 +51,12 @@ export async function createNexusClients(config: NexusClientConfig): Promise<Nex
     // Get version info
     const versionConfig = getMEEVersion(version);
 
+    // Auto-detect network
+    const network = await ethers.provider.getNetwork();
+    const viemChain = network.chainId === 8453 ? base : baseSepolia;
+
     console.log("🚀 Creating Nexus Account (AbstractJS)...");
+    console.log(`  Network: ${viemChain.name} (${network.chainId})`);
     console.log(`  MEE Version: ${version}`);
     console.log(`  Account ID: ${versionConfig.accountId}\n`);
 
@@ -58,11 +64,15 @@ export async function createNexusClients(config: NexusClientConfig): Promise<Nex
     const nexusAccount = await toNexusAccount({
         signer: owner,
         chainConfiguration: {
-            chain: baseSepolia,
-            transport: http(rpcUrl),
+            chain: viemChain,
+            // CRITICAL: Don't pass rpcUrl to http()!
+            // Passing rpcUrl causes SDK to include factory/factoryData in UserOps
+            // which triggers AA10 error for already-deployed wallets
+            transport: http(), // Let SDK use default Hardhat provider
             version: versionConfig, // Use versionConfig object, not version enum
         },
         accountAddress: walletAddress as `0x${string}`,
+        // NOTE: Don't use deployedOnChains - SDK auto-detects if wallet is deployed!
     });
 
     console.log(`  ✅ Nexus account created`);

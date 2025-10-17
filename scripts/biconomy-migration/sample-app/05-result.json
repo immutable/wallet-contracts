@@ -1,7 +1,7 @@
 {
   "scenario": "Gas Sponsorship",
-  "timestamp": "2025-10-16T02:27:21.629Z",
-  "wallet": "0x10b3cc2192F2e30708a9DE22243786C8C5883D54",
+  "timestamp": "2025-10-17T05:58:55.934Z",
+  "wallet": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
   "recipient": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
   "amount": "0.00001 ETH",
   "gasSponsorship": {
@@ -10,13 +10,13 @@
     "gasCostSponsoredByApp": "~0.000000 ETH"
   },
   "balanceChange": {
-    "initial": "0.000829 ETH",
-    "final": "0.000819 ETH",
+    "initial": "0.001797 ETH",
+    "final": "0.001786 ETH",
     "spent": "0.000010 ETH"
   },
-  "userOpHash": "0xe5257b59c8eb14526d1b26dc9a50c9aadc464fcd0827925eaaacdf2acd94a97a",
-  "txHash": "0x4d2b187080deb35a751103251d0315514a9ebde631618b70d6b5b83fa4520407",
+  "userOpHash": "0x8224908b14052085678a6ad25c341db2b8f2ea0c10d58cda0eec0a2ba3b0faa2",
+  "txHash": "0x19963ce046c16a575e88c87e806f0c8b55922f4584ef05f91858f63eee683a40",
   "success": "true",
-  "duration": "7.32s",
-  "explorer": "https://sepolia.basescan.org/tx/0x4d2b187080deb35a751103251d0315514a9ebde631618b70d6b5b83fa4520407"
+  "duration": "7.00s",
+  "explorer": "https://basescan.org/tx/0x19963ce046c16a575e88c87e806f0c8b55922f4584ef05f91858f63eee683a40"
 }

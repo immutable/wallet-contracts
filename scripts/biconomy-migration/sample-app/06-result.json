@@ -1,0 +1,17 @@
+{
+  "scenario": "NFT Purchase via Seaport",
+  "timestamp": "2025-10-17T06:33:00.802Z",
+  "wallet": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
+  "seaportAddress": "0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC",
+  "nft": {
+    "contract": "0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792",
+    "name": "Unknown NFT",
+    "tokenId": "333499",
+    "price": "0.00103 ETH"
+  },
+  "userOpHash": "0xf5c5f0e602728b3d9122760453f507302b47914ffb18deaf307a4e70857c9f15",
+  "txHash": "0x91f3411050476255cdd7b9ed70f91c77e4ab56ce49d265a15f1e9a6d5f638e49",
+  "success": true,
+  "duration": "7.63s",
+  "explorer": "https://basescan.org/tx/0x91f3411050476255cdd7b9ed70f91c77e4ab56ce49d265a15f1e9a6d5f638e49"
+}

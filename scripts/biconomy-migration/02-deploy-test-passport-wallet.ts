@@ -31,7 +31,17 @@ async function deployTestPassportWallet() {
     // LOAD DEPLOYMENT ARTIFACTS
     // ============================================================================
 
-    const deploymentPath = path.join(__dirname, "../deployment-summary-simplified.json");
+    // Auto-detect network and load correct deployment file
+    const currentNetwork = await ethers.provider.getNetwork();
+    const isMainnet = currentNetwork.chainId === 8453; // Base Mainnet
+
+    const deploymentPath = isMainnet
+        ? path.join(__dirname, "mainnet-poc/deployment-summary-base-mainnet.json")
+        : path.join(__dirname, "../deployment-summary-simplified.json");
+
+    console.log(`\n🌐 Network: ${currentNetwork.name} (chainId: ${currentNetwork.chainId})`);
+    console.log(`📂 Loading deployment from: ${path.basename(deploymentPath)}\n`);
+
     const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
 
     const artifacts = {
@@ -71,8 +81,11 @@ async function deployTestPassportWallet() {
     const balance = await deployer.getBalance();
     console.log(`💰 Deployer Balance: ${ethers.utils.formatEther(balance)} ETH\n`);
 
-    if (balance.lt(ethers.utils.parseEther("0.01"))) {
-        throw new Error("Insufficient balance for deployment (need at least 0.01 ETH)");
+    // Adjust minimum balance requirement based on network
+    const minBalance = isMainnet ? "0.005" : "0.01"; // Lower requirement for mainnet (real costs)
+
+    if (balance.lt(ethers.utils.parseEther(minBalance))) {
+        throw new Error(`Insufficient balance for deployment (need at least ${minBalance} ETH)`);
     }
 
     // ============================================================================

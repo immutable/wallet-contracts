@@ -11,6 +11,7 @@
  * REFACTORED: Now uses helper utilities for cleaner code
  */
 
+import { ethers } from "hardhat";
 import { encodeFunctionData, parseUnits } from "viem";
 import config from "./config.json";
 import {
@@ -74,8 +75,14 @@ async function erc20Transfer() {
 
     const { network, testTokens } = config;
 
-    // Using USDC on Base Sepolia
-    const tokenAddress = testTokens.usdc;
+    // Auto-detect network and use correct USDC address
+    const ethersNetwork = await ethers.provider.getNetwork();
+    const isMainnet = ethersNetwork.chainId === 8453;
+
+    // Using USDC (Base Mainnet or Base Sepolia)
+    const tokenAddress = isMainnet
+        ? "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" // Base Mainnet USDC
+        : testTokens.usdc; // Base Sepolia USDC
     const tokenDecimals = 6; // USDC has 6 decimals
     const tokenSymbol = "USDC";
 
@@ -112,7 +119,8 @@ async function erc20Transfer() {
     console.log("  ✅ Public client created\n");
 
     const bundlerUrl = getRequiredEnv("NEXUS_BUNDLER_URL");
-    const paymasterApiKey = process.env.PAYMASTER_API_KEY;
+    // IMPORTANT: Don't use paymaster for already-deployed wallets!
+    const paymasterApiKey = undefined; // Disabled for migrated wallets
 
     const clients = await createNexusClients({
         owner,

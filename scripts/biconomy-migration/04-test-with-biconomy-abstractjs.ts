@@ -15,7 +15,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { createWalletClient, http, parseEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import {
     createBicoBundlerClient,
     toNexusAccount,
@@ -89,6 +89,18 @@ async function testWithBiconomySDK() {
     console.log("=".repeat(80));
 
     // ============================================================================
+    // DETECT NETWORK
+    // ============================================================================
+
+    const network = await ethers.provider.getNetwork();
+    const isMainnet = network.chainId === 8453; // Base Mainnet
+    const viemChain = isMainnet ? base : baseSepolia;
+
+    console.log(`\n🌐 Network: ${viemChain.name} (chainId: ${network.chainId})`);
+    console.log(`   Mode: ${isMainnet ? 'MAINNET 🔴' : 'TESTNET 🟡'}\n`);
+    console.log("=".repeat(80));
+
+    // ============================================================================
     // CREATE NEXUS ACCOUNT WITH BICONOMY SDK
     // ============================================================================
 
@@ -106,7 +118,7 @@ async function testWithBiconomySDK() {
         const nexusAccount = await toNexusAccount({
             signer: eoaAccount,
             chainConfiguration: {
-                chain: baseSepolia,
+                chain: viemChain,
                 transport: http(),
                 version: versionConfig,
             },
@@ -152,8 +164,14 @@ async function testWithBiconomySDK() {
 
         console.log("\n🌐 Creating Bundler Client...");
 
-        // Load bundler URL from deployment or environment
-        const bundlerUrl = process.env.NEXUS_BUNDLER_URL || "https://bundler.biconomy.io/api/v2/84532/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44";
+        // Load bundler URL based on network
+        const bundlerUrl = isMainnet
+            ? (process.env.BICONOMY_BUNDLER_URL_BASE || process.env.NEXUS_BUNDLER_URL)
+            : (process.env.NEXUS_BUNDLER_URL || "https://bundler.biconomy.io/api/v2/84532/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44");
+
+        if (!bundlerUrl) {
+            throw new Error("Bundler URL not configured! Set BICONOMY_BUNDLER_URL_BASE in .env");
+        }
 
         console.log(`  Bundler URL: ${bundlerUrl}\n`);
 

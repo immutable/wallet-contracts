@@ -73,7 +73,9 @@ async function nativeTokenTransfer() {
     console.log("  ✅ Public client created\n");
 
     const bundlerUrl = getRequiredEnv("NEXUS_BUNDLER_URL");
-    const paymasterApiKey = process.env.PAYMASTER_API_KEY;
+    // NOTE: Paymaster not needed for this test (no gas sponsorship required)
+    // See script 05 for gas sponsorship example
+    const paymasterApiKey = undefined; // Disabled - not using gas sponsorship
 
     const clients = await createNexusClients({
         owner,

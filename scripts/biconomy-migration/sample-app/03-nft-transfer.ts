@@ -142,7 +142,8 @@ async function nftTransfer() {
     printSection("STEP 4: Setup Biconomy Clients");
 
     const bundlerUrl = getRequiredEnv("NEXUS_BUNDLER_URL");
-    const paymasterApiKey = process.env.PAYMASTER_API_KEY;
+    // IMPORTANT: Don't use paymaster for already-deployed wallets!
+    const paymasterApiKey = undefined; // Disabled for migrated wallets
 
     const clients = await createNexusClients({
         owner,
