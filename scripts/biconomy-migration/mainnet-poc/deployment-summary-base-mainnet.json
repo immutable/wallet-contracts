@@ -1,24 +1,24 @@
 {
-    "network": "base",
-    "chainId": 8453,
-    "deployedAt": "2025-10-17T04:00:00.000Z",
-    "deployer": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-    "infrastructure": {
-        "create2Deployer": "0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b",
-        "multiCallDeploy": "0x43E6FbD6014aC763B1d97E9eF0D119f863B31530",
-        "factory": "0xc717462912081A3822fEF854c292514291380dEa",
-        "latestWalletImplLocator": "0xb5b7b3AA3C6a6d02B34529d66ca0F3b488360C97",
-        "startupWalletImpl": "0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3",
-        "immutableSigner": "0xFB7a9A6E110C6732Bc936F0e1285bEca8B05a0B3",
-        "mainModuleDynamicAuth": "0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91"
-    },
-    "admins": {
-        "owner": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "multiCallAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "factoryAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "walletImplLocatorAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "walletImplChanger": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "signerRootAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
-        "signerAdmin": "0x33De6721Da81c02BE4eCFa14260a30753C50E776"
-    }
+  "network": "base",
+  "chainId": 8453,
+  "deployedAt": "2025-10-17T10:39:58.157Z",
+  "deployer": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+  "infrastructure": {
+    "create2Deployer": "0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b",
+    "multiCallDeploy": "0x43E6FbD6014aC763B1d97E9eF0D119f863B31530",
+    "factory": "0x8D95FB3bC8F42e8DA68EF804870a79eF17491f6F",
+    "latestWalletImplLocator": "0xdEe17F37667de8c17CE7E64364e781346cdE07e5",
+    "startupWalletImpl": "0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3",
+    "immutableSigner": "0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2",
+    "mainModuleDynamicAuth": "0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91"
+  },
+  "admins": {
+    "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "multiCallAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "factoryAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "walletImplLocatorAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "walletImplChanger": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "signerRootAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "signerAdmin": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC"
+  }
 }

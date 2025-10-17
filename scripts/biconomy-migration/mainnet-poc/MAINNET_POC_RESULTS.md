@@ -35,15 +35,15 @@ This POC demonstrates a complete end-to-end flow of:
 
 ### Deployed Contracts on Base Mainnet
 
-| Contract | Address | Status |
-|----------|---------|--------|
-| **Create2Deployer** | `0x7c5dB7e790D7E1b0D2C0a8e0B8d3d72be2C91Cf8` | ✅ |
-| **MultiCallDeploy** | `0x81f79E9a470Ee9C3e79d791e55Cb2BF508e0cc15` | ✅ |
-| **Factory** | `0x7B41FA5FCC01Fc9E9f52c95fEd63dA96CB09a7a9` | ✅ |
-| **LatestWalletImplLocator** | `0x7B7B5c4e25Db82FD37E6C3b76E2e3C0fbAa33BaC` | ✅ |
-| **StartupWalletImpl** | `0x6f18Ac7d82E7d82826a1A6Ff8d3a7F37f22d48E6` | ✅ |
-| **MainModuleDynamicAuth** | `0x2C79D3e47Ca1c20a9b7C29CefF5DA7C5e2a8F5Ea` | ✅ |
-| **ImmutableSigner** | `0xC82e46127D7Cb3bE99F6D2d9E5F7c9f5e4b8e3C4` | ✅ |
+| Contract | Address | Status | Admin |
+|----------|---------|--------|-------|
+| **Create2Deployer** | `0xFBB97BAaEb16Ee06d15A15150D99a9A0f175544b` | ✅ | N/A |
+| **MultiCallDeploy** | `0x43E6FbD6014aC763B1d97E9eF0D119f863B31530` | ✅ | `0xeDC117...e4dC` |
+| **Factory** | `0x8D95FB3bC8F42e8DA68EF804870a79eF17491f6F` | ✅ | `0xeDC117...e4dC` |
+| **ImmutableSigner** | `0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2` | ✅ | `0xeDC117...e4dC` |
+| **LatestWalletImplLocator** | `0xdEe17F37667de8c17CE7E64364e781346cdE07e5` | ✅ | `0xeDC117...e4dC` |
+| **StartupWalletImpl** | `0xaad16c08BE31b7Ad6E982B350bb37A68DabB05c3` | ✅ | N/A |
+| **MainModuleDynamicAuth** | `0x0114f5621BAbb0170f496Cc0Ffd550188D7E1a91` | ✅ | N/A |
 
 **Result:** ✅ Complete deployment and verification
 
@@ -318,7 +318,10 @@ All planned scenarios were tested and validated on Base Mainnet. The POC demonst
 
 ### Deployed Contracts
 - [Base Mainnet Explorer](https://basescan.org/)
-- [Factory Contract](https://basescan.org/address/0x7B41FA5FCC01Fc9E9f52c95fEd63dA96CB09a7a9)
+- [Factory Contract](https://basescan.org/address/0x8D95FB3bC8F42e8DA68EF804870a79eF17491f6F)
+- [ImmutableSigner Contract](https://basescan.org/address/0x798E63eA4B6f95431e8f532F9DC5E5311146E1A2)
+- [LatestWalletImplLocator Contract](https://basescan.org/address/0xdEe17F37667de8c17CE7E64364e781346cdE07e5)
+- [MultiCallDeploy Contract](https://basescan.org/address/0x43E6FbD6014aC763B1d97E9eF0D119f863B31530)
 - [Migrated Wallet](https://basescan.org/address/0xfFDe4C904E7262b4bdde127f159c3a44584726bC)
 
 ### Test Scripts
