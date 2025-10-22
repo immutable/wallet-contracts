@@ -1,0 +1,18 @@
+# Source files
+src/
+tsconfig.json
+.gitignore
+
+# Examples (not needed in published package)
+examples/
+
+# Development
+node_modules/
+*.log
+.DS_Store
+
+# Tests
+*.test.ts
+*.spec.ts
+coverage/
+
