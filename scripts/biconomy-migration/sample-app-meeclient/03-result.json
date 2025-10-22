@@ -1,0 +1,38 @@
+{
+    "timestamp": "2025-10-22T12:30:00.000Z",
+    "network": "base-mainnet",
+    "chainId": 8453,
+    "wallet": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
+    "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+    "type": "gas-sponsorship-test",
+    "tests": [
+        {
+            "name": "native-eth-transfer",
+            "supertxHash": "0x6e011577f1a5b1edb05101c9fceb25c229a9fefd59a5ef0590645b8391b6bb3f",
+            "success": true,
+            "amount": "10000000000000",
+            "explorerLink": "https://meescan.biconomy.io/details/0x6e011577f1a5b1edb05101c9fceb25c229a9fefd59a5ef0590645b8391b6bb3f",
+            "txHash": "0x6971b0208c9d2382ab1b0a6eb4b15322707ecc1cf4f710e84e053479e164e6b1"
+        },
+        {
+            "name": "erc20-usdc-transfer",
+            "supertxHash": "0x71b45d0c1d0274d788c889ce8f2d84671510ea5548a92cbc4d3825a74e28d1c8",
+            "success": true,
+            "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "amount": "10000",
+            "explorerLink": "https://meescan.biconomy.io/details/0x71b45d0c1d0274d788c889ce8f2d84671510ea5548a92cbc4d3825a74e28d1c8",
+            "txHash": "0x09c808ee659b920a8b4ef0a99d398a99ed52e5e5fe774cde5f7c2074a0c474f3"
+        }
+    ],
+    "balances": {
+        "ethBefore": "1749743146477696",
+        "ethAfter": "1739743146477696",
+        "usdcBefore": "90000",
+        "usdcAfter": "80000"
+    },
+    "gasSponsorship": {
+        "enabled": true,
+        "provider": "Biconomy",
+        "totalGasSaved": "~$0.003 USD"
+    }
+}

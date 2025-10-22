@@ -1,16 +1,17 @@
 /**
- * 05-test-migrated-wallet-with-meeclient-mainnet.ts
+ * 01-native-token-transfer-meeclient.ts
  * 
- * Tests MIGRATED Passport wallet on BASE MAINNET using createMeeClient.
+ * Native ETH transfer using MEE Client (createMeeClient).
  * 
- * Uses:
- * - createMeeClient() + toMultichainNexusAccount()
- * - Base Mainnet (8453)
- * - Migrated wallet: 0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6
- * - Gas sponsorship via Biconomy (hosted)
+ * MIGRATED FROM: sample-app/01-native-token-transfer.ts
+ * IMPROVEMENTS:
+ * - Uses MEE Client instead of legacy bundler/paymaster
+ * - Gas sponsorship via Biconomy (automatic)
+ * - Simplified API (no manual bundler/paymaster setup)
+ * - Entry Point v0.7.0 compatible
  */
 
-import { ethers } from "hardhat";
+import { ethers } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
 import { createPublicClient, http, parseEther, type Hex } from "viem";
@@ -18,8 +19,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { createMeeClient, toMultichainNexusAccount, getMEEVersion, MEEVersion } from "@biconomy/abstractjs";
 
-async function testMigratedWalletMainnet() {
-    console.log("🧪 Testing MIGRATED Wallet on BASE MAINNET with createMeeClient\n");
+async function nativeTokenTransferMeeClient() {
+    console.log("🧪 Native ETH Transfer - MEE Client\n");
     console.log("=".repeat(80));
     console.log("📋 Network: Base Mainnet (8453)");
     console.log("📋 API: createMeeClient() + toMultichainNexusAccount()");
@@ -46,10 +47,10 @@ async function testMigratedWalletMainnet() {
 
     console.log("\n⚙️  Setting up signer...");
 
-    const privateKeyRaw = process.env.SECURE_DEPLOYER_PK || process.env.MIGRATION_TEST_OWNER_PK;
+    const privateKeyRaw = process.env.MIGRATION_TEST_OWNER_PK;
 
     if (!privateKeyRaw) {
-        throw new Error("SECURE_DEPLOYER_PK or MIGRATION_TEST_OWNER_PK not found in .env");
+        throw new Error("MIGRATION_TEST_OWNER_PK not found in .env");
     }
 
     const privateKey = privateKeyRaw.startsWith("0x") ? privateKeyRaw : `0x${privateKeyRaw}`;
@@ -93,6 +94,11 @@ async function testMigratedWalletMainnet() {
     });
 
     console.log(`  Balance: ${ethers.utils.formatEther(balance.toString())} ETH\n`);
+
+    if (balance < parseEther("0.00002")) {
+        throw new Error("Insufficient balance in wallet");
+    }
+
     console.log("=".repeat(80));
 
     // ============================================================================
@@ -134,161 +140,94 @@ async function testMigratedWalletMainnet() {
         console.log("=".repeat(80));
 
         // ========================================================================
-        // SEND TEST TRANSACTION
+        // SEND NATIVE ETH TRANSFER
         // ========================================================================
 
-        console.log("\n🚀 Sending Test Transaction...");
+        console.log("\n🚀 Sending Native ETH Transfer...");
 
         const testAmount = parseEther("0.00001");
-        // Send to Native Nexus wallet to avoid self-transfer issues
-        const recipientAddress = "0xF04fF8e30816858dc4ec5436d3e148D1B9D84b6B" as `0x${string}`;
+        const recipientAddress = "0xF04fF8e30816858dc4ec5436d3e148D1B9D84b6B" as `0x${string}`; // Native Nexus wallet
 
         console.log(`  From:      ${walletAddress}`);
-        console.log(`  To:        ${recipientAddress} (Native Nexus Wallet)`);
+        console.log(`  To:        ${recipientAddress}`);
         console.log(`  Amount:    ${ethers.utils.formatEther(testAmount.toString())} ETH`);
         console.log(`  Sponsored: YES (Biconomy)\n`);
 
         console.log("  📋 Building quote with gas sponsorship...");
-        console.log("  ⚠️  Note: Sponsorship must be enabled at https://dashboard.biconomy.io\n");
 
-        let quote;
-        try {
-            quote = await meeClient.getQuote({
-                sponsorship: true,
-                instructions: [
-                    {
-                        calls: [
-                            {
-                                to: recipientAddress,
-                                value: testAmount,
-                            },
-                        ],
-                        chainId: base.id,
-                    },
-                ],
-            });
+        const quote = await meeClient.getQuote({
+            sponsorship: true,
+            instructions: [
+                {
+                    calls: [
+                        {
+                            to: recipientAddress,
+                            value: testAmount,
+                        },
+                    ],
+                    chainId: base.id,
+                },
+            ],
+        });
 
-            console.log("  ✅ Quote received!");
-            console.log(`  Quote ID: ${quote.id || "N/A"}`);
-            console.log(`  Quote:`, JSON.stringify(quote, null, 2));
-            console.log();
-        } catch (error: any) {
-            console.error("  ❌ Failed to get quote:");
-            console.error(`     ${error.message}`);
-            throw error;
-        }
+        console.log("  ✅ Quote received!\n");
 
-        // ========================================================================
-        // SIGN QUOTE (Manual Flow)
-        // ========================================================================
+        console.log("  🖊️  Signing quote...");
+        const signedQuote = await meeClient.signQuote({ quote });
+        console.log("  ✅ Quote signed!\n");
 
-        console.log("  🖊️  Signing quote...\n");
+        console.log("  📤 Executing signed quote...");
+        const result = await meeClient.executeSignedQuote({ signedQuote });
+        const hash = result.hash;
 
-        let signedQuote;
-        try {
-            signedQuote = await meeClient.signQuote({ quote });
-            console.log("  ✅ Quote signed!");
-            console.log(`  Signed Quote:`, JSON.stringify(signedQuote, null, 2));
-            console.log();
-        } catch (error: any) {
-            console.error("  ❌ Failed to sign quote:");
-            console.error(`     ${error.message}`);
-            throw error;
-        }
+        console.log(`  ✅ Transaction submitted!`);
+        console.log(`  Supertransaction Hash: ${hash}\n`);
 
-        // ========================================================================
-        // EXECUTE SIGNED QUOTE
-        // ========================================================================
-
-        console.log("  📤 Executing signed quote...\n");
-        console.log("  ⏳ Calling executeSignedQuote...");
-
-        let hash: string;
-        try {
-            const result = await meeClient.executeSignedQuote({ signedQuote });
-            hash = result.hash;
-
-            console.log(`\n  ✅ executeSignedQuote returned!`);
-            console.log(`  TX Hash: ${hash}`);
-            console.log(`  Explorer: https://basescan.org/tx/${hash}`);
-            console.log(`  Check BaseScan now to see if transaction was submitted!\n`);
-        } catch (error: any) {
-            console.error("  ❌ Failed to execute signed quote:");
-            console.error(`     ${error.message}`);
-            throw error;
-        }
-
-        // ========================================================================
-        // WAIT FOR RECEIPT
-        // ========================================================================
-
-        console.log("  ⏳ Waiting for Supertransaction receipt...\n");
+        console.log("  ⏳ Waiting for confirmation...\n");
 
         const receipt = await meeClient.waitForSupertransactionReceipt({ hash: hash as `0x${string}` });
 
-        console.log(`  📋 Receipt received!`);
-        console.log();
-
-        // Check if the supertransaction was successful
-        // The receipt structure has: transactionStatus, userOps[].executionStatus, receipts[].status
         const isSuccess = receipt.transactionStatus === "MINED_SUCCESS" ||
             (receipt.userOps && receipt.userOps.every((op: any) =>
                 op.executionStatus === "MINED_SUCCESS"
-            )) ||
-            (receipt.receipts && receipt.receipts.every((r: any) =>
-                r.status === "success"
             ));
 
         console.log(`  Status: ${isSuccess ? "✅ SUCCESS" : "❌ FAILED"}`);
-        console.log(`  Transaction Status: ${receipt.transactionStatus || "N/A"}`);
+        console.log(`  Transaction Status: ${receipt.transactionStatus || "N/A"}\n`);
 
-        // Show UserOp details if available
+        // Show UserOp details
         if (receipt.userOps && receipt.userOps.length > 0) {
-            console.log(`\n  📊 UserOps executed: ${receipt.userOps.length}`);
+            console.log(`  📊 UserOps executed: ${receipt.userOps.length}`);
             receipt.userOps.forEach((op: any, idx: number) => {
                 console.log(`    UserOp #${idx + 1}:`);
-                console.log(`      Sender: ${op.userOp?.sender || "N/A"}`);
-                console.log(`      UserOp Hash: ${op.userOpHash || "N/A"}`);
                 console.log(`      Execution Status: ${op.executionStatus || "N/A"}`);
-                console.log(`      Execution Data (TX Hash): ${op.executionData || "N/A"}`);
+                console.log(`      TX Hash: ${op.executionData || "N/A"}`);
             });
+            console.log();
         }
 
-        // Show blockchain transaction receipts
-        if (receipt.receipts && receipt.receipts.length > 0) {
-            console.log(`\n  📜 Blockchain Receipts: ${receipt.receipts.length}`);
-            receipt.receipts.forEach((r: any, idx: number) => {
-                console.log(`    Receipt #${idx + 1}:`);
-                console.log(`      TX Hash: ${r.transactionHash || "N/A"}`);
-                console.log(`      Block: ${r.blockNumber?.toString() || "N/A"}`);
-                console.log(`      Status: ${r.status || "N/A"}`);
-                console.log(`      Gas Used: ${r.gasUsed?.toString() || "N/A"}`);
-            });
-        }
-
-        // Show explorer links if available
+        // Show explorer links
         if (receipt.explorerLinks && receipt.explorerLinks.length > 0) {
-            console.log(`\n  🔗 Explorer Links:`);
+            console.log(`  🔗 Explorer Links:`);
             receipt.explorerLinks.forEach((link: string) => {
                 console.log(`    ${link}`);
             });
+            console.log();
         }
 
-        console.log();
         console.log("=".repeat(80));
 
         // ========================================================================
         // SAVE RESULT
         // ========================================================================
 
-        const result = {
+        const resultData = {
             timestamp: new Date().toISOString(),
             network: "base-mainnet",
             chainId: base.id,
             wallet: walletAddress,
             owner: ownerAddress,
-            type: "migrated",
-            entryPoint: "v0.7.0",
+            type: "native-token-transfer",
             supertxHash: hash,
             success: isSuccess,
             transactionStatus: receipt.transactionStatus,
@@ -300,21 +239,20 @@ async function testMigratedWalletMainnet() {
             recipient: recipientAddress,
         };
 
-        const resultPath = path.join(__dirname, "05-mainnet-result.json");
-        fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
+        const resultPath = path.join(__dirname, "01-result.json");
+        fs.writeFileSync(resultPath, JSON.stringify(resultData, null, 2));
 
         console.log(`\n📄 Result saved to: ${resultPath}\n`);
 
         console.log("=".repeat(80));
         if (isSuccess) {
-            console.log("\n🎉 MIGRATED WALLET TEST ON BASE MAINNET: SUCCESS!\n");
-            console.log("✅ createMeeClient works perfectly with Entry Point v0.7.0!");
+            console.log("\n🎉 NATIVE ETH TRANSFER: SUCCESS!\n");
+            console.log("✅ MEE Client works perfectly!");
             console.log("✅ Gas sponsorship working");
             console.log("✅ UserOps confirmed on-chain");
             console.log(`✅ Supertransaction: ${hash}\n`);
         } else {
-            console.log("\n⚠️  MIGRATED WALLET TEST: NEEDS INVESTIGATION\n");
-            console.log("   Check Biconomy dashboard for details\n");
+            console.log("\n⚠️  NATIVE ETH TRANSFER: NEEDS INVESTIGATION\n");
         }
         console.log("=".repeat(80));
 
@@ -326,7 +264,7 @@ async function testMigratedWalletMainnet() {
     }
 }
 
-testMigratedWalletMainnet()
+nativeTokenTransferMeeClient()
     .then(() => process.exit(0))
     .catch((error) => {
         console.error("\n❌ Test Failed!");

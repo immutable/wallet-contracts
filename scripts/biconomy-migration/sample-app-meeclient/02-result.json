@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-10-22T00:01:20.491Z",
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "wallet": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
+  "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+  "type": "erc20-transfer",
+  "supertxHash": "0x39909eb262a21af1fc05447c81503ebcb82d185fc91f586389baf9f59f846816",
+  "success": true,
+  "transactionStatus": "MINED_SUCCESS",
+  "userOpsCount": 1,
+  "blockchainTxHashes": [
+    "0x975fb1285265393816228e58180cb2004c165f6488e30fb106f75784e76f4679"
+  ],
+  "explorerLinks": [
+    "https://meescan.biconomy.io/details/0x39909eb262a21af1fc05447c81503ebcb82d185fc91f586389baf9f59f846816",
+    "https://basescan.org/tx/0x975fb1285265393816228e58180cb2004c165f6488e30fb106f75784e76f4679",
+    "https://v2.jiffyscan.xyz/tx/0xa410bd7a4a597a6ca2a4d68dda10110852e4ac64ab517b0ecfe4474cf86ce066"
+  ],
+  "sponsored": true,
+  "token": {
+    "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "symbol": "USDC",
+    "amount": "10000",
+    "decimals": 6
+  },
+  "recipient": "0xF04fF8e30816858dc4ec5436d3e148D1B9D84b6B",
+  "balanceBefore": "100000",
+  "balanceAfter": "90000"
+}
