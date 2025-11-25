@@ -76,9 +76,9 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
    *      For defensive validation, each extracted address is compared against IMMUTABLE_SIGNER_CONTRACT.
    *      If a match is found, it is recorded.
    *      
-   *      Special case: If this is the first transaction (nonce == 0) and the immutable signer contract
-   *      is one of the signers, the signature is automatically validated and approved without checking
-   *      the stored image hash. This allows the immutable signer to bootstrap the wallet on first use.
+   *      Special case: If this is the first transaction (nonce was 0, now 1 after increment) and the immutable 
+   *      signer contract is one of the signers, the signature is automatically validated and approved without 
+   *      checking the stored image hash. This allows the immutable signer to bootstrap the wallet on first use.
    */
   function _signatureValidationWithUpdateCheck(
     bytes32 _hash,
@@ -145,9 +145,10 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
       imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
     }
 
-    // Check if this is the first transaction (nonce == 0) and immutable signer contract is one of the signers
+    // Check if this is the first transaction (nonce was 0 before increment) and immutable signer contract is one of the signers
+    // Note: _validateNonce increments the nonce before _signatureValidation is called, so we check for 1, not 0
     uint256 currentNonce = uint256(ModuleStorage.readBytes32Map(NonceKey.NONCE_KEY, bytes32(uint256(0))));
-    if (currentNonce == 0 && immutableSignerContractFound) {
+    if (currentNonce == 1 && immutableSignerContractFound) {
       return (true, true, imageHash);
     }
 
