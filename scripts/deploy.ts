@@ -52,13 +52,13 @@ async function main(): Promise<EnvironmentInfo> {
   // 4. Deploy startup wallet impl (PNR)
   const startupWalletImpl = await deployContractViaCREATE2(env, wallets, 'StartupWalletImpl', [walletImplLocator.address]);
 
-  // --- Step 4: Deployed using CREATE2 Factory.
-  // 5. Deploy main module dynamic auth (CFC)
-  const mainModuleDynamicAuth = await deployContractViaCREATE2(env, wallets, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address]);
-
-  // --- Step 5: Deployed using Passport Nonce Reserver.
-  // 6. Deploy immutable signer (PNR)
+  // --- Step 4: Deployed using Passport Nonce Reserver.
+  // 5. Deploy immutable signer (PNR)
   const immutableSigner = await deployContractViaCREATE2(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
+
+  // --- Step 5: Deployed using CREATE2 Factory.
+  // 6. Deploy main module dynamic auth (CFC)
+  const mainModuleDynamicAuth = await deployContractViaCREATE2(env, wallets, 'MainModuleDynamicAuth', [factory.address, startupWalletImpl.address, immutableSigner.address]);
 
   // --- Step 6: Deployed using alternate wallet (?)
   // Fund the implementation changer

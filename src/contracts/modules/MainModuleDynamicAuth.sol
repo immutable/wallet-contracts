@@ -24,7 +24,7 @@ contract MainModuleDynamicAuth is
 {
 
   // solhint-disable-next-line no-empty-blocks
-  constructor(address _factory, address _startup) ModuleAuthDynamic (_factory, _startup) { }
+  constructor(address _factory, address _startupWalletImpl, address _immutableSignerContract) ModuleAuthDynamic (_factory, _startupWalletImpl, _immutableSignerContract) { }
 
 
   /**

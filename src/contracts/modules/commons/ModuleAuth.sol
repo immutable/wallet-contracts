@@ -13,9 +13,9 @@ import "./ModuleERC165.sol";
 abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, IERC1271Wallet {
   using LibBytes for bytes;
 
-  uint256 private constant FLAG_SIGNATURE = 0;
-  uint256 private constant FLAG_ADDRESS = 1;
-  uint256 private constant FLAG_DYNAMIC_SIGNATURE = 2;
+  uint256 internal constant FLAG_SIGNATURE = 0;
+  uint256 internal constant FLAG_ADDRESS = 1;
+  uint256 internal constant FLAG_DYNAMIC_SIGNATURE = 2;
 
   bytes4 private constant SELECTOR_ERC1271_BYTES_BYTES = 0x20c13b0b;
   bytes4 private constant SELECTOR_ERC1271_BYTES32_BYTES = 0x1626ba7e;
@@ -49,7 +49,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes32 _hash,
     bytes memory _signature
   )
-    internal override returns (bool)
+    internal virtual override returns (bool)
   {
     (bool verified, bool needsUpdate, bytes32 imageHash) = _signatureValidationWithUpdateCheck(_hash, _signature);
     if (needsUpdate) {
@@ -74,7 +74,7 @@ abstract contract ModuleAuth is IModuleAuth, ModuleERC165, SignatureValidator, I
     bytes32 _hash,
     bytes memory _signature
   )
-    internal view returns (bool, bool, bytes32)
+    internal view virtual returns (bool, bool, bytes32)
   {
     (
       uint16 threshold,  // required threshold signature
