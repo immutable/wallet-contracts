@@ -18,6 +18,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
   address public immutable IMMUTABLE_SIGNER_CONTRACT;
 
 constructor(address _factory, address _startupWalletImpl, address _immutableSignerContract) {
+    require(_immutableSignerContract != address(0), "ModuleAuthDynamic#constructor: INVALID_SIGNER_ADDRESS");
     // Build init code hash of the deployed wallets using that module
     bytes32 initCodeHash = keccak256(abi.encodePacked(Wallet.creationCode, uint256(uint160(_startupWalletImpl))));
 
@@ -136,8 +137,8 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
         revert("ModuleAuthDynamic#_signatureValidation INVALID_FLAG");
       }
 
-      // Defensive check: compare extracted address with target address
-      if (IMMUTABLE_SIGNER_CONTRACT != address(0) && addr == IMMUTABLE_SIGNER_CONTRACT) {
+      // Check if this signer is the immutable signer contract
+      if (addr == IMMUTABLE_SIGNER_CONTRACT) {
         immutableSignerContractFound = true;
       }
 
