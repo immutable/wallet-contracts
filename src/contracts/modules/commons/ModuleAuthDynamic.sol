@@ -13,6 +13,14 @@ import "../../utils/LibBytes.sol";
 abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
   using LibBytes for bytes;
 
+  /// @dev Struct to hold signature validation state to avoid stack too deep errors
+  struct SignatureValidationState {
+    uint256 rindex;
+    bytes32 imageHash;
+    uint256 totalWeight;
+    bool immutableSignerContractFound;
+  }
+
   bytes32 public immutable INIT_CODE_HASH;
   address public immutable FACTORY;
   address public immutable IMMUTABLE_SIGNER_CONTRACT;
@@ -92,69 +100,67 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
       uint256 rindex     // read index
     ) = _signature.readFirstUint16();
 
-    // Start image hash generation
-    bytes32 imageHash = bytes32(uint256(threshold));
-
-    // Acumulated weight of signatures
-    uint256 totalWeight;
-
-    // Track if immutable signer contract is one of the signers
-    bool immutableSignerContractFound = false;
+    SignatureValidationState memory state = SignatureValidationState({
+      rindex: rindex,
+      imageHash: bytes32(uint256(threshold)),
+      totalWeight: 0,
+      immutableSignerContractFound: false
+    });
 
     // Iterate until the image is completed
-    while (rindex < _signature.length) {
+    while (state.rindex < _signature.length) {
       // Read next item type and addrWeight
       uint256 flag; uint256 addrWeight; address addr;
-      (flag, addrWeight, rindex) = _signature.readUint8Uint8(rindex);
+      (flag, addrWeight, state.rindex) = _signature.readUint8Uint8(state.rindex);
 
       if (flag == FLAG_ADDRESS) {
         // Read plain address
-        (addr, rindex) = _signature.readAddress(rindex);
+        (addr, state.rindex) = _signature.readAddress(state.rindex);
       } else if (flag == FLAG_SIGNATURE) {
         // Read single signature and recover signer
         bytes memory signature;
-        (signature, rindex) = _signature.readBytes66(rindex);
+        (signature, state.rindex) = _signature.readBytes66(state.rindex);
         addr = recoverSigner(_hash, signature);
 
         // Acumulate total weight of the signature
-        totalWeight += addrWeight;
+        state.totalWeight += addrWeight;
       } else if (flag == FLAG_DYNAMIC_SIGNATURE) {
         // Read signer
-        (addr, rindex) = _signature.readAddress(rindex);
+        (addr, state.rindex) = _signature.readAddress(state.rindex);
 
         // Read signature size
         uint256 size;
-        (size, rindex) = _signature.readUint16(rindex);
+        (size, state.rindex) = _signature.readUint16(state.rindex);
 
         // Read dynamic size signature
         bytes memory signature;
-        (signature, rindex) = _signature.readBytes(rindex, size);
+        (signature, state.rindex) = _signature.readBytes(state.rindex, size);
         require(isValidSignature(_hash, addr, signature), "ModuleAuthDynamic#_signatureValidation: INVALID_SIGNATURE");
 
         // Acumulate total weight of the signature
-        totalWeight += addrWeight;
+        state.totalWeight += addrWeight;
       } else {
         revert("ModuleAuthDynamic#_signatureValidation INVALID_FLAG");
       }
 
       // Check if this signer is the immutable signer contract
       if (addr == IMMUTABLE_SIGNER_CONTRACT) {
-        immutableSignerContractFound = true;
+        state.immutableSignerContractFound = true;
       }
 
       // Write weight and address to image
-      imageHash = keccak256(abi.encode(imageHash, addrWeight, addr));
+      state.imageHash = keccak256(abi.encode(state.imageHash, addrWeight, addr));
     }
 
     // Check if this is the first transaction (nonce was 0 before increment) and immutable signer contract is one of the signers
     // Note: _validateNonce increments the nonce before _signatureValidation is called, so we check for 1, not 0
     uint256 currentNonce = uint256(ModuleStorage.readBytes32Map(NonceKey.NONCE_KEY, bytes32(uint256(0))));
-    if (currentNonce == 1 && immutableSignerContractFound) {
-      return (true, true, imageHash);
+    if (currentNonce == 1 && state.immutableSignerContractFound) {
+      return (true, true, state.imageHash);
     }
 
-    (bool verified, bool needsUpdate) = _isValidImage(imageHash);
-    return ((totalWeight >= threshold && verified), needsUpdate, imageHash);
+    (bool verified, bool needsUpdate) = _isValidImage(state.imageHash);
+    return ((state.totalWeight >= threshold && verified), needsUpdate, state.imageHash);
   }
 
   /**
