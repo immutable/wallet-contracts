@@ -23,8 +23,12 @@ describe('Wallet Factory', function () {
     const StartupWalletImpl= await ethers.getContractFactory('StartupWalletImpl')
     const startupWalletImpl = await StartupWalletImpl.deploy(latestWalletImplLocator.address)
 
+    // Deploy ImmutableSigner contract for use in MainModuleMock deployments
+    const ImmutableSigner = await ethers.getContractFactory('ImmutableSigner')
+    const immutableSigner = await ImmutableSigner.deploy(owner.address, owner.address, owner.address)
+
     const MainModule = await ethers.getContractFactory('MainModuleMockV1')
-    const mainModuleV1 = await MainModule.deploy(factory.address, startupWalletImpl.address)
+    const mainModuleV1 = await MainModule.deploy(factory.address, startupWalletImpl.address, immutableSigner.address)
 
     await latestWalletImplLocator.changeWalletImplementation(mainModuleV1.address)
 
@@ -41,7 +45,8 @@ describe('Wallet Factory', function () {
       mainModuleV1,
       startupWalletImpl,
       salt,
-      latestWalletImplLocator
+      latestWalletImplLocator,
+      immutableSigner
 
     }
   }
@@ -132,7 +137,7 @@ describe('Wallet Factory', function () {
 
 
     it('Should be able to upgrade implementation contracts', async function () {
-      const { factory, startupWalletImpl } = await loadFixture(setupStartupFixture)
+      const { factory, startupWalletImpl, immutableSigner } = await loadFixture(setupStartupFixture)
 
       const acc = ethers.Wallet.createRandom()
       const salt = encodeImageHash(1, [{ weight: 1, address: acc.address }])
@@ -151,7 +156,7 @@ describe('Wallet Factory', function () {
 
       //console.log("Deploy MainModuleMockV2")
       const MainModuleV2 = await ethers.getContractFactory('MainModuleMockV2')
-      const mainModuleV2 = await MainModuleV2.deploy(factory.address, startupWalletImpl.address)
+      const mainModuleV2 = await MainModuleV2.deploy(factory.address, startupWalletImpl.address, immutableSigner.address)
 
       // console.log("Upgrade wallet proxy to using MainModuleMockV2")
       const networkId = (await ethers.provider.getNetwork()).chainId
@@ -201,10 +206,10 @@ describe('Wallet Factory', function () {
 
 
     it('Deploying using upgrade should work', async function () {
-      const { factory, startupWalletImpl, latestWalletImplLocator } = await loadFixture(setupStartupFixture)
+      const { factory, startupWalletImpl, latestWalletImplLocator, immutableSigner } = await loadFixture(setupStartupFixture)
 
       const MainModuleV2 = await ethers.getContractFactory('MainModuleMockV2')
-      const mainModuleV2 = await MainModuleV2.deploy(factory.address, startupWalletImpl.address)
+      const mainModuleV2 = await MainModuleV2.deploy(factory.address, startupWalletImpl.address, immutableSigner.address)
       
       await latestWalletImplLocator.changeWalletImplementation(mainModuleV2.address)
 

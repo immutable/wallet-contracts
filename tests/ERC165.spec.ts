@@ -8,6 +8,7 @@ import {
   MainModuleDynamicAuth,
   StartupWalletImpl,
   LatestWalletImplLocator,
+  ImmutableSigner,
   Factory,
   Factory__factory,
   MainModule__factory,
@@ -16,6 +17,7 @@ import {
   ERC165CheckerMock__factory,
   StartupWalletImpl__factory,
   LatestWalletImplLocator__factory,
+  ImmutableSigner__factory,
 } from '../src'
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR)
@@ -51,6 +53,7 @@ contract('ERC165', () => {
   let moduleDynamicAuth: MainModuleDynamicAuth
   let startupWalletImpl: StartupWalletImpl
   let moduleLocator: LatestWalletImplLocator
+  let immutableSigner: ImmutableSigner
 
   let owner: ethers.Wallet
   let wallet: MainModule
@@ -70,10 +73,12 @@ contract('ERC165', () => {
     // Startup and Locator
     moduleLocator = await new LatestWalletImplLocator__factory().connect(signer).deploy(await signer.getAddress(), await signer.getAddress())
     startupWalletImpl = await new StartupWalletImpl__factory().connect(signer).deploy(moduleLocator.address)
+    // Deploy ImmutableSigner
+    immutableSigner = await new ImmutableSigner__factory().connect(signer).deploy(await signer.getAddress(), await signer.getAddress(), await signer.getAddress())
     // Deploy MainModule
     mainModule = await new MainModule__factory().connect(signer).deploy(factory.address)
     moduleUpgradable = await new MainModuleUpgradable__factory().connect(signer).deploy()
-    moduleDynamicAuth = await new MainModuleDynamicAuth__factory().connect(signer).deploy(factory.address, startupWalletImpl.address)
+    moduleDynamicAuth = await new MainModuleDynamicAuth__factory().connect(signer).deploy(factory.address, startupWalletImpl.address, immutableSigner.address)
     // Deploy ERC165 Checker
     erc165checker = await new ERC165CheckerMock__factory().connect(signer).deploy()
 
