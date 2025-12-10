@@ -514,8 +514,3 @@ New files:
 - [Existing Audit Background](./202309_audit_background.md)
 - [0xSequence Wallet Contracts](https://github.com/0xsequence/wallet-contracts)
 - [Immutable Passport Documentation](https://www.immutable.com/products/passport)
-
-### C. Contact
-
-For questions regarding this threat model, contact the Immutable Security Team.
-
