@@ -369,12 +369,9 @@ if (currentNonce == 1 && state.immutableSignerContractFound && verified) {
 **Mitigation:**
 - ImmutableSigner uses role-based access control for key rotation
 - Key rotation can be performed without affecting wallet addresses
-- Monitoring and detection of unauthorized signatures
 - Regular key rotation cadence
 
 **Residual Risk:** MEDIUM - Key compromise would allow unauthorized bootstrap
-
-**Detection:** Monitor `PrimarySignerUpdated` events and validate bootstrap transactions against expected patterns.
 
 ### Attack 4: Front-Running Bootstrap Transaction
 
