@@ -17,8 +17,9 @@ import {
 
 ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR)
 
-function now(): number {
-  return Math.floor(Date.now() / 1000)
+async function getBlockTimestamp(): Promise<number> {
+  const block = await web3.eth.getBlock('latest')
+  return Number(block.timestamp)
 }
 
 const optimalGasLimit = ethers.constants.Two.pow(21)
@@ -328,14 +329,17 @@ contract('Require utils', (accounts: string[]) => {
   })
   describe('Expirable transactions', () => {
     it('Should pass if non expired', async () => {
-      await requireUtils.requireNonExpired(now() + 1480)
+      const blockTimestamp = await getBlockTimestamp()
+      await requireUtils.requireNonExpired(blockTimestamp + 1480)
     })
     it('Should fail if expired', async () => {
-      const tx = requireUtils.requireNonExpired(now() - 1)
+      const blockTimestamp = await getBlockTimestamp()
+      const tx = requireUtils.requireNonExpired(blockTimestamp - 1)
       await expect(tx).to.be.rejectedWith(RevertError('RequireUtils#requireNonExpired: EXPIRED'))
     })
     it('Should pass bundle if non expired', async () => {
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
+      const blockTimestamp = await getBlockTimestamp()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -347,7 +351,7 @@ contract('Require utils', (accounts: string[]) => {
           gasLimit: optimalGasLimit,
           target: requireUtils.address,
           value: ethers.constants.Zero,
-          data: requireUtils.interface.encodeFunctionData('requireNonExpired', [now() + 1480])
+          data: requireUtils.interface.encodeFunctionData('requireNonExpired', [blockTimestamp + 1480])
         },
         {
           delegateCall: false,
@@ -365,6 +369,7 @@ contract('Require utils', (accounts: string[]) => {
     })
     it('Should fail bundle if expired', async () => {
       const callReceiver = await new CallReceiverMock__factory().connect(signer).deploy()
+      const blockTimestamp = await getBlockTimestamp()
 
       const valA = 5423
       const valB = web3.utils.randomHex(120)
@@ -376,7 +381,7 @@ contract('Require utils', (accounts: string[]) => {
           gasLimit: optimalGasLimit,
           target: requireUtils.address,
           value: ethers.constants.Zero,
-          data: requireUtils.interface.encodeFunctionData('requireNonExpired', [now() - 1])
+          data: requireUtils.interface.encodeFunctionData('requireNonExpired', [blockTimestamp - 1])
         },
         {
           delegateCall: false,
