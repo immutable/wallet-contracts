@@ -36,44 +36,6 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
   }
 
   /**
-   * @notice Verify if signer is default wallet owner
-   * @param _hash       Hashed signed message
-   * @param _signature  Array of signatures with signers ordered
-   *                    like the the keys in the multisig configs
-   *
-   * @dev The signature must be solidity packed and contain the total number of owners,
-   *      the threshold, the weight and either the address or a signature for each owner.
-   *
-   *      Each weight & (address or signature) pair is prefixed by a flag that signals if such pair
-   *      contains an address or a signature. The aggregated weight of the signatures must surpass the threshold.
-   *
-   *      Flag types:
-   *        0x00 - Signature
-   *        0x01 - Address
-   *
-   *      E.g:
-   *      abi.encodePacked(
-   *        uint16 threshold,
-   *        uint8 01,  uint8 weight_1, address signer_1,
-   *        uint8 00, uint8 weight_2, bytes signature_2,
-   *        ...
-   *        uint8 01,  uint8 weight_5, address signer_5
-   *      )
-   */
-  function _signatureValidation(
-    bytes32 _hash,
-    bytes memory _signature
-  )
-    internal virtual override returns (bool)
-  {
-    (bool verified, bool needsUpdate, bytes32 imageHash) = _signatureValidationWithUpdateCheck(_hash, _signature);
-    if (needsUpdate) {
-      updateImageHashInternal(imageHash);
-    }
-    return verified;
-  }
-
-  /**
    * @notice Verify signature and determine if image hash needs updating
    * @param _hash       Hashed signed message
    * @param _signature  Packed signature data containing threshold, flags, weights, and addresses/signatures
