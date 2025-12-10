@@ -293,7 +293,7 @@ describe('ModuleAuthDynamic Bootstrap Flow', () => {
   })
 
   describe('Bootstrap flow - Negative cases', () => {
-    it('Should reject first transaction without ImmutableSigner when wallet was not pre-deployed with correct salt', async () => {
+    it('Should accept first transaction without ImmutableSigner when image hash matches deployment salt', async () => {
       // Create a random signer that is NOT the ImmutableSigner
       const randomSigner = ethers.Wallet.createRandom().connect(hardhat.provider)
 
@@ -332,15 +332,63 @@ describe('ModuleAuthDynamic Bootstrap Flow', () => {
         false
       )
 
-      // This should still work because the wallet was deployed with the correct salt
-      // The signature validation will verify against the deployment address
-      // (This tests the existing flow, not the bootstrap flow)
+      // This should work because the signature's image hash matches the deployment salt
+      // This is the normal first-tx flow (not the bootstrap flow with ImmutableSigner)
       await wallet.execute([transaction], nonce, signature)
       expect(await wallet.nonce()).to.equal(1)
     })
 
-    it('Should reject first transaction with wrong image hash even with ImmutableSigner', async () => {
-      // Deploy wallet with specific signers
+    it('Should reject first transaction without ImmutableSigner when image hash does not match deployment salt', async () => {
+      // Create two different random signers
+      const deploymentSigner = ethers.Wallet.createRandom().connect(hardhat.provider)
+      const attackerSigner = ethers.Wallet.createRandom().connect(hardhat.provider)
+
+      // Deploy wallet with deploymentSigner
+      const walletSalt = encodeImageHash(1, [
+        { weight: 1, address: deploymentSigner.address }
+      ])
+      const walletAddress = addressOf(factory.address, startupWallet.address, walletSalt)
+      await factory.connect(walletDeployerEOA).deploy(startupWallet.address, walletSalt)
+
+      const wallet = MainModule__factory.connect(walletAddress, relayerEOA)
+
+      // Transfer funds
+      await relayerEOA.sendTransaction({ to: walletAddress, value: 1 })
+
+      const transaction = {
+        delegateCall: false,
+        revertOnError: true,
+        gasLimit: 1000000,
+        target: await randomEOA.getAddress(),
+        value: 1,
+        data: []
+      }
+
+      const networkId = (await hardhat.provider.getNetwork()).chainId
+      const nonce = 0
+      const data = encodeMetaTransactionsData(wallet.address, [transaction], networkId, nonce)
+
+      // Sign with attackerSigner (different from deployment signer, NOT ImmutableSigner)
+      // This creates a different image hash than what the wallet was deployed with
+      const signature = await walletMultiSign(
+        [
+          { weight: 1, owner: attackerSigner }
+        ],
+        1,
+        data,
+        false
+      )
+
+      // This should FAIL because:
+      // 1. Image hash doesn't match deployment salt
+      // 2. ImmutableSigner is not present to vouch via bootstrap flow
+      await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
+        'ModuleCalls#execute: INVALID_SIGNATURE'
+      )
+    })
+
+    it('Should accept first transaction with different image hash when ImmutableSigner is present', async () => {
+      // Deploy wallet with specific signers (threshold 2, userEOA + immutableSigner)
       const walletSalt = encodeImageHash(2, [
         { weight: 1, address: await userEOA.getAddress() },
         { weight: 1, address: immutableSigner.address }
@@ -366,21 +414,29 @@ describe('ModuleAuthDynamic Bootstrap Flow', () => {
       const nonce = 0
       const data = encodeMetaTransactionsData(wallet.address, [transaction], networkId, nonce)
 
-      // Sign with ONLY ImmutableSigner (threshold 1, but wallet requires threshold 2)
+      // Sign with ONLY ImmutableSigner (threshold 1, but wallet was deployed with threshold 2)
       // This creates a different image hash than what the wallet was deployed with
+      // Bootstrap flow allows this because ImmutableSigner can vouch for any first transaction
       const signature = await walletMultiSign(
         [
           { weight: 1, owner: immutableSigner.address, signature: (await ethSign(immutableEOA as ethers.Wallet, data)) + '03' }
         ],
-        1,  // Wrong threshold - wallet was deployed with threshold 2
+        1,  // Different threshold than deployment - but allowed via bootstrap
         data,
         false
       )
 
-      // This should fail because the image hash doesn't match
-      await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
-        'ModuleCalls#execute: INVALID_SIGNATURE'
-      )
+      const originalBalance = await randomEOA.getBalance()
+
+      // This should SUCCEED because ImmutableSigner can vouch for any first transaction
+      // regardless of whether the signature's image hash matches the deployment salt
+      await wallet.execute([transaction], nonce, signature)
+
+      // Verify funds were transferred
+      expect(await randomEOA.getBalance()).to.equal(originalBalance.add(1))
+
+      // Verify nonce incremented
+      expect(await wallet.nonce()).to.equal(1)
     })
 
     it('Should reject second transaction with wrong signers after bootstrap', async () => {
