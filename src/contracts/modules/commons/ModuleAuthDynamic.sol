@@ -18,7 +18,7 @@ abstract contract ModuleAuthDynamic is ModuleAuthUpgradable {
     uint256 rindex;
     bytes32 imageHash;
     uint256 totalWeight;
-    bool immutableSignerContractFound;
+    bool immutableSignerContractSigned;
   }
 
   bytes32 public immutable INIT_CODE_HASH;
@@ -43,13 +43,17 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
    * @return needsUpdate True if the image hash needs to be stored (first transaction)
    * @return imageHash  The computed image hash from the signature
    *
-   * @dev This function parses the signature, recovers/reads signer addresses, and validates them.
-   *      For defensive validation, each extracted address is compared against IMMUTABLE_SIGNER_CONTRACT.
-   *      If a match is found, it is recorded.
+   * @dev This function parses the signature, recovers signer addresses from verified signatures, and validates them.
+   *      Only FLAG_SIGNATURE and FLAG_DYNAMIC_SIGNATURE are supported - FLAG_ADDRESS is intentionally not
+   *      supported to prevent attackers from including addresses without providing valid signatures.
    *      
-   *      Special case: If this is the first transaction (nonce was 0, now 1 after increment) and the immutable 
-   *      signer contract is one of the signers, the signature is automatically validated and approved without 
-   *      checking the stored image hash. This allows the immutable signer to bootstrap the wallet on first use.
+   *      For each verified signature, the extracted address is compared against IMMUTABLE_SIGNER_CONTRACT.
+   *      If a match is found after signature verification, it is recorded.
+   *      
+   *      Special case: If this is the first transaction (nonce was 0, now 1 after increment), the immutable 
+   *      signer contract has provided a valid signature, AND the weight threshold is met, the signature is 
+   *      automatically validated and approved without checking the stored image hash. This allows the immutable 
+   *      signer to bootstrap the wallet on first use while preventing unauthorized bootstrap attacks.
    */
   function _signatureValidationWithUpdateCheck(
     bytes32 _hash,
@@ -66,7 +70,7 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
       rindex: rindex,
       imageHash: bytes32(uint256(threshold)),
       totalWeight: 0,
-      immutableSignerContractFound: false
+      immutableSignerContractSigned: false
     });
 
     // Iterate until the image is completed
@@ -75,17 +79,22 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
       uint256 flag; uint256 addrWeight; address addr;
       (flag, addrWeight, state.rindex) = _signature.readUint8Uint8(state.rindex);
 
-      if (flag == FLAG_ADDRESS) {
-        // Read plain address
-        (addr, state.rindex) = _signature.readAddress(state.rindex);
-      } else if (flag == FLAG_SIGNATURE) {
+      // Note: FLAG_ADDRESS is intentionally not supported in this module to prevent
+      // attackers from including the immutable signer address without providing a valid signature.
+      // Only FLAG_SIGNATURE and FLAG_DYNAMIC_SIGNATURE are allowed.
+      if (flag == FLAG_SIGNATURE) {
         // Read single signature and recover signer
         bytes memory signature;
         (signature, state.rindex) = _signature.readBytes66(state.rindex);
         addr = recoverSigner(_hash, signature);
 
-        // Acumulate total weight of the signature
+        // Accumulate total weight of the signature
         state.totalWeight += addrWeight;
+
+        // Check if this signer is the immutable signer contract (only after signature verification)
+        if (addr == IMMUTABLE_SIGNER_CONTRACT) {
+          state.immutableSignerContractSigned = true;
+        }
       } else if (flag == FLAG_DYNAMIC_SIGNATURE) {
         // Read signer
         (addr, state.rindex) = _signature.readAddress(state.rindex);
@@ -99,25 +108,27 @@ constructor(address _factory, address _startupWalletImpl, address _immutableSign
         (signature, state.rindex) = _signature.readBytes(state.rindex, size);
         require(isValidSignature(_hash, addr, signature), "ModuleAuthDynamic#_signatureValidation: INVALID_SIGNATURE");
 
-        // Acumulate total weight of the signature
+        // Accumulate total weight of the signature
         state.totalWeight += addrWeight;
+
+        // Check if this signer is the immutable signer contract (only after signature verification)
+        if (addr == IMMUTABLE_SIGNER_CONTRACT) {
+          state.immutableSignerContractSigned = true;
+        }
       } else {
         revert("ModuleAuthDynamic#_signatureValidation INVALID_FLAG");
-      }
-
-      // Check if this signer is the immutable signer contract
-      if (addr == IMMUTABLE_SIGNER_CONTRACT) {
-        state.immutableSignerContractFound = true;
       }
 
       // Write weight and address to image
       state.imageHash = keccak256(abi.encode(state.imageHash, addrWeight, addr));
     }
 
-    // Check if this is the first transaction (nonce was 0 before increment) and immutable signer contract is one of the signers
+    // Check if this is the first transaction (nonce was 0 before increment) and immutable signer contract
+    // has provided a valid signature. The immutable signer must have actually signed (not just be listed
+    // as an address) and the total weight must meet the threshold to prevent unauthorized bootstrap attacks.
     // Note: _validateNonce increments the nonce before _signatureValidation is called, so we check for 1, not 0
     uint256 currentNonce = uint256(ModuleStorage.readBytes32Map(NonceKey.NONCE_KEY, bytes32(uint256(0))));
-    if (currentNonce == 1 && state.immutableSignerContractFound) {
+    if (currentNonce == 1 && state.immutableSignerContractSigned && state.totalWeight >= threshold) {
       return (true, true, state.imageHash);
     }
 

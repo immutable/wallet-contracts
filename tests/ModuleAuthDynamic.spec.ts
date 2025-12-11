@@ -568,9 +568,10 @@ describe('ModuleAuthDynamic Bootstrap Flow', () => {
         false
       )
 
-      // Should fail because threshold requires both signatures but only ImmutableSigner signed
+      // Should fail because FLAG_ADDRESS is not supported in ModuleAuthDynamic
+      // (removed to prevent attackers from including addresses without signatures)
       await expect(wallet.execute([transaction2], 1, signature2)).to.be.revertedWith(
-        'ModuleCalls#execute: INVALID_SIGNATURE'
+        'ModuleAuthDynamic#_signatureValidation INVALID_FLAG'
       )
     })
   })
