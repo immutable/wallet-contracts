@@ -32,6 +32,16 @@ const config: HardhatUserConfig = {
     tests: 'tests'
   },
   networks: {
+    hardhat: {
+      forking: process.env.FORK_URL ? {
+        url: process.env.FORK_URL,
+      } : undefined,
+      allowUnlimitedContractSize: true,
+      blockGasLimit: 120000000,  // 120 million gas
+      gas: 30000000,              // 30 million gas per tx
+      gasPrice: 0,
+      initialBaseFeePerGas: 0    // Set base fee to 0 for local testing
+    },
     // Define here to easily specify private keys
     localhost: {
       url: 'http://127.0.0.1:8545',
@@ -47,6 +57,11 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: 'https://rpc.immutable.com',
+      accounts: []
+    },
+    'arb-sepolia': {
+      url: 'https://sepolia-rollup.arbitrum.io/rpc',
+      chainId: 421614,
       accounts: []
     },
   },
