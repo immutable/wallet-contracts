@@ -10,8 +10,12 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '0x38D64731246b62fd7A79731ff1cC4D579aA420D0';
-  const walletImplLocatorContractAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+
+  // Update this address from step5b
+  const mainModuleDynamicAuthAddress = 'UPDATE_THIS_ADDRESS';
+
+  // Ethereum Sepolia Address for wallet impl locator
+  const walletImplLocatorContractAddress = '0xDB4b8F9D2C0C731A345a405b6335b3750d197b6C';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);
