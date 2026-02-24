@@ -93,7 +93,7 @@ describe('E2E Immutable Wallet Deployment', () => {
     // Nonce 5
     mainModuleDynamicAuth = await new MainModuleDynamicAuth__factory()
       .connect(contractDeployerEOA)
-      .deploy(factory.address, startupWallet.address)
+      .deploy(factory.address, startupWallet.address, immutableSigner.address)
 
     // Setup the latest implementation address
     await moduleLocator
@@ -283,7 +283,7 @@ describe('E2E Immutable Wallet Deployment', () => {
     )
 
     await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
-      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+      'ModuleAuthDynamic#_signatureValidation: INVALID_SIGNATURE'
     )
   })
 
@@ -336,7 +336,7 @@ describe('E2E Immutable Wallet Deployment', () => {
     )
 
     await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
-      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+      'ModuleAuthDynamic#_signatureValidation: INVALID_SIGNATURE'
     )
   })
 
@@ -393,7 +393,7 @@ describe('E2E Immutable Wallet Deployment', () => {
     )
 
     await expect(wallet.execute([transaction], nonce, signature)).to.be.revertedWith(
-      'ModuleAuth#_signatureValidation: INVALID_SIGNATURE'
+      'ModuleAuthDynamic#_signatureValidation: INVALID_SIGNATURE'
     )
   })
 })

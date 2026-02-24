@@ -16,16 +16,18 @@ loadAndValidateEnvironment();
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: '0.8.17' }],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 999999,
-        details: {
-          yul: true
+    compilers: [{
+      version: '0.8.17',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 999999,
+          details: {
+            yul: true
+          }
         }
       }
-    }
+    }]
   },
   paths: {
     root: 'src',
