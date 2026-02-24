@@ -1,6 +1,6 @@
 // Copyright Immutable Pty Ltd 2018 - 2023
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.27;
 
 // Holds the creation code of the WalletProxy.yul used by smart contract wallet instances.
 // Generate this bytecode using ./compileWalletProxyYul.sh
