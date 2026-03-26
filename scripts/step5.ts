@@ -28,7 +28,12 @@ async function step5(): Promise<EnvironmentInfo> {
   // Deploy immutable signer (PNR)
   const immutableSigner = await deployContract(env, wallets, 'ImmutableSigner', [signerRootAdminPubKey, signerAdminPubKey, signerAddress]);
 
-  fs.writeFileSync('step5.json', JSON.stringify({
+  // Save to network-specific directory
+  const stepDir = network === 'base_sepolia' ? 'scripts/steps/base_sepolia' : 'scripts/steps';
+  if (!fs.existsSync(stepDir)) {
+    fs.mkdirSync(stepDir, { recursive: true });
+  }
+  fs.writeFileSync(`${stepDir}/step5.json`, JSON.stringify({
     signerRootAdminPubKey: signerRootAdminPubKey,
     signerAdminPubKey: signerAdminPubKey,
     signerAddress: signerAddress,

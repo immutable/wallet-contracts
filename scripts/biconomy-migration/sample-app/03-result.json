@@ -1,0 +1,18 @@
+{
+  "scenario": "NFT Transfer",
+  "timestamp": "2025-10-17T05:49:09.448Z",
+  "nftContract": "0x9F5DB0869A67C8B5720f4BE59ea0a066652c06b6",
+  "nftName": "Sample App Test NFT",
+  "nftSymbol": "SATNFT",
+  "tokenId": 0,
+  "deployer": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+  "recipient": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
+  "mintTxHash": "0x8513294c3290c408107026af16c8df71ee409a046d17e8c35830382463a142e9",
+  "transferUserOpHash": "0x4742de4af0832fd69e82c07619fcdd97443eed1ed5fbf70362d12f11c5c4278d",
+  "transferTxHash": "0xa054b902e9a7b2a40422a1dff0a894142248704fdc8bd776b3ad88d3a7c17835",
+  "finalOwner": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
+  "success": true,
+  "duration": "8.83s",
+  "nftExplorer": "https://basescan.org/nft/0x9F5DB0869A67C8B5720f4BE59ea0a066652c06b6/0",
+  "txExplorer": "https://basescan.org/tx/0xa054b902e9a7b2a40422a1dff0a894142248704fdc8bd776b3ad88d3a7c17835"
+}

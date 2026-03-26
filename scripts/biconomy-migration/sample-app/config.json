@@ -1,0 +1,35 @@
+{
+    "network": {
+        "name": "Base Sepolia",
+        "chainId": 84532,
+        "rpcUrl": "https://sepolia.base.org",
+        "explorer": "https://sepolia.basescan.org"
+    },
+    "contracts": {
+        "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+        "nexusImplementation": "0x00000026F4042e22F6Ef2D5EA892BdECD85Bd202",
+        "nexusFactory": "0x00000067568A75dF11b2B80295D349B4E5268c5f",
+        "k1Validator": "0x0000002D6DB27c52E3C11c1Cf24072004AC75cBa"
+    },
+    "bundlers": {
+        "v2": "https://bundler.biconomy.io/api/v2/84532/rpc",
+        "v3": "https://bundler.biconomy.io/api/v3/84532/bundler_{apiKey}"
+    },
+    "testTokens": {
+        "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "weth": "0x4200000000000000000000000000000000000006",
+        "testERC20": "0x..."
+    },
+    "testNFT": {
+        "seaport": "0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC",
+        "testCollection": "0x..."
+    },
+    "paymaster": {
+        "url": "https://network.biconomy.io",
+        "gasTank": {
+            "address": "0x18eAc826f3dD77d065E75E285d3456B751AC80d5",
+            "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            "chainId": 84532
+        }
+    }
+}

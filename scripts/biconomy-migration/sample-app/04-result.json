@@ -1,0 +1,39 @@
+{
+  "scenario": "Invisible Signing",
+  "timestamp": "2025-10-17T05:47:58.807Z",
+  "wallet": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
+  "transactionCount": 3,
+  "successCount": 3,
+  "userPrompts": 0,
+  "transactions": [
+    {
+      "index": 1,
+      "userOpHash": "0x2125fe26568fa287d1e43fbc58bd1f43b6d04bd9be13a6c46a92fcef03142796",
+      "txHash": "0x2e623cec82115b7b063c1cc02576017ae5852798e2a91f7e477be2acbd4e3360",
+      "amount": "0.00001 ETH",
+      "duration": "8.72s",
+      "success": "true",
+      "explorer": "https://basescan.org/tx/0x2e623cec82115b7b063c1cc02576017ae5852798e2a91f7e477be2acbd4e3360"
+    },
+    {
+      "index": 2,
+      "userOpHash": "0x5ff9994de285ccc46161fe5a87bf942f908816e7ed717b5775e1bc72afda63c6",
+      "txHash": "0xe3ba3519355a88835ce10991907b131e988b77b8e3ff1decb257e4420e1f95f3",
+      "amount": "0.00001 ETH",
+      "duration": "6.34s",
+      "success": "true",
+      "explorer": "https://basescan.org/tx/0xe3ba3519355a88835ce10991907b131e988b77b8e3ff1decb257e4420e1f95f3"
+    },
+    {
+      "index": 3,
+      "userOpHash": "0xacc5b87dba8d0b7e04691354d978081a11cee6e37d1074ca94ed222b66d231f3",
+      "txHash": "0x72b6e76d64ff2db77faf1ed3be966872c0609f30bdcab5ee5d2aa129cc7ef20d",
+      "amount": "0.00001 ETH",
+      "duration": "7.23s",
+      "success": "true",
+      "explorer": "https://basescan.org/tx/0x72b6e76d64ff2db77faf1ed3be966872c0609f30bdcab5ee5d2aa129cc7ef20d"
+    }
+  ],
+  "totalTime": "22.29s",
+  "averageTime": "7.43s"
+}

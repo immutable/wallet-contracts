@@ -1,0 +1,23 @@
+{
+    "network": {
+        "name": "Base Mainnet",
+        "chainId": 8453,
+        "rpcUrl": "https://mainnet.base.org",
+        "explorer": "https://basescan.org"
+    },
+    "contracts": {
+        "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+        "nexusImplementation": "0x0E12B6ED74b95aFEc6dc578Dc0b29292C0A95c90",
+        "nexusFactory": "0xDB1D73d8c7e8D50F760083449390b1D4080108dF",
+        "k1Validator": "0x0000000031ef4155C978d48a8A7d4EDba03b04fE",
+        "nexusBootstrap": "0x0000003eDf18913c01cBc482C978bBD3D6E8ffA3"
+    },
+    "bundlers": {
+        "v3": "https://bundler.biconomy.io/api/v3/8453/bundler_{apiKey}"
+    },
+    "testTokens": {
+        "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "weth": "0x4200000000000000000000000000000000000006"
+    },
+    "testRecipient": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC"
+}

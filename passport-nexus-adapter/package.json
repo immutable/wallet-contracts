@@ -1,0 +1,40 @@
+{
+    "name": "@immutable/passport-nexus-adapter",
+    "version": "0.1.0-alpha",
+    "description": "Adapter for routing Passport wallet transactions to Nexus implementation when migrated",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "npm run clean && npm run build"
+    },
+    "keywords": [
+        "immutable",
+        "passport",
+        "nexus",
+        "biconomy",
+        "erc-4337",
+        "account-abstraction",
+        "wallet-migration"
+    ],
+    "author": "Immutable",
+    "license": "Apache-2.0",
+    "peerDependencies": {
+        "ethers": "^5.8.0 || ^6.0.0",
+        "@biconomy/abstractjs": "^1.1.9",
+        "viem": "^2.37.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0",
+        "ethers": "^6.13.0",
+        "@biconomy/abstractjs": "^1.1.9",
+        "viem": "^2.37.9"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md"
+    ]
+}

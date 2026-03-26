@@ -25,19 +25,30 @@ async function step1(): Promise<EnvironmentInfo> {
   console.log(`[${network}] multiCallAdminPubKey ${multiCallAdminPubKey}`);
   console.log(`[${network}] factoryAdminPubKey ${factoryAdminPubKey}`);
 
-  await waitForInput();
+  // await waitForInput(); // Commented out for automated deployment
 
   // Setup wallet
   const wallets: WalletOptions = await newWalletOptions(env);
 
   // --- STEP 1: Deployed using Passport Nonce Reserver.
-  // Deploy multi call deploy (PNR)
-  const multiCallDeploy = await deployContract(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, submitterAddress]);
+  // Deploy multi call deploy (PNR) with your funded wallet as executor
+  const executorAddress = process.env.COLD_WALLET_ADDRESS || '0xeDC117090236293afEBb179260e8B9dd5bffe4dC';
+  console.log(`[${network}] Using executor wallet: ${executorAddress}`);
+  const multiCallDeploy = await deployContract(env, wallets, 'MultiCallDeploy', [multiCallAdminPubKey, executorAddress]);
+
+  // Wait for the first deployment to be confirmed
+  console.log(`[${env.network}] Waiting for MultiCallDeploy deployment to be confirmed...`);
+  await new Promise(resolve => setTimeout(resolve, 5000));
 
   // Deploy factory with multi call deploy address as deployer role EST (PNR)
   const factory = await deployContract(env, wallets, 'Factory', [factoryAdminPubKey, multiCallDeploy.address]);
 
-  fs.writeFileSync('step1.json', JSON.stringify({
+  // Save to network-specific directory
+  const stepDir = env.network === 'base_sepolia' ? 'scripts/steps/base_sepolia' : 'scripts/steps';
+  if (!fs.existsSync(stepDir)) {
+    fs.mkdirSync(stepDir, { recursive: true });
+  }
+  fs.writeFileSync(`${stepDir}/step1.json`, JSON.stringify({
     multiCallAdminPubKey: multiCallAdminPubKey,
     factoryAdminPubKey: factoryAdminPubKey,
     multiCallDeploy: multiCallDeploy.address,

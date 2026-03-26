@@ -1,0 +1,15 @@
+{
+  "scenario": "NFT Purchase via Seaport",
+  "timestamp": "2025-10-22T02:13:13.951Z",
+  "wallet": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
+  "seaportAddress": "0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC",
+  "nft": {
+    "contract": "0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792",
+    "tokenId": "305634",
+    "price": "0.00064 ETH"
+  },
+  "supertxHash": "0x458881efc2bb2bee248fe372c83b9e9e5fa24cce931b654bcd311d75d829cca5",
+  "status": "FAILED - Execution deadline exceeded",
+  "dashboardUrl": "https://dashboard.biconomy.io/",
+  "note": "Seaport order expired before execution. This is a timing issue with marketplace orders, not MEE Client."
+}

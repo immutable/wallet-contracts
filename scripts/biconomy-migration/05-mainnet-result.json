@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-10-21T10:30:10.609Z",
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "wallet": "0x846A51Ac27990D255Eaa0a732A9411F21cAF91b6",
+  "owner": "0xeDC117090236293afEBb179260e8B9dd5bffe4dC",
+  "type": "migrated",
+  "entryPoint": "v0.7.0",
+  "supertxHash": "0xcbb1d5faa3e63fe0223e020d44e1020d08c530d78995918c871f2e2d78263f5f",
+  "success": true,
+  "transactionStatus": "MINED_SUCCESS",
+  "userOpsCount": 1,
+  "blockchainTxHashes": [
+    "0x7c50979882d781ee208d88de65fb16b3f0ab487ac880525c9c08e149c165515b"
+  ],
+  "explorerLinks": [
+    "https://meescan.biconomy.io/details/0xcbb1d5faa3e63fe0223e020d44e1020d08c530d78995918c871f2e2d78263f5f",
+    "https://basescan.org/tx/0x7c50979882d781ee208d88de65fb16b3f0ab487ac880525c9c08e149c165515b",
+    "https://v2.jiffyscan.xyz/tx/0x444cb0f858c559f39bbed8454b6d2c5197f96752e1e04e6ad5cd04ca2c04da44"
+  ],
+  "sponsored": true,
+  "testAmount": "10000000000000",
+  "recipient": "0xF04fF8e30816858dc4ec5436d3e148D1B9D84b6B"
+}

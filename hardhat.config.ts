@@ -3,39 +3,75 @@ import { networkConfig } from './utils/config-loader';
 import * as dotenv from 'dotenv';
 
 import '@nomiclabs/hardhat-truffle5';
-import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-web3';
 import '@nomiclabs/hardhat-etherscan';
 import '@nomicfoundation/hardhat-chai-matchers';
+import "@nomicfoundation/hardhat-foundry";
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
+import "hardhat-contract-sizer";
 
 dotenv.config();
-loadAndValidateEnvironment();
+// Skip environment validation for local development
+if (process.env.NODE_ENV !== 'development') {
+  loadAndValidateEnvironment();
+}
 
 const config: HardhatUserConfig = {
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+  },
   solidity: {
-    compilers: [{ version: '0.8.17' }],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 999999,
-        details: {
-          yul: true
+    compilers: [{
+      version: '0.8.27',
+      settings: {
+        evmVersion: 'cancun',
+        optimizer: {
+          enabled: true,
+          runs: 999999,
+          details: {
+            yul: true,
+            yulDetails: {
+              stackAllocation: true,
+              optimizerSteps: "dhfoDgvulfnTUtnIf xa dr cs gr"
+            }
+          }
         }
       }
-    }
+    }],
   },
   paths: {
-    root: 'src',
+    sources: 'src/contracts',
     tests: 'tests'
+  },
+  // Adiciona os remappings do Foundry para o Hardhat
+  external: {
+    contracts: [
+      {
+        artifacts: "artifacts",
+        deploy: "deploy"
+      }
+    ],
+    deployments: {
+      hardhat: ["deployments/hardhat"],
+      localhost: ["deployments/hardhat"]
+    }
   },
   networks: {
     // Define here to easily specify private keys
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
     localhost: {
       url: 'http://127.0.0.1:8545',
-      accounts: []
+      chainId: 31337,
+      allowUnlimitedContractSize: true,
+      allowBlocksWithSameTimestamp: true,
     },
     devnet: {
       url: 'https://rpc.dev.immutable.com',
@@ -49,6 +85,18 @@ const config: HardhatUserConfig = {
       url: 'https://rpc.immutable.com',
       accounts: []
     },
+    base: {
+      url: process.env.BASE_MAINNET_ENDPOINT,
+      accounts: []
+    },
+    arbitrum: {
+      url: process.env.ARBITRUM_MAINNET_ENDPOINT,
+      accounts: []
+    },
+    base_sepolia: {
+      url: process.env.BASE_SEPOLIA_ENDPOINT,
+      accounts: []
+    }
   },
   mocha: {
     timeout: process.env.COVERAGE ? 15 * 60 * 1000 : 30 * 1000

@@ -1,0 +1,17 @@
+{
+  "scenario": "ERC20 Token Transfer",
+  "timestamp": "2025-10-17T06:12:31.583Z",
+  "wallet": "0xfFDe4C904E7262b4bdde127f159c3a44584726bC",
+  "token": {
+    "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "recipient": "0x33De6721Da81c02BE4eCFa14260a30753C50E776",
+  "amount": "0.1 USDC",
+  "userOpHash": "0xa09b7c5dbf2effe2d29f6f31e33f8d95d6d6e0306dd146cb12cc80e14a079f55",
+  "txHash": "0x1736e3281e119fb8a44d3d1ec6923d519ab49128204386695d470d3ffe65a109",
+  "success": "true",
+  "duration": "6.79s",
+  "explorer": "https://basescan.org/tx/0x1736e3281e119fb8a44d3d1ec6923d519ab49128204386695d470d3ffe65a109"
+}

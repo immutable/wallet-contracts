@@ -10,9 +10,23 @@ import { waitForInput } from './helper-functions';
  **/
 async function step2(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
-  const { network, deployerContractAddress } = env;
+  const { network } = env;
   const walletImplLocatorAdmin = process.env.WALLET_IMPL_LOCATOR_ADMIN;
   const walletImplChangerAdmin = process.env.WALLET_IMPL_CHANGER_ADMIN;
+
+  // Load the correct deployer address from step0.json
+  const stepDir = network === 'base_sepolia' ? 'scripts/steps/base_sepolia' : 'scripts/steps';
+  const step0Path = `${stepDir}/step0.json`;
+
+  if (!fs.existsSync(step0Path)) {
+    throw new Error(`Step 0 not found at ${step0Path}. Please run step 0 first.`);
+  }
+
+  const step0Data = JSON.parse(fs.readFileSync(step0Path, 'utf8'));
+  const deployerContractAddress = step0Data.create2DeployerAddress;
+
+  // Update env with correct deployer address
+  env.deployerContractAddress = deployerContractAddress;
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] CREATE2 Factory address ${deployerContractAddress}`);
@@ -29,7 +43,11 @@ async function step2(): Promise<EnvironmentInfo> {
     walletImplLocatorAdmin, walletImplChangerAdmin
   ]);
 
-  fs.writeFileSync('step2.json', JSON.stringify({
+  // Save to network-specific directory
+  if (!fs.existsSync(stepDir)) {
+    fs.mkdirSync(stepDir, { recursive: true });
+  }
+  fs.writeFileSync(`${stepDir}/step2.json`, JSON.stringify({
     walletImplLocatorAdmin: walletImplLocatorAdmin,
     walletImplChangerAdmin: walletImplChangerAdmin,
     latestWalletImplLocator: latestWalletImplLocator.address,
