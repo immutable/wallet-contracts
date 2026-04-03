@@ -27,6 +27,7 @@ import {
   Factory__factory,
   MainModule__factory,
   MainModuleUpgradable__factory,
+  MainModuleDynamicAuth__factory,
   RequireUtils__factory,
   HookCallerMock__factory,
   CallReceiverMock__factory,
@@ -45,10 +46,27 @@ import {
   DelegateCallMock,
   GasBurnerMock,
   RequireUtils,
-  GasBurnerMock__factory
+  GasBurnerMock__factory,
+  MainModuleDynamicAuth,
+  StartupWalletImpl__factory,
+  LatestWalletImplLocator__factory
 } from '../src'
 
 const CallReceiverMockArtifact = artifacts.require('CallReceiverMock')
+
+type UserOperation = {
+  sender: string
+  nonce: ethers.BigNumberish
+  initCode: ethers.BytesLike
+  callData: ethers.BytesLike
+  callGasLimit: ethers.BigNumberish
+  verificationGasLimit: ethers.BigNumberish
+  preVerificationGas: ethers.BigNumberish
+  maxFeePerGas: ethers.BigNumberish
+  maxPriorityFeePerGas: ethers.BigNumberish
+  paymasterAndData: ethers.BytesLike
+  signature: ethers.BytesLike
+}
 
 const optimalGasLimit = ethers.constants.Two.pow(21)
 
@@ -3999,9 +4017,191 @@ contract('MainModule', (accounts: string[]) => {
       expect(await callReceiver3.lastValB()).to.equal(expected3)
     })
   })
-})
 
-// 0x000102010b1f05b9dd385e2683500bdfec03b53b0d9acb8f004700010001d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b020303
-// 0x000102010b1f05b9dd385e2683500bdfec03b53b0d9acb8f004700010001d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b0203
-//                                                       00010001d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b02
-//                                                               d4c175bfe46abb1138ad97ec9560aae4b745f0b2957986b3367dbaa3486e40497096518c964bad007597f625e2e978d1d6f5096ed2783cb8ceeb828088e81a811b02
+  describe('ValidateUserOp', () => {
+    let dynamicAuth: MainModuleDynamicAuth
+    let startupWalletImpl: any
+    let moduleLocator: any
+
+    beforeEach(async () => {
+      owner = new ethers.Wallet(ethers.utils.randomBytes(32))
+
+      // Deploy StartupWalletImpl and LatestWalletImplLocator
+      moduleLocator = await new LatestWalletImplLocator__factory(signer).deploy(await signer.getAddress(), await signer.getAddress())
+      startupWalletImpl = await new StartupWalletImpl__factory(signer).deploy(moduleLocator.address)
+
+      const moduleFactory = new MainModuleDynamicAuth__factory(signer)
+      const logic = await moduleFactory.deploy(factory.address, startupWalletImpl.address)
+
+      const salt = encodeImageHash(1, [{ weight: 1, address: owner.address }])
+      await factory.deploy(logic.address, salt)
+
+      const walletAddress = addressOf(factory.address, logic.address, salt)
+      dynamicAuth = MainModuleDynamicAuth__factory.connect(walletAddress, signer)
+
+      // Fund the wallet for tests that might require it
+      await signer.sendTransaction({
+        to: dynamicAuth.address,
+        value: ethers.utils.parseEther('1.0')
+      })
+    })
+
+    it('Should return 0 for a valid signature', async () => {
+      const userOp: UserOperation = {
+        sender: dynamicAuth.address,
+        nonce: 0,
+        initCode: [],
+        callData: [],
+        callGasLimit: 100000,
+        verificationGasLimit: 150000,
+        preVerificationGas: 50000,
+        maxFeePerGas: 10,
+        maxPriorityFeePerGas: 2,
+        paymasterAndData: [],
+        signature: []
+      }
+
+      const userOpHash = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          [
+            'address',
+            'uint256',
+            'bytes32',
+            'bytes32',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'bytes32'
+          ],
+          [
+            userOp.sender,
+            userOp.nonce,
+            ethers.utils.keccak256(userOp.initCode),
+            ethers.utils.keccak256(userOp.callData),
+            userOp.callGasLimit,
+            userOp.verificationGasLimit,
+            userOp.preVerificationGas,
+            userOp.maxFeePerGas,
+            userOp.maxPriorityFeePerGas,
+            ethers.utils.keccak256(userOp.paymasterAndData)
+          ]
+        )
+      )
+
+      const signature = await walletSign(owner, userOpHash)
+      userOp.signature = signature
+
+      const result = await dynamicAuth.validateUserOp(userOp, userOpHash, 0)
+      expect(result).to.equal(0)
+    })
+
+    it('Should return 1 for an invalid signature', async () => {
+      const userOp: UserOperation = {
+        sender: dynamicAuth.address,
+        nonce: 0,
+        initCode: [],
+        callData: [],
+        callGasLimit: 100000,
+        verificationGasLimit: 150000,
+        preVerificationGas: 50000,
+        maxFeePerGas: 10,
+        maxPriorityFeePerGas: 2,
+        paymasterAndData: [],
+        signature: []
+      }
+
+      const userOpHash = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          [
+            'address',
+            'uint256',
+            'bytes32',
+            'bytes32',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'bytes32'
+          ],
+          [
+            userOp.sender,
+            userOp.nonce,
+            ethers.utils.keccak256(userOp.initCode),
+            ethers.utils.keccak256(userOp.callData),
+            userOp.callGasLimit,
+            userOp.verificationGasLimit,
+            userOp.preVerificationGas,
+            userOp.maxFeePerGas,
+            userOp.maxPriorityFeePerGas,
+            ethers.utils.keccak256(userOp.paymasterAndData)
+          ]
+        )
+      )
+
+      const impostor = ethers.Wallet.createRandom()
+      const signature = await walletSign(impostor, userOpHash)
+      userOp.signature = signature
+
+      const result = await dynamicAuth.validateUserOp(userOp, userOpHash, 0)
+      expect(result).to.equal(1)
+    })
+
+    it('Should revert if missingAccountFunds is greater than 0', async () => {
+      const userOp: UserOperation = {
+        sender: dynamicAuth.address,
+        nonce: 0,
+        initCode: [],
+        callData: [],
+        callGasLimit: 100000,
+        verificationGasLimit: 150000,
+        preVerificationGas: 50000,
+        maxFeePerGas: 10,
+        maxPriorityFeePerGas: 2,
+        paymasterAndData: [],
+        signature: []
+      }
+
+      const userOpHash = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          [
+            'address',
+            'uint256',
+            'bytes32',
+            'bytes32',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'uint256',
+            'bytes32'
+          ],
+          [
+            userOp.sender,
+            userOp.nonce,
+            ethers.utils.keccak256(userOp.initCode),
+            ethers.utils.keccak256(userOp.callData),
+            userOp.callGasLimit,
+            userOp.verificationGasLimit,
+            userOp.preVerificationGas,
+            userOp.maxFeePerGas,
+            userOp.maxPriorityFeePerGas,
+            ethers.utils.keccak256(userOp.paymasterAndData)
+          ]
+        )
+      )
+
+      const signature = await walletSign(owner, userOpHash)
+      userOp.signature = signature
+
+      const missingFunds = 1
+      const tx = dynamicAuth.validateUserOp(userOp, userOpHash, missingFunds)
+
+      await expect(tx).to.be.rejectedWith(
+        RevertError('Not enough funds to cover transaction costs')
+      )
+    })
+  })
+})
