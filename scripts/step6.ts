@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as hre from 'hardhat';
 import { Contract, ContractFactory, utils } from 'ethers';
 import { newContractFactory, waitForInput } from './helper-functions';
@@ -10,8 +11,8 @@ import { newWalletOptions, WalletOptions } from './wallet-options';
 async function step6(): Promise<EnvironmentInfo> {
   const env = loadEnvironmentInfo(hre.network.name);
   const { network, signerAddress, } = env;
-  const mainModuleDynamicAuthAddress = '0x38D64731246b62fd7A79731ff1cC4D579aA420D0';
-  const walletImplLocatorContractAddress = '0x09BfBa65266e35b7Aa481Ee6fddbE4bA8845C8Af';
+  const mainModuleDynamicAuthAddress = '0xC2d54E4D795469f8616612CC343af078A892F36F';
+  const walletImplLocatorContractAddress = '0xDB4b8F9D2C0C731A345a405b6335b3750d197b6C';
 
   console.log(`[${network}] Starting deployment...`);
   console.log(`[${network}] mainModuleDynamicAuth address ${mainModuleDynamicAuthAddress}`);
@@ -33,12 +34,18 @@ async function step6(): Promise<EnvironmentInfo> {
   const tx = await walletImplLocator
     .connect(wallets.getWallet())
     .changeWalletImplementation(mainModuleDynamicAuthAddress, {
-      gasLimit: 30000000,
-      maxFeePerGas: 10000000000,
-      maxPriorityFeePerGas: 10000000000,
+      gasLimit: 1_000_000,
+      maxFeePerGas: 30000000000,
+      maxPriorityFeePerGas: 1000000000,
     });
   await tx.wait();
   console.log(`[${network}] Wallet Impl Locator implementation changed to: ${mainModuleDynamicAuthAddress}`);
+
+  fs.writeFileSync('step6.json', JSON.stringify({
+    mainModuleDynamicAuth: mainModuleDynamicAuthAddress,
+    walletImplLocatorContractAddress: walletImplLocatorContractAddress,
+    signerAddress: signerAddress,
+  }, null, 1));
 
   return env;
 }

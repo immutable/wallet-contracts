@@ -41,12 +41,24 @@ const config: HardhatUserConfig = {
       url: 'https://rpc.dev.immutable.com',
       accounts: []
     },
+    l1devnet: {
+      url: 'https://rpc.ankr.com/eth_holesky',
+      accounts: []
+    },
     testnet: {
       url: 'https://rpc.testnet.immutable.com',
       accounts: []
     },
+    l1testnet: {
+      url: 'https://eth-sepolia.g.alchemy.com/v2/<CHANGE_ME>',
+      accounts: []
+    },
     mainnet: {
       url: 'https://rpc.immutable.com',
+      accounts: []
+    },
+    l1mainnet: {
+      url: 'https://eth-mainnet.g.alchemy.com/v2/<CHANGE_ME>',
       accounts: []
     },
   },

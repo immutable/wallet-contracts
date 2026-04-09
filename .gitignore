@@ -26,6 +26,7 @@ scripts/*_output*.json
 
 # Ignore any environmental files with sensitive data
 .env
+.env.l1dev
 .env.localhost
 .env.devnet
 .env.testnet
